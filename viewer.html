@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0b0e12">
+  <title>3D Kanal Görüntüleyici</title>
+  <link rel="stylesheet" href="./src/styles/viewer.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header - Mobil'de gizlenebilir -->
+    <header class="app-header">
+      <h1 class="app-title">🧰 3D Kanal Görüntüleyici</h1>
+      <div class="part-selector-wrapper">
+        <label for="part-selector">Parça Seç:</label>
+        <select id="part-selector" class="part-selector">
+          <!-- Dinamik olarak doldurulacak -->
+        </select>
+      </div>
+      <button id="mobile-toggle" class="mobile-toggle" aria-label="Parametreleri Aç/Kapat">
+        <span class="toggle-icon">⚙️</span>
+      </button>
+    </header>
+
+    <!-- Ana İçerik - Mobil'de dikey, desktop'ta yatay -->
+    <main class="app-main">
+      <!-- Sol Panel: 3D Görünüm -->
+      <div class="viewer-panel">
+        <div class="canvas-wrapper">
+          <div id="hud" class="hud"></div>
+          <canvas id="canvas-3d"></canvas>
+          <div id="view-controls" class="view-controls-container"></div>
+        </div>
+      </div>
+
+      <!-- Sağ Panel: Parametreler - Mobil'de alt'ta -->
+      <aside class="params-panel">
+        <div class="params-scroll">
+          <div id="parameter-panel"></div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script type="module" src="./src/app.js"></script>
+</body>
+</html>

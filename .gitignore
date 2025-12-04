@@ -1,0 +1,26 @@
+# Node modules
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+server.log
+server.err
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Vercel
+.vercel
+
+# Environment
+.env
+.env.local
+.env*.local

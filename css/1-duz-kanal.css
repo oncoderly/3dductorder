@@ -1,0 +1,146 @@
+/* 1-düz kanal.css - Düz Kanal 3D CSS Stilleri */
+
+:root{
+  --bg:#ffffff; --panel:#f6f8fb; --text:#111418; --muted:#d0d7de;
+  --blue:#1e5bff; --minus:#ff6b6b; --plus:#2ecc71;
+  --uiScale:1;
+}
+@media (max-width:600px){ :root{ --uiScale:.5; } }
+
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
+body{overflow:hidden;font:13px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+
+/* yerleşim - responsive - sabit boyutlar */
+#app{height:100vh;display:flex;flex-direction:column;overflow:hidden}
+#sceneWrap{position:relative;flex:0 0 40vh;height:40vh;overflow:hidden}
+#panel{flex:0 0 60vh;height:60vh;overflow:auto;background:var(--panel);border-top:1px solid var(--muted)}
+
+/* Geniş ekran (landscape) - yan yana */
+@media (min-aspect-ratio: 4/3) and (min-width: 800px){
+  #app{flex-direction:row}
+  #sceneWrap{flex:0 0 65vw;width:65vw;height:100vh}
+  #panel{flex:0 0 35vw;width:35vw;height:100vh;border-top:none;border-left:1px solid var(--muted)}
+}
+
+/* Çok geniş ekran - daha fazla sahne alanı */
+@media (min-aspect-ratio: 16/9) and (min-width: 1200px){
+  #sceneWrap{flex:0 0 75vw;width:75vw}
+  #panel{flex:0 0 25vw;width:25vw}
+}
+
+/* Orta geniş ekran */
+@media (min-aspect-ratio: 3/2) and (max-aspect-ratio: 16/9) and (min-width: 900px){
+  #sceneWrap{flex:0 0 70vw;width:70vw}
+  #panel{flex:0 0 30vw;width:30vw}
+}
+
+/* Dar ekran (portrait) - dikey düzen */
+@media (max-aspect-ratio: 3/4){
+  #sceneWrap{flex:0 0 35vh;height:35vh}
+  #panel{flex:0 0 65vh;height:65vh}
+}
+
+/* Çok dar ekran - daha fazla panel alanı */
+@media (max-aspect-ratio: 9/16){
+  #sceneWrap{flex:0 0 30vh;height:30vh}
+  #panel{flex:0 0 70vh;height:70vh}
+}
+
+#c{display:block;width:100%;height:100%}
+
+/* HUD - responsive */
+#hud{
+  position:absolute;top:10px;left:10px;z-index:40;color:#1f2328;
+  background:rgba(255,255,255,.92);padding:calc(4px*var(--uiScale)) calc(8px*var(--uiScale));
+  border:1px solid var(--muted);border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.08);
+  font-size:calc(12px*var(--uiScale));
+  transform:scale(var(--uiScale));transform-origin:top left;
+  max-width:calc(100vw - 20px);
+}
+#hud .mini{margin-top:6px;font-weight:700}
+
+/* Dar ekranlarda HUD'ı küçült */
+@media (max-width: 480px) or (max-aspect-ratio: 3/4){
+  #hud{font-size:10px;padding:3px 6px;}
+}
+
+/* Yön tuşları - responsive */
+#viewbar{
+  position:absolute;left:50%;bottom:10px;z-index:50;
+  transform:translateX(-50%) scale(var(--uiScale));transform-origin:bottom center;
+  display:flex;flex-wrap:nowrap;gap:calc(8px*var(--uiScale));
+  background:rgba(255,255,255,.9);border:1px solid var(--muted);border-radius:12px;backdrop-filter:blur(6px);
+  padding:calc(6px*var(--uiScale)) calc(8px*var(--uiScale));
+  max-width:calc(100vw - 20px);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;
+}
+#viewbar .vbtn{
+  flex:0 0 auto;min-width:calc(64px*var(--uiScale));
+  background:#fff;color:#1f2328;border:1px solid var(--muted);border-radius:8px;
+  padding:calc(6px*var(--uiScale)) calc(10px*var(--uiScale));font-size:calc(12px*var(--uiScale));cursor:pointer
+}
+#viewbar .vbtn:hover{background:#f6f8fb}
+
+/* Dar ekranlarda viewbar'ı optimize et */
+@media (max-width: 600px) or (max-aspect-ratio: 3/4){
+  #viewbar{gap:4px;padding:4px 6px;}
+  #viewbar .vbtn{min-width:48px;padding:4px 6px;font-size:10px;}
+}
+
+/* Çok dar ekranlarda daha kompakt */
+@media (max-width: 480px) or (max-aspect-ratio: 9/16){
+  #viewbar .vbtn{min-width:40px;padding:3px 4px;font-size:9px;}
+}
+
+/* Ölçü paneli */
+.dims{
+  padding:calc(10px*var(--uiScale)) calc(12px*var(--uiScale)) calc(6px*var(--uiScale)) calc(12px*var(--uiScale));
+  border-bottom:1px solid var(--muted);background:#fff;position:sticky;top:0;z-index:2;
+  font-size:calc(13px*var(--uiScale));
+  transform:scale(var(--uiScale));transform-origin:top left;width:calc(100%/var(--uiScale))
+}
+.sectionTitle{font-weight:800;margin-top:10px;margin-bottom:4px;opacity:.8}
+
+/* DIMS iframe'inde ölçek kaldır + tam yükseklik + scroll */
+.embed-dims #app{ height:auto !important; }
+.embed-dims #panel{ max-height:none !important; height:auto !important; border:0 !important; }
+.embed-dims body{ overflow:auto !important; }
+.embed-dims .dims{ transform:none !important; width:100% !important; font-size:14px !important; }
+.embed-dims .dimrow input[type="range"]{ transform:none !important; }
+
+.dimrow{
+  display:grid;grid-template-columns:
+    calc(38px*var(--uiScale)) 1fr auto
+    calc(72px*var(--uiScale)) auto calc(72px*var(--uiScale));
+  gap:calc(8px*var(--uiScale));align-items:center;margin:calc(8px*var(--uiScale)) 0;
+}
+@media (max-width:480px){
+  .dimrow{ grid-template-columns: 34px 1fr auto 64px auto 64px; }
+}
+.dimrow label{font-weight:700;justify-self:end}
+.dimrow input[type="range"]{width:100%;accent-color:var(--blue);transform:scale(var(--uiScale));transform-origin:left center}
+.dimrow .num{
+  width:calc(72px*var(--uiScale));padding:calc(6px*var(--uiScale)) calc(8px*var(--uiScale));
+  border:1px solid var(--muted);border-radius:calc(6px*var(--uiScale));
+  background:#fff;text-align:center;font-weight:700;font-size:calc(13px*var(--uiScale))
+}
+.dimrow .unit{font-weight:700}
+.btn{border:none;border-radius:calc(8px*var(--uiScale));padding:calc(8px*var(--uiScale)) calc(10px*var(--uiScale));color:#fff;font-weight:800;cursor:pointer;font-size:calc(13px*var(--uiScale))}
+.btn.minus{background:var(--minus)} .btn.plus{background:var(--plus)}
+
+.setrow{display:grid;grid-template-columns: 1fr 90px 40px; gap:8px; align-items:center; margin:8px 0;}
+.setrow input{width:100%;padding:6px 8px;border:1px solid var(--muted);border-radius:6px;font-weight:700;text-align:center}
+
+.label{
+  font-weight:800;background:rgba(255,255,255,.9);padding:2px 6px;border:1px solid var(--muted);
+  border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,.08);font-size:10px
+}
+
+/* Mini kartlar */
+.card{padding:10px 12px;background:#fff;border:1px solid #e0e6ec;border-radius:12px;font:14px system-ui}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--muted);background:#fff;font-weight:700}
+.btn2{border:1px solid #d0d7de;border-radius:8px;background:#1e5bff;color:#fff;padding:8px 12px;font-weight:800;cursor:pointer}
+.btn2.sec{background:#fff;color:#1f2328}
+table{width:100%;border-collapse:collapse}
+th,td{padding:8px;border-bottom:1px dashed #e5e9f0;text-align:left}

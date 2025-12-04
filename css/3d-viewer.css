@@ -1,0 +1,215 @@
+/* 3D Viewer Common Styles */
+html, body {
+  height: 100%;
+  margin: 0;
+  background: #0b0e12;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+}
+
+.main-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.scene-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.controls-container {
+  height: 350px;
+  background: #1a1d23;
+  border-top: 2px solid #39414f;
+  overflow-y: auto;
+  padding: 0;
+  margin: 0;
+}
+
+/* Mobil için kontrol paneli yüksekliği */
+@media (max-width: 768px) {
+  .controls-container {
+    height: 400px;
+  }
+}
+
+/* Çok küçük ekranlar için kontrol paneli yüksekliği */
+@media (max-width: 480px) {
+  .controls-container {
+    height: 450px;
+  }
+}
+
+#c {
+  width: 100%;
+  height: 100%;
+}
+
+#hud {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+  color: #e6edf3;
+  font: 11px/1.3 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+  opacity: 0.8;
+}
+
+.label {
+  color: inherit;
+  font-weight: 600;
+  background: rgba(18, 24, 34, .85);
+  padding: 2px 6px;
+  border: 1px solid #39414f;
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .3);
+  text-shadow: none;
+  font-size: 10px;
+}
+
+#viewbar {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 10px;
+  display: flex;
+  gap: 6px;
+  z-index: 11;
+}
+
+#viewbar .vbtn {
+  background: #1b2230;
+  color: #e6edf3;
+  border: 1px solid #39414f;
+  border-radius: 6px;
+  padding: 4px 6px;
+  font: 12px system-ui;
+  cursor: pointer;
+  opacity: .9;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+#viewbar .vbtn:hover {
+  opacity: 1;
+}
+
+#viewbar .vbtn .vicon {
+  width: 32px;
+  height: 32px;
+  display: inline-block;
+}
+
+/* GUI Alt Panel Stilleri */
+.gui-container {
+  padding: 8px;
+  background: #1a1d23;
+  color: #e6edf3;
+}
+
+.gui-section {
+  margin-bottom: 8px;
+  background: #252b3b;
+  border-radius: 6px;
+  padding: 8px;
+  border: 1px solid #39414f;
+}
+
+.gui-section h3 {
+  margin: 0 0 6px 0;
+  color: #4cc3ff;
+  font-size: 13px;
+  font-weight: 600;
+  border-bottom: 1px solid #39414f;
+  padding-bottom: 4px;
+}
+
+.gui-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.gui-control {
+  margin-bottom: 6px;
+}
+
+.gui-control label {
+  display: block;
+  font-size: 12px;
+  color: #b8c5d1;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.gui-range {
+  width: 100%;
+  height: 20px;
+  background: #39414f;
+  border-radius: 10px;
+  outline: none;
+  -webkit-appearance: none;
+  margin: 4px 0;
+}
+
+.gui-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #4cc3ff;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.gui-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #4cc3ff;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+.gui-checkbox {
+  margin-right: 8px;
+  transform: scale(1.2);
+}
+
+.gui-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+  gap: 8px;
+}
+
+.gui-value {
+  min-width: 50px;
+  text-align: center;
+  background: #39414f;
+  border: 1px solid #4cc3ff;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  color: #4cc3ff;
+  font-weight: 600;
+}
+
+.gui-color {
+  width: 30px;
+  height: 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.area-display {
+  background: rgba(76, 195, 255, 0.1);
+  border: 1px solid #4cc3ff;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #4cc3ff;
+}

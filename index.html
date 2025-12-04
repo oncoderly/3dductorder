@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sipariş Sistemi (Mobil – iframe yerleşimi)</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🧰</text></svg>">
+  <!-- Mevcut genel stilleriniz -->
+  <link rel="stylesheet" href="./css/styles.css" />
+
+</head>
+<body>
+  <div class="app">
+    <div class="sticky-top">
+      <h1 class="main-title">🧰 Parça Sipariş Sistemi</h1>
+    </div>
+
+    <!-- İki kolonlu düzen: solda SAHNE + DIMS, sağda ALAN + SİPARİŞ -->
+    <div class="grid-2">
+      <div class="stack">
+        <!-- 1. Parça Seçimi -->
+        <div class="frame part-frame">
+          <div class="frame-header">
+            <h2>1️⃣ Parça Türü Seçimi</h2>
+            <span class="frame-hint">parça değişince alt iframe'ler senkron olur</span>
+          </div>
+          <div class="frame-content">
+            <label for="partSelect" class="label">Parça Türünü Seçin:</label>
+            <select id="partSelect" class="select"></select>
+          </div>
+        </div>
+
+        <!-- 2. 3D Sahne (iframe) -->
+        <div class="scene-frame">
+          <div class="scene-content">
+            <div class="ratio">
+              <iframe id="fScene" src="about:blank" title="3D Sahne" allowfullscreen></iframe>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="stack">
+
+        <!-- 5. Siparişe Ekle -->
+        <div class="frame order-frame">
+          <div class="frame-header">
+            <h2>5️⃣ Siparişe Ekle</h2>
+          </div>
+          <div class="frame-content">
+            <div class="grid two">
+              <div class="field">
+                <label class="label" for="material">Malzeme Cinsi</label>
+                <select id="material" class="select">
+                  <option value="Galvaniz">Galvaniz</option>
+                  <option value="Paslanmaz">Paslanmaz</option>
+                  <option value="Alüminyum">Alüminyum</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="label" for="qty">Adet</label>
+                <div class="qty">
+                  <button id="qtyMinus" class="btn -muted" type="button">−</button>
+                  <input id="qty" class="input center" type="number" min="1" step="1" value="1"/>
+                  <button id="qtyPlus" class="btn -muted" type="button">+</button>
+                </div>
+              </div>
+            </div>
+
+            <label class="label" for="note">Notlar</label>
+            <textarea id="note" class="textarea" placeholder="Bu parça için özel notlarınız..."></textarea>
+
+            <button id="addBtn" class="btn -primary block" type="button">➕ Siparişe Ekle</button>
+            <div id="addHint" class="hint muted">İpucu: Boyutlar iframe içinden otomatik okunur.</div>
+          </div>
+        </div>
+
+        <!-- 6. Sipariş Listesi -->
+        <div class="frame list-frame">
+          <div class="frame-header">
+            <h2>6️⃣ Sipariş Listesi</h2>
+            <span id="summaryBadge" class="badge">0 parça, 0 adet</span>
+          </div>
+          <div class="frame-content">
+            <div class="toolbar">
+              <div class="grow"></div>
+              <input id="project" class="input" placeholder="Proje adı" />
+              <input id="zone" class="input" placeholder="Mahal/Alan (Zone)" />
+              <button id="printBtn" class="btn" type="button">🖨️ PDF indir</button>
+              <button id="shareBtn" class="btn -muted" type="button">🔗 Paylaş</button>
+              <button id="clearBtn" class="btn -danger" type="button">🗑️ Tümünü Sil</button>
+            </div>
+            <section id="orderList" class="list"></section>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

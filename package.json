@@ -1,0 +1,22 @@
+{
+  "name": "3d-duct-order",
+  "version": "1.0.0",
+  "description": "3D Kanal Sipariş Sistemi - Modern hava kanalı tasarım ve sipariş platformu",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "3d",
+    "duct",
+    "hvac",
+    "three.js",
+    "webgl"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.x"
+  }
+}
