@@ -189,14 +189,17 @@ export class Scene3D {
 
   // Eksen görünürlüğünü ayarla
   setAxesVisible(visible) {
+    console.log('🔧 setAxesVisible called:', visible, 'axis labels count:', this.axisLabels?.children.length);
+
     if (this.axes) {
       this.axes.visible = visible;
     }
     if (this.axisLabels) {
       this.axisLabels.visible = visible;
       // CSS2D labels need explicit DOM visibility control
-      this.axisLabels.children.forEach(label => {
+      this.axisLabels.children.forEach((label, index) => {
         if (label.element) {
+          console.log(`  Label ${index} (${label.element.textContent}): setting display to`, visible ? 'visible' : 'none');
           label.element.style.display = visible ? '' : 'none';
         }
       });
