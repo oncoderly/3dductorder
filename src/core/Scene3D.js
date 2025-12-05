@@ -282,7 +282,8 @@ export class Scene3D {
   }
 
   clearLabels() {
-    this.canvas.parentElement.querySelectorAll('.label').forEach(el => el.remove());
+    // Sadece dimension label'ları temizle, axis label'ları kalıcı
+    this.canvas.parentElement.querySelectorAll('.label:not(.axis-label)').forEach(el => el.remove());
   }
 
   // Label Management
