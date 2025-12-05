@@ -155,6 +155,12 @@ export class Scene3D {
     }
     if (this.axisLabels) {
       this.axisLabels.visible = visible;
+      // CSS2D labels need explicit DOM visibility control
+      this.axisLabels.children.forEach(label => {
+        if (label.element) {
+          label.element.style.display = visible ? '' : 'none';
+        }
+      });
     }
   }
 
