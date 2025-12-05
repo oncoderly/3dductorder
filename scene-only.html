@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<title>3D Sahne - Sadece Canvas</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<style>
+  :root{
+    --bg:#ffffff; --text:#111418; --muted:#d0d7de;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
+  body{overflow:hidden;font:13px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+
+  #app{height:100vh;display:flex;flex-direction:column}
+  #sceneWrap{position:relative;flex:1;background:var(--bg)}
+  #c{display:block;width:100%;height:100%}
+
+  /* HUD (üst sol) - küçük */
+  #hud{
+    position:absolute;top:8px;left:8px;z-index:10;color:#1f2328;
+    background:rgba(255,255,255,.9);
+    padding:4px 8px;border:1px solid var(--muted); border-radius:6px;
+    font-size:11px;box-shadow:0 1px 4px rgba(0,0,0,.1);
+  }
+
+  /* Yön butonları - alt orta */
+  #viewbar{
+    position:absolute; left:50%; bottom:8px; z-index:11;
+    transform:translateX(-50%);
+    display:flex; flex-wrap:wrap; gap:4px; justify-content:center;
+    background:rgba(255,255,255,.9); border:1px solid var(--muted); 
+    border-radius:8px; padding:4px;
+    max-width:calc(100% - 16px);
+  }
+  #viewbar .vbtn{
+    flex:0 0 auto; min-width:50px;
+    background:#ffffff;color:#1f2328;border:1px solid var(--muted);
+    border-radius:4px;padding:3px 6px;font:10px system-ui;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    transition:background 0.2s;
+  }
+  #viewbar .vbtn:hover{background:#f6f8fb}
+
+  @media (max-width:480px){
+    #hud{font-size:9px;padding:2px 4px;top:4px;left:4px}
+    #viewbar .vbtn{min-width:40px;font-size:9px;padding:2px 4px}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="sceneWrap">
+    <!-- HUD Bilgi -->
+    <div id="hud">Sol tık: döndür • Sağ tık: kaydır • Tekerlek: zoom</div>
+    
+    <!-- 3D Canvas -->
+    <canvas id="c"></canvas>
+    
+    <!-- Yön Butonları -->
+    <div id="viewbar">
+      <button class="vbtn" data-v="Right">Sağ</button>
+      <button class="vbtn" data-v="Left">Sol</button>
+      <button class="vbtn" data-v="Front">Ön</button>
+      <button class="vbtn" data-v="Back">Arka</button>
+      <button class="vbtn" data-v="Top">Üst</button>
+      <button class="vbtn" data-v="SW Iso">İzo1</button>
+      <button class="vbtn" data-v="NE Iso">İzo2</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'https://unpkg.com/three@0.155.0/build/three.module.js';
+import {OrbitControls} from 'https://unpkg.com/three@0.155.0/examples/jsm/controls/OrbitControls.js';
+
+// Sahne kurulumu
+const canvas = document.getElementById('c');
+const S = new THREE.Scene();
+S.background = new THREE.Color(0xf0f4f8);
+
+const Cam = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
+const R = new THREE.WebGLRenderer({canvas, antialias:true});
+R.setSize(window.innerWidth, window.innerHeight);
+R.shadowMap.enabled = true;
+R.shadowMap.type = THREE.PCFSoftShadowMap;
+
+// Kontroller
+const Ctrl = new OrbitControls(Cam, canvas);
+Ctrl.enableDamping = true;
+Ctrl.dampingFactor = 0.05;
+
+// Işık
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+S.add(ambientLight);
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+dirLight.position.set(5, 5, 5);
+dirLight.castShadow = true;
+S.add(dirLight);
+
+// Model grup
+const MODEL = new THREE.Group();
+S.add(MODEL);
+
+// Malzemeler
+const metalMat = new THREE.MeshPhysicalMaterial({
+  color: 0xb9c1c9, roughness: 0.42, metalness: 0.2, clearcoat: 0.25
+});
+
+// Basit kanal modeli (örnek)
+function createDuctModel(w=0.25, h=0.30, l=1.20) {
+  MODEL.clear();
+  
+  const geometry = new THREE.BoxGeometry(w, h, l);
+  const mesh = new THREE.Mesh(geometry, metalMat);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  MODEL.add(mesh);
+  
+  // Kenarlar
+  const edges = new THREE.EdgesGeometry(geometry);
+  const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({color: 0x6b7581}));
+  MODEL.add(line);
+}
+
+// İlk model
+createDuctModel();
+
+// Kamera pozisyonu
+Cam.position.set(0.8, 0.6, 0.8);
+Cam.lookAt(0, 0, 0);
+
+// Yön butonları
+document.getElementById('viewbar').addEventListener('click', (e) => {
+  if (!e.target.classList.contains('vbtn')) return;
+  
+  const view = e.target.getAttribute('data-v');
+  const distance = 1.5;
+  
+  switch(view) {
+    case 'Right': Cam.position.set(distance, 0, 0); break;
+    case 'Left': Cam.position.set(-distance, 0, 0); break;
+    case 'Front': Cam.position.set(0, 0, distance); break;
+    case 'Back': Cam.position.set(0, 0, -distance); break;
+    case 'Top': Cam.position.set(0, distance, 0); break;
+    case 'SW Iso': Cam.position.set(-distance*0.7, distance*0.5, distance*0.7); break;
+    case 'NE Iso': Cam.position.set(distance*0.7, distance*0.5, -distance*0.7); break;
+  }
+  Cam.lookAt(0, 0, 0);
+  Ctrl.update();
+});
+
+// Resize handler
+addEventListener('resize', () => {
+  Cam.aspect = innerWidth / innerHeight;
+  Cam.updateProjectionMatrix();
+  R.setSize(innerWidth, innerHeight);
+});
+
+// Ana döngü
+function animate() {
+  requestAnimationFrame(animate);
+  Ctrl.update();
+  R.render(S, Cam);
+}
+animate();
+
+// Parent'a hazır olduğunu bildir
+try {
+  parent.postMessage({type: 'scene-ready'}, '*');
+} catch(e) { /* iframe dışında çalışıyorsa ignore */ }
+
+// Parametreleri dinle
+window.addEventListener('message', (e) => {
+  if (e.data?.type === 'update-dimensions') {
+    const {w, h, l} = e.data;
+    createDuctModel(w/100, h/100, l/100); // cm'den m'ye
+  }
+});
+</script>
+</body>
+</html>

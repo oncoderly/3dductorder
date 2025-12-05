@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <title>Three.js – Redüksiyonlu Çeyrek Dirsek (cm) • Revize (Görüşü Koru + Çerçeveli Etiketler)</title>
+  <style>
+    html, body { height: 100%; margin: 0; overflow: hidden; background: #0b0e12; }
+    #hud { position:absolute; top:10px; left:10px; z-index:10; color:#e6edf3; font:13px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial }
+    .label{
+      color:inherit;
+      font-weight:700;
+      background:rgba(18,24,34,.9);
+      padding:4px 8px;
+      border:1px solid #39414f;
+      border-radius:8px;
+      box-shadow:0 2px 8px rgba(0,0,0,.35);
+      text-shadow:none;
+    }
+  #viewbar{position:absolute;left:50%;transform:translateX(-50%);bottom:10px;display:flex;gap:6px;z-index:11}
+#viewbar .vbtn{background:#1b2230;color:#e6edf3;border:1px solid #39414f;border-radius:6px;padding:4px 6px;font:12px system-ui;cursor:pointer;opacity:.9;display:flex;align-items:center;gap:2px}
+#viewbar .vbtn:hover{opacity:1}
+#viewbar .vbtn .vicon{width:32px;height:32px;display:inline-block}
+</style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div style="position:absolute;top:10px;left:10px;z-index:100;background:rgba(18,24,34,0.9);padding:8px 12px;border-radius:8px;display:flex;align-items:center;gap:10px;border:1px solid #39414f;">
+    <a href="/" style="display:flex;align-items:center;">
+      <img src="/logo23dductorder.png" alt="3D Duct Order Logo" style="height:30px;width:auto;">
+    </a>
+    <span style="color:#e6edf3;font-weight:600;font-size:14px;">Redüksiyonlu Dirsek</span>
+  </div>
+  <div id="hud">Sol tık: döndür • Sağ tık: kaydır • Tekerlek: zoom</div>
+  <canvas id="c"></canvas>
+<div id="viewbar">
+  <button class="vbtn" data-v="Right">Right</button>
+  <button class="vbtn" data-v="Left">Left</button>
+  <button class="vbtn" data-v="Front">Front</button>
+  <button class="vbtn" data-v="Back">Back</button>
+  <button class="vbtn" data-v="Top">Top</button>
+  <button class="vbtn" data-v="SW Iso">SW Iso</button>
+  <button class="vbtn" data-v="NE Iso">NE Iso</button>
+</div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+    import GUI from 'https://cdn.jsdelivr.net/npm/lil-gui@0.19/+esm';
+
+    // === Temel sahne ===
+    const canvas = document.getElementById('c');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.01, 10000);
+    camera.position.set(3.2, 1.9, 3.2);
+    scene.add(camera);
+
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x101018, 0.9); scene.add(hemi);
+    const dir  = new THREE.DirectionalLight(0xffffff, 0.7); dir.position.set(3,5,4); scene.add(dir);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.enablePan = true;
+    controls.enableZoom = true;
+
+    const grid = new THREE.GridHelper(10, 20, 0x2a2e35, 0x1a1d23); scene.add(grid);
+    const axes = new THREE.AxesHelper(1.0); scene.add(axes);
+
+    // CSS2D (ölçü etiketleri)
+    const labelRenderer = new CSS2DRenderer();
+    labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    labelRenderer.domElement.style.position = 'absolute';
+    labelRenderer.domElement.style.top = '0';
+    labelRenderer.domElement.style.pointerEvents = 'none';
+    document.body.appendChild(labelRenderer.domElement);
+
+    // HUD ikinci satır: alan hesabı
+    const hudEl=document.getElementById('hud');
+    const areaEl=document.createElement('div'); areaEl.style.marginTop='6px'; hudEl.appendChild(areaEl);
+
+    // Görünüm butonları ve ikonları
+    const viewbar=document.getElementById('viewbar');
+    let lastCtr=new THREE.Vector3(); let lastDist=3;
+    const views={ Right:new THREE.Vector3(1,0,0), Left:new THREE.Vector3(-1,0,0), Front:new THREE.Vector3(0,0,1), Back:new THREE.Vector3(0,0,-1), Top:new THREE.Vector3(0,1,0), 'SW Iso':new THREE.Vector3(-1,1,-1), 'NE Iso':new THREE.Vector3(1,1,1) };
+    function setView(dir){ const v=dir.clone().normalize().multiplyScalar(lastDist); camera.position.copy(lastCtr.clone().add(v)); camera.near=lastDist/100; camera.far=lastDist*100; camera.updateProjectionMatrix(); controls.target.copy(lastCtr); controls.update(); }
+    viewbar?.querySelectorAll('.vbtn').forEach(b=>b.addEventListener('click',()=>{ const v=views[b.dataset.v]; if(v) setView(v); }));
+
+    // Küçük ikonlar (inline SVG)
+    function cubeSVG(highlight){ const stroke='#9aa7b1', face='#263040', acc='#4cc3ff'; const top=`<polygon points="6,10 12,6 18,10 12,14" fill="${highlight==='top'?acc:face}" stroke="${stroke}" stroke-width="1"/>`; const left=`<polygon points="6,10 6,18 12,22 12,14" fill="${highlight==='left'?acc:face}" stroke="${stroke}" stroke-width="1"/>`; const right=`<polygon points="12,14 12,22 18,18 18,10" fill="${highlight==='right'?acc:face}" stroke="${stroke}" stroke-width="1"/>`; return `<svg class="vicon" viewBox="0 0 24 24" aria-hidden="true">${top}${left}${right}</svg>`; }
+    function faceSVG(){ const stroke='#9aa7b1', acc='#4cc3ff'; return `<svg class="vicon" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" ry="2" fill="${acc}" stroke="${stroke}" stroke-width="1"/></svg>`; }
+    function backSVG(){ const stroke='#9aa7b1', acc='#4cc3ff', face='#263040'; return `<svg class="vicon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="12" height="12" rx="2" ry="2" fill="${face}" stroke="${stroke}" stroke-width="1"/><rect x="7" y="7" width="12" height="12" rx="2" ry="2" fill="${acc}" stroke="${stroke}" stroke-width="1"/></svg>`; }
+    function isoSVG(){ return cubeSVG(null); }
+    function iconSVG(name){ switch(name){ case 'Top': return cubeSVG('top'); case 'Left': return cubeSVG('left'); case 'Right': return cubeSVG('right'); case 'Front': return faceSVG(); case 'Back': return backSVG(); case 'SW Iso': return isoSVG(); case 'NE Iso': return isoSVG(); default: return isoSVG(); } }
+    viewbar?.querySelectorAll('.vbtn').forEach(btn=>{ const label=btn.textContent; const svg=iconSVG(btn.dataset.v||label); btn.innerHTML = svg + `<span>${label}</span>`; });
+
+    // === Parametreler (santimetre) ===
+    // Not: Geometri hesaplarında metreye çevrilecektir (cm → m = *0.01)
+    const P = {
+      // SON ağız (u=1) ölçüleri [cm]
+      W1: 40.0,
+      H1: 25.0,
+      // BAŞLANGIÇ ağız (u=0) ölçüleri [cm]
+      W2: 30.0,
+      H2: 20.0,
+      t: 0.12,   // sac kalınlığı [cm]
+      R_in: 20.0,// İÇ yarıçap [cm]
+      A: 90,     // açı (derece)
+      steps: 200,
+      edgeSegs: 6, // her kenar üzeri örnek sayısı (geometri kalitesi)
+      showEdges: true,
+      showDims: true,
+      showFlange: true,
+      flangeLip: 3.0,
+      flangeThick: 0.6,
+      metalRough: 0.35,
+      metalness: 0.85,
+      showAxis: false,
+      showGrid: true,      // Yatay konum modu: 'central' | 'flatLeft' | 'flatRight'
+      modeW: 'central',
+      // Yeni: Görüş koruma ve ölçü çizim ayarları
+      keepViewOnEdit: true,
+      dimAlwaysOnTop: true,
+      dimFixedOffset: true,
+      dimOffsetCm: 1.5,
+      arrowHeadCm: 4.0,
+      arrowRadiusCm: 1.2,
+      extLenCm: 15,
+      extGapCm: 1,
+      dimPlaneOffsetCm: 20,
+      labelOffsetCm: 0.5,
+      // Ölçü renkleri (hex)
+      colorW1: '#007bff', // mavi
+      colorH1: '#ffd400', // sarı
+      colorW2: '#00c853', // yeşil
+      colorH2: '#ff8c00', // turuncu
+      colorR:  '#ff1744', // kırmızı
+      colorA:  '#7e57c2',  // mor
+      // Alan hesabı
+      areaIncludeFlange:false,
+      wastePercent:25,
+      kFactor:1
+    };
+
+    // === Malzemeler ===
+    const metalMat  = new THREE.MeshPhysicalMaterial({ color: 0xbfc7d2, roughness: P.metalRough, metalness: P.metalness, clearcoat: 0.5, clearcoatRoughness: 0.25, side: THREE.DoubleSide });
+    const flangeMat = new THREE.MeshPhysicalMaterial({ color: 0x9aa3ad, roughness: 0.6, metalness: 0.9 });
+    const edgeMat   = new THREE.LineBasicMaterial({ color: 0x3a3f46 });
+
+    const elbowGroup  = new THREE.Group(); scene.add(elbowGroup);
+    const flangeGroup = new THREE.Group(); scene.add(flangeGroup);
+    const dimsGroup   = new THREE.Group(); scene.add(dimsGroup);
+    const labelsGroup = new THREE.Group(); scene.add(labelsGroup);
+    const axisLabelGroup = new THREE.Group(); scene.add(axisLabelGroup);
+
+    // Çeyrek daire eğrisi (XZ düzleminde), yol yarıçapı = merkez hat = R_in + W/2
+    class QuarterArc extends THREE.Curve {
+      constructor(Rc, thetaRad){ super(); this.Rc = Rc; this.theta = thetaRad; }
+      getPoint(t){ const a = t * this.theta; return new THREE.Vector3(-this.Rc*Math.cos(a), 0, this.Rc*Math.sin(a)); }
+      getTangent(t){ const a = t * this.theta; const v = new THREE.Vector3(this.Rc*Math.sin(a), 0, this.Rc*Math.cos(a)); return v.normalize(); }
+    }
+
+    // Flanş: dıştan dışa W x H delikli çerçeve (lip paylı)
+    function makeFlangeFrame(Wm,Hm,lipm,thickm){
+      const s = new THREE.Shape([
+        new THREE.Vector2(-Wm/2 - lipm, -Hm/2 - lipm),
+        new THREE.Vector2( Wm/2 + lipm, -Hm/2 - lipm),
+        new THREE.Vector2( Wm/2 + lipm,  Hm/2 + lipm),
+        new THREE.Vector2(-Wm/2 - lipm,  Hm/2 + lipm)
+      ]);
+      const hole = new THREE.Path([
+        new THREE.Vector2(-Wm/2, -Hm/2),
+        new THREE.Vector2( Wm/2, -Hm/2),
+        new THREE.Vector2( Wm/2,  Hm/2),
+        new THREE.Vector2(-Wm/2,  Hm/2)
+      ]);
+      s.holes.push(hole);
+      const g = new THREE.ExtrudeGeometry(s, { depth: thickm, bevelEnabled:false });
+      g.center();
+      const m = new THREE.Mesh(g, flangeMat);
+      m.add(new THREE.LineSegments(new THREE.EdgesGeometry(g), edgeMat));
+      return m;
+    }
+
+    function clearGroup(g){ while(g.children.length) { const c=g.children.pop(); if(c.geometry) c.geometry.dispose?.(); if(c.material){ if(Array.isArray(c.material)) c.material.forEach(m=>m.dispose?.()); else c.material.dispose?.(); } } }
+
+    function addLabel(text, position, color){
+      const div = document.createElement('div');
+      div.className = 'label';
+      div.textContent = text;
+      if (color) div.style.color = color;
+      const obj = new CSS2DObject(div);
+      obj.position.copy(position);
+      scene.add(obj);
+      dimsGroup.add(obj);
+      return obj;
+    }
+
+    function addAxisLabel(text, position, color){
+      const div = document.createElement('div');
+      div.className = 'label';
+      div.textContent = text;
+      if (color) div.style.color = color;
+      const obj = new CSS2DObject(div);
+      obj.position.copy(position);
+      scene.add(obj);
+      axisLabelGroup.add(obj);
+      return obj;
+    }
+
+    function arrowBoth(p1, p2, color=0xff4d4d, headLen=0.04, radius=0.01){
+      const lineMat = new THREE.LineBasicMaterial({ color, depthTest: !P.dimAlwaysOnTop, depthWrite: !P.dimAlwaysOnTop, transparent: P.dimAlwaysOnTop });
+      const geo = new THREE.BufferGeometry().setFromPoints([p1, p2]);
+      const line = new THREE.Line(geo, lineMat); line.renderOrder = P.dimAlwaysOnTop? 999: 0;
+      const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
+      const mk = (q,p)=>{ const c = new THREE.Mesh(new THREE.ConeGeometry(radius, headLen, 12), new THREE.MeshBasicMaterial({ color, depthTest: !P.dimAlwaysOnTop, depthWrite: !P.dimAlwaysOnTop, transparent: P.dimAlwaysOnTop })); c.quaternion.copy(q); c.position.copy(p); c.renderOrder = P.dimAlwaysOnTop? 999: 0; return c; };
+      const q2 = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0), dir);
+      const q1 = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0), dir.clone().negate());
+      dimsGroup.add(line, mk(q2,p2), mk(q1,p1));
+    }
+
+    // Uzatma çizgileri + düzlem ofsetli ölçü
+    function dimLine(p1,p2,offsetDir,label,color){
+      const n = offsetDir.clone().normalize();
+      const gap = (P.extGapCm||1)*0.01;
+      const targetOff = P.dimFixedOffset ? (P.dimPlaneOffsetCm||20)*0.01 : (gap + (P.extLenCm||15)*0.01);
+      const s1 = p1.clone().add(n.clone().multiplyScalar(gap));
+      const e1 = p1.clone().add(n.clone().multiplyScalar(targetOff));
+      const s2 = p2.clone().add(n.clone().multiplyScalar(gap));
+      const e2 = p2.clone().add(n.clone().multiplyScalar(targetOff));
+
+      const mat = new THREE.LineBasicMaterial({ color: new THREE.Color(color||0xff4d4d), depthTest: !P.dimAlwaysOnTop, depthWrite: !P.dimAlwaysOnTop, transparent: P.dimAlwaysOnTop });
+      const L1 = new THREE.Line(new THREE.BufferGeometry().setFromPoints([s1,e1]), mat);
+      const L2 = new THREE.Line(new THREE.BufferGeometry().setFromPoints([s2,e2]), mat);
+      L1.renderOrder = L2.renderOrder = P.dimAlwaysOnTop? 999: 0;
+      dimsGroup.add(L1,L2);
+
+      const head = (P.arrowHeadCm||4)*0.01, rad=(P.arrowRadiusCm||1.2)*0.01;
+      const dir = new THREE.Vector3().subVectors(e2,e1).normalize();
+      const off = (P.dimOffsetCm||1.5)*0.01;
+      const a1 = e1.clone().add(dir.clone().multiplyScalar(off));
+      const a2 = e2.clone().add(dir.clone().multiplyScalar(-off));
+      arrowBoth(a1,a2,color,head,rad);
+      const mid = a1.clone().add(a2).multiplyScalar(0.5).add(n.clone().multiplyScalar((P.labelOffsetCm||0.5)*0.01));
+      return addLabel(label, mid, color);
+    }
+
+    function placeAtFrame(obj, p, t, n, b){
+      // obj yerel ekseni: +Z ileri (tangent), +X sağ (normal), +Y yukarı (binormal)
+      const M = new THREE.Matrix4().makeBasis(n.clone(), b.clone(), t.clone());
+      const Q = new THREE.Quaternion().setFromRotationMatrix(M);
+      obj.position.copy(p);
+      obj.quaternion.copy(Q);
+    }
+
+    let didInitialFrame = false;
+
+    function buildElbow(){
+      // Görüş koruma (isteğe bağlı)
+      const preserve = P.keepViewOnEdit && didInitialFrame;
+      let camState;
+      if (preserve){ camState = { pos: camera.position.clone(), quat: camera.quaternion.clone(), tgt: controls.target.clone() }; }
+
+      clearGroup(elbowGroup); clearGroup(flangeGroup); clearGroup(dimsGroup); clearGroup(labelsGroup); clearGroup(axisLabelGroup);
+      document.querySelectorAll('.label').forEach(el=>el.remove());
+
+      // --- cm → m dönüşümü ---
+      const W1m = P.W1*0.01, H1m = P.H1*0.01;
+      const W2m = P.W2*0.01, H2m = P.H2*0.01;
+      const tm = P.t*0.01; const Rinm = P.R_in*0.01;
+      const lipm = P.flangeLip*0.01; const thickm = P.flangeThick*0.01;
+      const theta = THREE.MathUtils.degToRad(P.A);
+
+      const path = new QuarterArc(Rinm + (Math.max(W1m,W2m)/2), theta); // merkez hat
+      const fr = path.computeFrenetFrames(P.steps, false);
+
+      // --- halka dilimleri ---
+      const perSide = Math.max(1, Math.floor(P.edgeSegs));
+      const ptsPerLoop = perSide*4;
+      const vertices = []; const indices = [];
+      function lerp(a,b,t){return a+(b-a)*t;}
+      function addQuad(a,b,c,d){ indices.push(a,b,c, a,c,d); }
+
+      const ringsOuter=[]; const ringsInner=[];
+      for(let i=0;i<=P.steps;i++){
+        const u = i/P.steps;
+        const p = path.getPoint(u);
+        const tvec = fr.tangents[i];
+        const n = fr.normals[i];
+        const b = fr.binormals[i];
+        const W = lerp(W2m, W1m, u);
+        const H = lerp(H2m, H1m, u);
+        const Wi = Math.max(W-2*tm, 1e-5);
+        const Hi = Math.max(H-2*tm, 1e-5);
+
+        function rectLoop(halfW, halfH, pBase){
+          const arr=[];
+          for(let s=0;s<perSide;s++){ const x = -halfW + (2*halfW)*s/(perSide-1); arr.push( new THREE.Vector3().copy(pBase).add(n.clone().multiplyScalar(x)).add(b.clone().multiplyScalar(-halfH)) ); }
+          for(let s=0;s<perSide;s++){ const y = -halfH + (2*halfH)*s/(perSide-1); arr.push( new THREE.Vector3().copy(pBase).add(n.clone().multiplyScalar( halfW)).add(b.clone().multiplyScalar(y)) ); }
+          for(let s=0;s<perSide;s++){ const x = halfW - (2*halfW)*s/(perSide-1); arr.push( new THREE.Vector3().copy(pBase).add(n.clone().multiplyScalar(x)).add(b.clone().multiplyScalar( halfH)) ); }
+          for(let s=0;s<perSide;s++){ const y = halfH - (2*halfH)*s/(perSide-1); arr.push( new THREE.Vector3().copy(pBase).add(n.clone().multiplyScalar(-halfW)).add(b.clone().multiplyScalar(y)) ); }
+          return arr;
+        }
+        const yShift = 0;
+        const xShift = (P.modeW==='flatLeft' ? (W/2) : (P.modeW==='flatRight' ? (-W/2) : 0));
+        const pC = p.clone().add(b.clone().multiplyScalar(yShift)).add(n.clone().multiplyScalar(xShift));
+        ringsOuter.push( rectLoop(W/2, H/2, pC) );
+        ringsInner.push( rectLoop(Wi/2, Hi/2, pC) );
+      }
+
+      const N = ptsPerLoop;
+      function pushRing(r){ for(const v of r){ vertices.push(v.x,v.y,v.z); } }
+      for(let i=0;i<=P.steps;i++){ pushRing(ringsOuter[i]); }
+      const baseInner = vertices.length/3;
+      for(let i=0;i<=P.steps;i++){ pushRing(ringsInner[i]); }
+
+      for(let i=0;i<P.steps;i++){
+        const base0 = i*N; const base1 = (i+1)*N;
+        for(let k=0;k<N;k++){
+          const a=base0+k, b=base0+(k+1)%N, c=base1+(k+1)%N, d=base1+k; addQuad(a,b,c,d);
+        }
+      }
+      for(let i=0;i<P.steps;i++){
+        const base0 = baseInner + i*N; const base1 = baseInner + (i+1)*N;
+        for(let k=0;k<N;k++){
+          const a=base0+k, b=base0+(k+1)%N, c=base1+(k+1)%N, d=base1+k; addQuad(d,c,b,a);
+        }
+      }
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices,3));
+      geo.setIndex(indices);
+      geo.computeVertexNormals();
+      const mesh = new THREE.Mesh(geo, metalMat);
+      elbowGroup.add(mesh);
+      if(P.showEdges){ elbowGroup.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo,1), edgeMat)); }
+
+      // Flanşlar: başlangıçta W2,H2; sonda W1,H1
+      if (P.showFlange){
+        const p0 = path.getPoint(0); const p1 = path.getPoint(1);
+        const nf0 = fr.normals[0], bf0 = fr.binormals[0], tf0 = fr.tangents[0];
+        const nf1 = fr.normals[P.steps], bf1 = fr.binormals[P.steps], tf1 = fr.tangents[P.steps];
+        const flStart = makeFlangeFrame(W2m,H2m,lipm,thickm);
+        const flEnd   = makeFlangeFrame(W1m,H1m,lipm,thickm);
+        const sh0 = 0;
+        const sh1 = 0;
+        const sw0 = (P.modeW==='flatLeft'? W2m/2 : P.modeW==='flatRight'? -W2m/2 : 0);
+        const sw1 = (P.modeW==='flatLeft'? W1m/2 : P.modeW==='flatRight'? -W1m/2 : 0);
+        placeAtFrame(flStart, p0.clone().add(bf0.clone().multiplyScalar(sh0)).add(nf0.clone().multiplyScalar(sw0)).add(tf0.clone().multiplyScalar(-thickm*0.5)), tf0, nf0, bf0);
+        placeAtFrame(flEnd,   p1.clone().add(bf1.clone().multiplyScalar(sh1)).add(nf1.clone().multiplyScalar(sw1)).add(tf1.clone().multiplyScalar( thickm*0.5)),  tf1, nf1, bf1);
+        flangeGroup.add(flStart); flangeGroup.add(flEnd);
+      }
+
+      // === Alan Hesabı (yalnızca dış yüzey) ===
+      (function computeArea(){
+        const pos = geo.attributes.position.array; const ind = geo.index.array;
+        const a=new THREE.Vector3(), b=new THREE.Vector3(), c=new THREE.Vector3();
+        const read=(i,v)=>{ v.set(pos[3*i],pos[3*i+1],pos[3*i+2]); };
+        const triCountOuter = P.steps * (ptsPerLoop) * 2; // her quad 2 üçgen
+        let Aout=0;
+        for(let t=0; t<triCountOuter; t++){
+          const i0=ind[t*3], i1=ind[t*3+1], i2=ind[t*3+2];
+          read(i0,a); read(i1,b); read(i2,c);
+          Aout += new THREE.Vector3().copy(b).sub(a).cross(new THREE.Vector3().copy(c).sub(a)).length()*0.5;
+        }
+        let sheet=Aout*(P.kFactor||1);
+        if(P.areaIncludeFlange){
+          const geomArea=(g)=>{ const p=g.attributes.position.array; const I=g.index?g.index.array:null; const A=new THREE.Vector3(),B=new THREE.Vector3(),C=new THREE.Vector3(); const rd=(i,v)=>{ v.set(p[3*i],p[3*i+1],p[3*i+2]); }; let sum=0; if(I){ for(let i=0;i<I.length;i+=3){ rd(I[i],A); rd(I[i+1],B); rd(I[i+2],C); sum+=new THREE.Vector3().copy(B).sub(A).cross(new THREE.Vector3().copy(C).sub(A)).length()*0.5; } } else { for(let i=0;i<p.length;i+=9){ A.set(p[i],p[i+1],p[i+2]); B.set(p[i+3],p[i+4],p[i+5]); C.set(p[i+6],p[i+7],p[i+8]); sum+=new THREE.Vector3().copy(B).sub(A).cross(new THREE.Vector3().copy(C).sub(A)).length()*0.5; } } return sum; };
+          flangeGroup.children.forEach(m=>{ if(m.geometry) sheet += geomArea(m.geometry); });
+        }
+        const waste = sheet*(1+((P.wastePercent||0)/100));
+        areaEl.textContent = `Dış: ${Aout.toFixed(3)} m² | k=${(P.kFactor||1).toFixed(2)} ⇒ ${sheet.toFixed(3)} m² | +%${(P.wastePercent||0).toFixed(1)} atık ⇒ ${waste.toFixed(3)} m²`;
+      })();
+
+      // Ölçülendirme & etiketler (cm)
+      if(P.showDims){
+        const p0 = path.getPoint(0); const p1 = path.getPoint(1);
+        const n0=fr.normals[0], b0=fr.binormals[0];
+        const n1=fr.normals[P.steps], b1=fr.binormals[P.steps];
+        // Başlangıç ağız W2,H2 (ölçü çizgileri köşelerden)
+        const sw0d = (P.modeW==='flatLeft'? W2m/2 : P.modeW==='flatRight'? -W2m/2 : 0);
+        const p0s = p0.clone().add(n0.clone().multiplyScalar(sw0d));
+        // Köşeler
+        const p0_LB = p0s.clone().add(n0.clone().multiplyScalar(-W2m/2)).add(b0.clone().multiplyScalar(-H2m/2));
+        const p0_RB = p0s.clone().add(n0.clone().multiplyScalar( W2m/2)).add(b0.clone().multiplyScalar(-H2m/2));
+        const p0_LT = p0s.clone().add(n0.clone().multiplyScalar(-W2m/2)).add(b0.clone().multiplyScalar( H2m/2));
+        // W2: alt kenar boyunca (yatay), uzatma aşağı (−b0)
+        dimLine(p0_LB, p0_RB, b0.clone().negate(), `W2 = ${P.W2.toFixed(1)} cm`, P.colorW2);
+        // H2: sol kenar boyunca (dikey), uzatma sola (−n0)
+        dimLine(p0_LB, p0_LT, n0.clone().negate(), `H2 = ${P.H2.toFixed(1)} cm`, P.colorH2);
+        // Bitiş ağız W1,H1 (ölçü çizgileri köşelerden)
+        const sw1d = (P.modeW==='flatLeft'? W1m/2 : P.modeW==='flatRight'? -W1m/2 : 0);
+        const p1s = p1.clone().add(n1.clone().multiplyScalar(sw1d));
+        // Köşeler
+        const p1_LB = p1s.clone().add(n1.clone().multiplyScalar(-W1m/2)).add(b1.clone().multiplyScalar(-H1m/2));
+        const p1_RB = p1s.clone().add(n1.clone().multiplyScalar( W1m/2)).add(b1.clone().multiplyScalar(-H1m/2));
+        const p1_LT = p1s.clone().add(n1.clone().multiplyScalar(-W1m/2)).add(b1.clone().multiplyScalar( H1m/2));
+        // W1: alt kenar boyunca (yatay), uzatma aşağı (−b1)
+        dimLine(p1_LB, p1_RB, b1.clone().negate(), `W1 = ${P.W1.toFixed(1)} cm`, P.colorW1);
+        // H1: sol kenar boyunca (dikey), uzatma sola (−n1)
+        dimLine(p1_LB, p1_LT, n1.clone().negate(), `H1 = ${P.H1.toFixed(1)} cm`, P.colorH1);
+        // R(iç) tek taraflı gösterim
+        const center = new THREE.Vector3(0,0,0); const Rin = Rinm;
+        const arcPoint = new THREE.Vector3(-Rin,0,0);
+        const headLen = (P.arrowHeadCm||4.0)*0.01; const radius=(P.arrowRadiusCm||1.2)*0.01;
+        const dirR = new THREE.Vector3().subVectors(arcPoint, center).normalize();
+        const startR = center.clone().add(dirR.clone().multiplyScalar((P.dimOffsetCm||1.5)*0.01));
+        const lineMat = new THREE.LineBasicMaterial({ color: new THREE.Color(P.colorR), depthTest: !P.dimAlwaysOnTop, depthWrite: !P.dimAlwaysOnTop, transparent: P.dimAlwaysOnTop });
+        const geoR = new THREE.BufferGeometry().setFromPoints([startR, arcPoint]);
+        const lineR = new THREE.Line(geoR, lineMat); lineR.renderOrder = P.dimAlwaysOnTop? 999: 0; dimsGroup.add(lineR);
+        const cone = new THREE.Mesh(new THREE.ConeGeometry(radius, headLen, 12), new THREE.MeshBasicMaterial({ color: new THREE.Color(P.colorR), depthTest: !P.dimAlwaysOnTop, depthWrite: !P.dimAlwaysOnTop, transparent: P.dimAlwaysOnTop }));
+        cone.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dirR);
+        cone.position.copy(arcPoint); cone.renderOrder = P.dimAlwaysOnTop? 999: 0; dimsGroup.add(cone);
+        addLabel(`R(iç) = ${P.R_in.toFixed(1)} cm`, startR.clone().add(arcPoint).multiplyScalar(0.5), P.colorR);
+        // Açı yayı
+        const R_center = Rinm + Math.max(W1m,W2m)/2; const segs=48; const arcPts=[];
+        const theta = THREE.MathUtils.degToRad(P.A);
+        for(let i=0;i<=segs;i++){ const a=i/segs*theta; arcPts.push(new THREE.Vector3(-R_center*Math.cos(a),0,R_center*Math.sin(a))); }
+        const arc = new THREE.Line(new THREE.BufferGeometry().setFromPoints(arcPts), new THREE.LineDashedMaterial({ color: new THREE.Color(P.colorA), dashSize: 0.06, gapSize: 0.04 }));
+        arc.computeLineDistances(); arc.renderOrder = P.dimAlwaysOnTop? 999: 0; dimsGroup.add(arc);
+        addLabel(`A = ${P.A}°`, new THREE.Vector3(-R_center*0.6, 0, R_center*0.6), P.colorA);
+      }
+
+      // Dünya eksen etiketleri (+X,+Y,+Z)
+      const axisLen=1.2; axes.scale.set(axisLen,axisLen,axisLen);
+      addAxisLabel('+X', new THREE.Vector3(axisLen,0,0), '#ff6b6b');
+      addAxisLabel('+Y', new THREE.Vector3(0,axisLen,0), '#5cff5c');
+      addAxisLabel('+Z', new THREE.Vector3(0,0,axisLen), '#5cb6ff');
+
+      // Kadrajla (ya da görüşü koru)
+      if (!preserve){ frameObject(elbowGroup); didInitialFrame = true; }
+      else { camera.position.copy(camState.pos); camera.quaternion.copy(camState.quat); camera.updateProjectionMatrix(); controls.target.copy(camState.tgt); controls.update(); lastCtr.copy(controls.target); lastDist = camera.position.distanceTo(controls.target); }
+    }
+
+    function frameObject(obj){
+      const box = new THREE.Box3().setFromObject(obj);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const dist = maxDim / (2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))) * 1.4;
+      const dir = new THREE.Vector3(1,0.6,1).normalize();
+      camera.position.copy(center.clone().add(dir.multiplyScalar(dist)));
+      camera.near = dist/100; camera.far = dist*100; camera.updateProjectionMatrix();
+      controls.target.copy(center); controls.update(); lastCtr.copy(center); lastDist=dist;
+    }
+
+    // İlk inşa
+    buildElbow();
+    // Görünüm anahtarlarını uygula
+    axes.visible = P.showAxis; grid.visible = P.showGrid;
+
+    // GUI
+    const gui = new GUI({ title: 'Dirsek Parametreleri' });
+    const f = gui.addFolder('Ölçüler (cm)');
+    f.add(P, 'W1', 1, 200, 0.1).name('W1 (bitiş) cm').onChange(buildElbow);
+    f.add(P, 'H1', 1, 200, 0.1).name('H1 (bitiş) cm').onChange(buildElbow);
+    f.add(P, 'W2', 1, 200, 0.1).name('W2 (başlangıç) cm').onChange(buildElbow);
+    f.add(P, 'H2', 1, 200, 0.1).name('H2 (başlangıç) cm').onChange(buildElbow);
+    f.add(P, 't', 0.02, 1.0, 0.01).name('Sac Kalınlığı t').onChange(buildElbow);
+    f.add(P, 'R_in', 1, 300, 0.1).name('İç Yarıçap R').onChange(buildElbow);
+    f.add(P, 'A', 10, 180, 1).name('Açı (°)').onChange(buildElbow);
+    f.add(P, 'steps', 16, 400, 1).name('Segment (steps)').onChange(buildElbow);
+    f.add(P, 'edgeSegs', 2, 16, 1).name('Kenar örnek (kalite)').onChange(buildElbow);
+
+    const f2 = gui.addFolder('Görünüm / Flanş');
+    f2.add(P, 'showEdges').name('Kenar Çizgileri').onChange(buildElbow);
+    f2.add(P, 'showDims').name('Ölçülendirme').onChange(buildElbow);
+    f2.add(P, 'showFlange').name('Flanşları Göster').onChange(buildElbow);
+    f2.add(P, 'flangeLip', 0.5, 8.0, 0.1).name('Flanş Payı (lip) cm').onChange(buildElbow);
+    f2.add(P, 'flangeThick', 0.2, 2.0, 0.05).name('Flanş Kalınlığı cm').onChange(buildElbow);
+    f2.add(P, 'metalRough', 0, 1, 0.01).name('Roughness').onChange(()=>{ metalMat.roughness = P.metalRough; renderer.render(scene,camera); });
+    f2.add(P, 'metalness', 0, 1, 0.01).name('Metalness').onChange(()=>{ metalMat.metalness = P.metalness; renderer.render(scene,camera); });
+    f2.add(P, 'showAxis').name('Eksenleri Göster').onChange(v=>{ axes.visible = v; });
+    f2.add(P, 'showGrid').name('Grid Göster').onChange(v=>{ grid.visible = v; });
+    f2.add(P, 'keepViewOnEdit').name('Ölçü değişince görüşü koru');
+    f2.add(P, 'dimAlwaysOnTop').name('Ölçüler hep üstte').onChange(buildElbow);
+    f2.add(P, 'dimFixedOffset').name('Flanştan sabit uzaklık').onChange(buildElbow);
+    f2.add(P, 'dimOffsetCm', 0.5, 5.0, 0.1).name('Ok Ucu Kısalt (cm)').onChange(buildElbow);
+    f2.add(P, 'arrowHeadCm', 1.0, 8.0, 0.1).name('Ok Boyu (cm)').onChange(buildElbow);
+    f2.add(P, 'arrowRadiusCm', 0.5, 3.0, 0.1).name('Ok Kalınlığı (cm)').onChange(buildElbow);
+    f2.add(P, 'extLenCm', 2, 40, 0.5).name('Uzatma Uzunluğu (cm)').onChange(buildElbow);
+    f2.add(P, 'extGapCm', 0.2, 5.0, 0.1).name('Parça Boşluğu (cm)').onChange(buildElbow);
+    f2.add(P, 'dimPlaneOffsetCm', 1, 100, 0.5).name('Flanştan Mesafe (cm)').onChange(buildElbow);
+    f2.add(P, 'labelOffsetCm', 0, 5, 0.1).name('Etiket Ofset (cm)').onChange(buildElbow);    // Yatay konum modu (W)
+    const fOW = gui.addFolder('Yatay Konum (W)');
+    fOW.add(P,'modeW',{ 'Sol Düz':'flatLeft','Merkez':'central','Sağ Düz':'flatRight' }).name('W Konumu').onChange(buildElbow);
+
+    // Renkler
+    const f3 = gui.addFolder('Renkler');
+    f3.addColor(P, 'colorW1').name('W1 Rengi').onChange(buildElbow);
+    f3.addColor(P, 'colorH1').name('H1 Rengi').onChange(buildElbow);
+    f3.addColor(P, 'colorW2').name('W2 Rengi').onChange(buildElbow);
+    f3.addColor(P, 'colorH2').name('H2 Rengi').onChange(buildElbow);
+    f3.addColor(P, 'colorR').name('R(iç) Rengi').onChange(buildElbow);
+    f3.addColor(P, 'colorA').name('Açı Rengi').onChange(buildElbow);
+
+    // Alan Hesabı GUI
+    const fA = gui.addFolder('Alan Hesabı');
+    fA.add(P,'areaIncludeFlange').name('Flanşı dahil et').onChange(buildElbow);
+    fA.add(P,'wastePercent',0,100,1).name('% Atık/Pay').onChange(buildElbow);
+    fA.add(P,'kFactor',0,2,0.01).name('Düzeltme Katsayısı k').onChange(buildElbow);
+
+    // Etkileşim
+    window.addEventListener('resize', ()=>{
+      camera.aspect = window.innerWidth/window.innerHeight; 
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    (function animate(){
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+      labelRenderer.render(scene, camera);
+    })();
+
+    // ====== Basit Testler (konsola yazar) ======
+    (function runTests(){
+      function t(name, cond){ console[cond?'log':'error'](`[TEST] ${cond?'PASS':'FAIL'} - ${name}`); }
+      t('Renderer hazır', !!renderer && !!renderer.domElement);
+      t('GUI hazır', true);
+      t('Axes toggle ayarı', (typeof P.showAxis === 'boolean'));
+      t('Grid toggle ayarı', (typeof P.showGrid === 'boolean'));
+      // Hızlı rebuild
+      const oldW1 = P.W1; P.W1 = oldW1 + 0.1; buildElbow(); t('Rebuild başarılı', elbowGroup.children.length>0); P.W1 = oldW1; buildElbow();
+    })();
+  </script>
+</body>
+</html>

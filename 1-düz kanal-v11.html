@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<title>Düz Kanal – parçalı kullanım (atık payı + katsayı + nav)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<link rel="stylesheet" href="./css/1-duz-kanal.css" />
+
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+}}
+</script>
+</head>
+<body>
+  <!-- SEÇİM ŞERİDİ -->
+  <div id="pickerWrap" class="card" style="display:none;margin:8px">
+    <div class="row">
+      <strong>Parça:</strong>
+      <label class="pill"><input type="radio" name="partsel" value="duz" checked> Düz Kanal</label>
+    </div>
+  </div>
+
+  <!-- SAHNE + PANEL -->
+  <div id="app">
+    <div id="sceneWrap">
+      <div style="position:absolute;top:10px;left:10px;z-index:100;background:rgba(255,255,255,0.95);padding:8px 12px;border-radius:8px;display:flex;align-items:center;gap:10px;border:1px solid #d0d7de;">
+        <a href="/" style="display:flex;align-items:center;">
+          <img src="/logo23dductorder.png" alt="3D Duct Order Logo" style="height:30px;width:auto;">
+        </a>
+        <span style="color:#1f2328;font-weight:600;font-size:14px;">Düz Kanal v11</span>
+      </div>
+      <div id="hud">Sol tık: döndür • Sağ tık: kaydır • Tekerlek: zoom
+        <div id="hudArea" class="mini"></div>
+      </div>
+      <canvas id="c"></canvas>
+      <div id="viewbar">
+        <button class="vbtn" data-v="Right">Right</button>
+        <button class="vbtn" data-v="Left">Left</button>
+        <button class="vbtn" data-v="Front">Front</button>
+        <button class="vbtn" data-v="Back">Back</button>
+        <button class="vbtn" data-v="Top">Top</button>
+        <button class="vbtn" data-v="SW Iso">SW Iso</button>
+        <button class="vbtn" data-v="NE Iso">NE Iso</button>
+      </div>
+    </div>
+    <div id="panel"><div class="dims" id="dims"></div></div>
+  </div>
+
+  <!-- ALAN -->
+  <div id="areaWrap" class="card" style="display:none;margin:8px">
+    <div class="row"><strong>Alan (m²):</strong> <span id="areaText" class="pill">…</span></div>
+  </div>
+
+  <!-- SİPARİŞE EKLE -->
+  <div id="orderAddWrap" class="card" style="display:none;margin:8px">
+    <div class="row" style="justify-content:space-between">
+      <div>
+        <div class="row"><strong>Düz Kanal</strong> <span class="pill">W1: <span id="oaW1">—</span> cm</span> <span class="pill">H1: <span id="oaH1">—</span> cm</span> <span class="pill">L: <span id="oaL">—</span> cm</span></div>
+        <div class="row" style="margin-top:8px"><span class="pill">Alan: <span id="oaArea">—</span> m²</span></div>
+      </div>
+      <div class="row">
+        <input id="oaQty" type="number" min="1" value="1" style="width:72px;padding:8px;border:1px solid #d0d7de;border-radius:8px">
+        <button id="oaAdd" class="btn2">Siparişe Ekle</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SİPARİŞ LİSTESİ -->
+  <div id="orderListWrap" class="card" style="display:none;margin:8px">
+    <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:6px">
+      <strong>Sipariş Listesi</strong>
+      <div class="row"><button id="olClear" class="btn2 sec">Listeyi Temizle</button></div>
+    </div>
+    <div id="orderListBox"></div>
+  </div>
+
+<script type="module">
+/* ====== PART / IFAME MODU ====== */
+const qs = new URLSearchParams(location.search);
+const PART = qs.get('part') || 'all';
+const parts = {
+  picker: PART==='picker' || PART==='all',
+  scene:  PART==='scene'  || PART==='all',
+  dims:   PART==='dims'   || PART==='all',
+  area:   PART==='area'   || PART==='all',
+  orderAdd: PART==='orderAdd' || PART==='all',
+  orderList:PART==='orderList'|| PART==='all',
+};
+const pickerWrap   = document.getElementById('pickerWrap');
+const sceneWrap    = document.getElementById('sceneWrap');
+const panel        = document.getElementById('panel');
+const areaWrap     = document.getElementById('areaWrap');
+const orderAddWrap = document.getElementById('orderAddWrap');
+const orderListWrap= document.getElementById('orderListWrap');
+
+pickerWrap.style.display   = parts.picker?'block':'none';
+document.getElementById('app').style.display = (parts.scene||parts.dims)?'flex':'none';
+sceneWrap.style.display    = parts.scene?'block':'none';
+panel.style.display        = parts.dims?'block':'none';
+areaWrap.style.display     = parts.area?'block':'none';
+orderAddWrap.style.display = parts.orderAdd?'block':'none';
+orderListWrap.style.display= parts.orderList?'block':'none';
+
+/* DIMS iframe'inde ölçek kapat + yükseklik & scroll düzelt */
+if (PART==='dims') {
+  document.documentElement.classList.add('embed-dims');
+  document.body.style.overflow = 'auto';
+  const appEl   = document.getElementById('app');
+  const panelEl = document.getElementById('panel');
+  if (appEl)   appEl.style.height     = 'auto';
+  if (panelEl) panelEl.style.maxHeight= 'none';
+}
+
+/* SAHNE KURULUMU */
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const C=document.getElementById('c');
+const R=new THREE.WebGLRenderer({canvas:C,antialias:true,alpha:false});
+R.setClearColor(0xffffff,1);
+R.physicallyCorrectLights=true;
+R.outputColorSpace=THREE.SRGBColorSpace;
+R.toneMapping=THREE.ACESFilmicToneMapping;
+R.toneMappingExposure=1.15;
+R.shadowMap.enabled=true; R.shadowMap.type=THREE.PCFSoftShadowMap;
+
+const S=new THREE.Scene();
+const pmrem=new THREE.PMREMGenerator(R);
+S.environment=pmrem.fromScene(new RoomEnvironment(R),0.04).texture;
+
+const Cam=new THREE.PerspectiveCamera(45,1,0.01,1e5);
+Cam.position.set(3.2,1.9,3.2); S.add(Cam);
+
+const Hemi=new THREE.HemisphereLight(0xffffff,0xdfe3ea,.65); S.add(Hemi);
+const Key=new THREE.DirectionalLight(0xffffff,1.2); Key.position.set(4,6,5);
+Key.castShadow=true; Key.shadow.mapSize.set(2048,2048);
+Key.shadow.camera.near=.1; Key.shadow.camera.far=50;
+Key.shadow.camera.left=-10; Key.shadow.camera.right=10;
+Key.shadow.camera.top=10; Key.shadow.camera.bottom=-10; S.add(Key);
+
+const Ctrl=new OrbitControls(Cam,R.domElement); Ctrl.enableDamping=true; Ctrl.zoomToCursor=false; Ctrl.dollySpeed=0.9;
+
+const LBL=new CSS2DRenderer();
+Object.assign(LBL.domElement.style,{position:'absolute',inset:'0',pointerEvents:'none',zIndex:'5'});
+if (parts.scene) sceneWrap.appendChild(LBL.domElement);
+
+const G=new THREE.Group(), GF=new THREE.Group(), GD=new THREE.Group(), GROUND=new THREE.Group();
+const MODEL=new THREE.Group(); MODEL.add(G,GF); const ROOT=new THREE.Group(); ROOT.add(MODEL,GD,GROUND); S.add(ROOT);
+
+const metalMat=new THREE.MeshPhysicalMaterial({color:0xb9c1c9,roughness:0.42,metalness:0.2,clearcoat:0.25,clearcoatRoughness:0.6,side:THREE.DoubleSide,envMapIntensity:0.8});
+const flangeMat=new THREE.MeshStandardMaterial({color:0xaab2bb,roughness:0.5,metalness:0.15,side:THREE.DoubleSide,envMapIntensity:0.8});
+const edgeMat=new THREE.LineBasicMaterial({color:0x6b7581});
+
+const V=(x=0,y=0,z=0)=>new THREE.Vector3(x,y,z);
+const cm=v=>v*0.01;
+const clear=g=>{while(g.children.length){const c=g.children.pop();c.geometry?.dispose?.();if(c.material){(Array.isArray(c.material)?c.material:[c.material]).forEach(m=>m.dispose?.());}}};
+const addLabel=(txt,pos,color)=>{const d=document.createElement('div');d.className='label';d.textContent=txt;if(color)d.style.color=color;const o=new CSS2DObject(d);o.position.copy(pos);S.add(o);GD.add(o);return o;};
+
+const screenSized=[]; const tmpV=new THREE.Vector3();
+function worldUnitsPerPixelAt(worldPos){ const dist=Cam.position.distanceTo(worldPos); const vFOV=THREE.MathUtils.degToRad(Cam.fov); const viewH=2*Math.tan(vFOV/2)*dist; return viewH/Math.max(1,R.domElement.clientHeight); }
+function registerScreenSizedCone(m){ screenSized.push(m); }
+function arrowBoth(p1,p2,color=0x1e5bff){
+  const col=new THREE.Color(color);
+  const ln=new THREE.Line(new THREE.BufferGeometry().setFromPoints([p1,p2]),new THREE.LineBasicMaterial({color:col,depthTest:false,depthWrite:false,transparent:true})); ln.renderOrder=999; GD.add(ln);
+  const dir=new THREE.Vector3().subVectors(p2,p1).normalize();
+  const coneGeo=new THREE.ConeGeometry(1,1,12); const coneMat=new THREE.MeshBasicMaterial({color:col,depthTest:false,depthWrite:false,transparent:true});
+  const c2=new THREE.Mesh(coneGeo,coneMat); c2.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir); c2.position.copy(p2); c2.renderOrder=999; GD.add(c2); registerScreenSizedCone(c2);
+  const c1=new THREE.Mesh(coneGeo,coneMat); c1.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.clone().negate()); c1.position.copy(p1); c1.renderOrder=999; GD.add(c1); registerScreenSizedCone(c1);
+  return {line:ln, headA:c1, headB:c2};
+}
+function dimLine(p1,p2,offsetDir,label,lineColor){
+  const cmv=v=>v*0.01;
+  const n=offsetDir.clone().normalize(); const gap=cmv(1); const targetOff=cmv(20);
+  const s1=p1.clone().add(n.clone().multiplyScalar(gap)), e1=p1.clone().add(n.clone().multiplyScalar(targetOff));
+  const s2=p2.clone().add(n.clone().multiplyScalar(gap)), e2=p2.clone().add(n.clone().multiplyScalar(targetOff));
+  const col=new THREE.Color(lineColor||0x1e5bff);
+  const mat=new THREE.LineBasicMaterial({color:col,depthTest:false,depthWrite:false,transparent:true});
+  const L1=new THREE.Line(new THREE.BufferGeometry().setFromPoints([s1,e1]),mat),
+        L2=new THREE.Line(new THREE.BufferGeometry().setFromPoints([s2,e2]),mat);
+  L1.renderOrder=L2.renderOrder=999; GD.add(L1,L2);
+  const a1=e1.clone(), a2=e2.clone(); arrowBoth(a1,a2,col);
+  const mid=a1.clone().add(a2).multiplyScalar(0.5).add(n.clone().multiplyScalar(cmv(0.5)));
+  return addLabel(label,mid,col.getStyle());
+}
+
+/* PARAMETRELER */
+const P={
+  W1:65, H1:105, L:165,
+  wastePct:0,            // Atık payı (%)
+  corrFactor:1,          // Düzeltme katsayısı (x)
+  showEdges:true, showDims:true, showFlange:true, flangeLip:3,
+  colorW1:'#2f67bc', colorH1:'#c32828', colorL:'#26b6c9',
+  showGround:true, shadowOpacity:0.25, fitPadding:1.12
+};
+let didInitialFrame=false;
+
+/* İNŞA */
+function flangeRing(Wm,Hm,lip){
+  const sh=new THREE.Shape([new THREE.Vector2(-Wm/2-lip,-Hm/2-lip),new THREE.Vector2( Wm/2+lip,-Hm/2-lip),new THREE.Vector2( Wm/2+lip, Hm/2+lip),new THREE.Vector2(-Wm/2-lip, Hm/2+lip)]);
+  const hole=new THREE.Path([new THREE.Vector2(-Wm/2,-Hm/2),new THREE.Vector2( Wm/2,-Hm/2),new THREE.Vector2( Wm/2, Hm/2),new THREE.Vector2(-Wm/2, Hm/2)]);
+  sh.holes.push(hole); const g=new THREE.ShapeGeometry(sh); g.center();
+  const m=new THREE.Mesh(g,flangeMat); m.add(new THREE.LineSegments(new THREE.EdgesGeometry(g),edgeMat)); return m;
+}
+function getModelBox(){ return new THREE.Box3().expandByObject(MODEL); }
+function build(){
+  [G,GF,GD,GROUND].forEach(clear); screenSized.length=0; document.querySelectorAll('.label').forEach(e=>e.remove());
+  const W=cm(P.W1), H=cm(P.H1), L=cm(P.L), lip=cm(P.flangeLip);
+
+  const top=new THREE.Mesh(new THREE.PlaneGeometry(W,L),metalMat);  top.rotation.x=-Math.PI/2; top.position.set(0, H/2, L/2); G.add(top);
+  const bot=new THREE.Mesh(new THREE.PlaneGeometry(W,L),metalMat);  bot.rotation.x=-Math.PI/2; bot.position.set(0,-H/2, L/2); G.add(bot);
+  const right=new THREE.Mesh(new THREE.PlaneGeometry(L,H),metalMat); right.rotation.y= Math.PI/2; right.position.set( W/2,0,L/2); G.add(right);
+  const left =new THREE.Mesh(new THREE.PlaneGeometry(L,H),metalMat); left.rotation.y =-Math.PI/2; left.position.set(-W/2,0,L/2); G.add(left);
+  [top,bot,right,left].forEach(m=>{m.castShadow=true;m.receiveShadow=true;});
+
+  if(P.showEdges){
+    [top,bot,right,left].forEach(m=>{
+      const e=new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry),edgeMat);
+      e.rotation.copy(m.rotation); e.position.copy(m.position); G.add(e);
+    });
+  }
+
+  if(P.showFlange){
+    const F0=flangeRing(W,H,lip); F0.position.set(0,0,0); GF.add(F0);
+    const F1=flangeRing(W,H,lip); F1.position.set(0,0,L); GF.add(F1);
+    [F0,F1].forEach(m=>{m.castShadow=true;m.receiveShadow=true;});
+  }
+
+  if(P.showGround){
+    const box=getModelBox(); const sz=box.getSize(new THREE.Vector3());
+    const gSize=Math.max(5, Math.max(sz.x,sz.z)*1.8);
+    const gMat=new THREE.ShadowMaterial({opacity:P.shadowOpacity,color:0x000000});
+    const ground=new THREE.Mesh(new THREE.PlaneGeometry(gSize,gSize),gMat);
+    ground.rotation.x=-Math.PI/2; ground.position.y=-H/2-cm(0.5); ground.receiveShadow=true; GROUND.add(ground);
+  }
+
+  if(P.showDims){
+    dimLine(new THREE.Vector3(-W/2, H/2, L), new THREE.Vector3(W/2, H/2, L), new THREE.Vector3(0,1,0),  `W1 = ${Math.round(P.W1)} cm`, P.colorW1);
+    dimLine(new THREE.Vector3(-W/2,-H/2, L), new THREE.Vector3(-W/2, H/2, L), new THREE.Vector3(-1,0,0), `H1 = ${Math.round(P.H1)} cm`, P.colorH1);
+    dimLine(new THREE.Vector3(W/2,-H/2, 0),  new THREE.Vector3(W/2,-H/2, L), new THREE.Vector3(1,0,0),  `L = ${Math.round(P.L)} cm`,  P.colorL);
+  }
+
+  fitView(MODEL,{padding:P.fitPadding, preserveTarget: didInitialFrame, smooth: didInitialFrame});
+  didInitialFrame=true;
+
+  updateAreaUI(); updateOrderAddUI();
+}
+
+/* KADRAJ */
+function fitView(obj,{padding=1.25,viewDir=null,preserveTarget=true,smooth=true}={}){
+  const box=new THREE.Box3().expandByObject(obj); if(!isFinite(box.min.x)||!isFinite(box.max.x)) return;
+  const t=(preserveTarget?Ctrl.target.clone():box.getCenter(new THREE.Vector3()));
+  const corners=[new THREE.Vector3(box.min.x,box.min.y,box.min.z),new THREE.Vector3(box.min.x,box.min.y,box.max.z),new THREE.Vector3(box.min.x,box.max.y,box.min.z),new THREE.Vector3(box.min.x,box.max.y,box.max.z),new THREE.Vector3(box.max.x,box.min.y,box.min.z),new THREE.Vector3(box.max.x,box.min.y,box.max.z),new THREE.Vector3(box.max.x,box.max.y,box.min.z),new THREE.Vector3(box.max.x,box.max.y,box.max.z)];
+  let reff=0; for(const k of corners) reff=Math.max(reff,k.distanceTo(t));
+  let dir; if(viewDir){dir=viewDir.clone().normalize();} else{ const cur=Cam.position.clone().sub(Ctrl.target); dir=cur.length()>1e-6?cur.normalize():new THREE.Vector3(1,0.8,1).normalize(); }
+  const vfov=THREE.MathUtils.degToRad(Cam.fov), aspect=Math.max(0.0001,Cam.aspect||1), hfov=2*Math.atan(Math.tan(vfov/2)*aspect);
+  const needDist=Math.max(reff/Math.tan(vfov/2), reff/Math.tan(hfov/2))*padding;
+  const endTgt=t.clone(); const endPos=t.clone().add(dir.multiplyScalar(needDist));
+  Ctrl.maxDistance=needDist*10; Ctrl.minDistance=Math.max(needDist*0.01,0.001);
+  Cam.near=Math.max(needDist/200,0.001); Cam.far=needDist*80+reff*5; Cam.updateProjectionMatrix();
+  if(!smooth||!didInitialFrame){ Ctrl.target.copy(endTgt); Cam.position.copy(endPos); Ctrl.update(); }
+  else{ const sp=Cam.position.clone(), st=Ctrl.target.clone(), dur=280, t0=performance.now();
+    (function anim(){ const a=(performance.now()-t0)/dur; if(a>=1){Ctrl.target.copy(endTgt); Cam.position.copy(endPos); Ctrl.update();}
+      else{ const u=a<0.5?2*a*a:-1+(4-2*a)*a; Cam.position.lerpVectors(sp,endPos,u); Ctrl.target.lerpVectors(st,endTgt,u); Ctrl.update(); requestAnimationFrame(anim);} })();
+  }
+}
+
+/* ===== Ölçü Girişleri ===== */
+const dimsWrap=document.getElementById('dims');
+function makeDimRow(label,key,min,max){
+  const row=document.createElement('div'); row.className='dimrow';
+  row.innerHTML=`<label>${label}:</label>
+    <input class="slider" type="range" min="${min}" max="${max}" step="1">
+    <button class="btn minus">-5</button>
+    <input class="num" type="number" min="${min}" max="${max}" step="1">
+    <span class="unit">cm</span>
+    <button class="btn plus">+5</button>`;
+  dimsWrap.appendChild(row);
+  const slider=row.querySelector('.slider'), num=row.querySelector('.num'), minus=row.querySelector('.minus'), plus=row.querySelector('.plus');
+  const clampInt=v=>Math.min(max,Math.max(min,Math.round(+v||0)));
+  function notifyDims(){ try{ window.parent?.postMessage({ type:'dims-change', payload:{ W1:P.W1, H1:P.H1, L:P.L, wastePct:P.wastePct, corrFactor:P.corrFactor } }, '*'); }catch{} }
+  const setVal=v=>{v=clampInt(v); P[key]=v; slider.value=v; num.value=v; build(); notifyDims();};
+  slider.value=P[key]; num.value=P[key];
+  slider.addEventListener('input',e=>setVal(e.target.value));
+  num.addEventListener('input',e=>setVal(e.target.value));
+  minus.addEventListener('click',()=>setVal(P[key]-5));
+  plus .addEventListener('click',()=>setVal(P[key]+5));
+  num.addEventListener('focus',()=>{num.select(); num.value='';});
+  num.addEventListener('blur',()=>{ if(num.value==='') num.value=P[key]; });
+}
+function makeSetRow(label,key,unit,opts={}){
+  const row=document.createElement('div'); row.className='setrow';
+  const step=opts.step??1, min=opts.min??0, max=opts.max??1000, fmt=opts.format??(v=>v);
+  row.innerHTML=`<div style="font-weight:700">${label}</div>
+    <input class="setnum" type="number" step="${step}" min="${min}" max="${max}">
+    <div class="unit" style="font-weight:700;text-align:center">${unit||''}</div>`;
+  dimsWrap.appendChild(row);
+  const num=row.querySelector('.setnum');
+  const set=(v)=>{ if(key==='corrFactor'){ v=Math.max(min,Math.min(max,parseFloat(v)||1)); } else { v=Math.round(Math.max(min,Math.min(max,parseFloat(v)||0))); }
+    P[key]=v; num.value=fmt(v); build(); };
+  num.value=fmt(P[key]);
+  num.addEventListener('input',()=>set(num.value));
+  num.addEventListener('focus',()=>{num.select();});
+}
+
+if (parts.dims && !dimsWrap.children.length){
+  makeDimRow('W1','W1',1,400);
+  makeDimRow('H1','H1',1,400);
+  makeDimRow('L','L',1,2000);
+
+  const st=document.createElement('div'); st.className='sectionTitle'; st.textContent='Ayarlar'; dimsWrap.appendChild(st);
+  makeSetRow('Atık Payı','wastePct','%',{step:1,min:0,max:100,format:v=>Math.round(v)});
+  makeSetRow('Düzeltme Katsayısı','corrFactor','x',{step:0.01,min:0.01,max:99,format:v=>Number(v).toFixed(2)});
+}
+
+/* ===== Alan & Sipariş UI ===== */
+const hudArea=document.getElementById('hudArea');
+const areaText=document.getElementById('areaText');
+function baseArea(){ const W=cm(P.W1), H=cm(P.H1), L=cm(P.L); return 2*(W+H)*L; }
+function totalArea(){ return baseArea() * P.corrFactor * (1 + (P.wastePct||0)/100); }
+function updateAreaUI(){
+  const a=totalArea().toFixed(3);
+  if (hudArea && (parts.scene||PART==='all')) hudArea.textContent=`Alan: ${a} m²`;
+  const oaA=document.getElementById('oaArea'); if(oaA) oaA.textContent=a;
+  if (areaText && parts.area) areaText.textContent=a;
+}
+function updateOrderAddUI(){
+  if(!parts.orderAdd) return;
+  const set=(id,val)=>{ const el=document.getElementById(id); if(el) el.textContent=val; };
+  set('oaW1',Math.round(P.W1)); set('oaH1',Math.round(P.H1)); set('oaL',Math.round(P.L));
+  updateAreaUI();
+}
+
+/* ===== Sipariş Listesi ===== */
+const orderBox=document.getElementById('orderListBox');
+function renderOrderList(list=[]){
+  if(!parts.orderList) return;
+  if(!list.length){ orderBox.innerHTML='<div style="opacity:.7">Liste boş.</div>'; return; }
+  let html='<table><thead><tr><th>Parça</th><th>W1</th><th>H1</th><th>L</th><th>Alan (m²)</th><th>Adet</th><th></th></tr></thead><tbody>';
+  list.forEach((it,i)=>{ html+=`<tr>
+    <td>${it.type||'Düz Kanal'}</td>
+    <td>${it.W1}</td><td>${it.H1}</td><td>${it.L}</td>
+    <td>${(+it.area).toFixed(3)}</td><td>${it.qty||1}</td>
+    <td><button data-i="${i}" class="btn2 sec" style="padding:4px 8px">Sil</button></td>
+  </tr>`; });
+  html+='</tbody></table>'; orderBox.innerHTML=html;
+  orderBox.querySelectorAll('button[data-i]').forEach(b=>b.addEventListener('click',()=>{ const idx=+b.dataset.i; try{window.parent?.postMessage({type:'order-remove',index:idx},'*');}catch{} }));
+}
+if (parts.orderList) document.getElementById('olClear').addEventListener('click',()=>{ try{window.parent?.postMessage({type:'order-clear'},'*');}catch{} });
+
+/* ===== Parent ile Haberleşme ===== */
+try{ window.parent?.postMessage({ type:'frame-ready', part:PART }, '*'); }catch{}
+window.addEventListener('message',(e)=>{
+  const msg=e.data||{};
+  if(msg.type==='apply-dims' && msg.payload){
+    const d=msg.payload;
+    if(typeof d.W1==='number')P.W1=d.W1;
+    if(typeof d.H1==='number')P.H1=d.H1;
+    if(typeof d.L==='number')P.L=d.L;
+    if(typeof d.wastePct==='number')P.wastePct=d.wastePct;
+    if(typeof d.corrFactor==='number')P.corrFactor=d.corrFactor;
+
+    if (parts.dims) document.querySelectorAll('.dimrow').forEach(row=>{
+      const name=row.querySelector('label').textContent.replace(':',''); const map={W1:'W1',H1:'H1',L:'L'}; const k=map[name];
+      if(!k) return; row.querySelector('.slider').value=P[k]; row.querySelector('.num').value=P[k];
+    });
+    // ayarlar inputlarını da güncelle
+    document.querySelectorAll('.setrow .setnum').forEach(inp=>{
+      const label=inp.parentElement.firstElementChild.textContent;
+      if(label.includes('Atık')) inp.value = Math.round(P.wastePct);
+      if(label.includes('Katsay')) inp.value = Number(P.corrFactor).toFixed(2);
+    });
+    build();
+  }
+  if(msg.type==='set-orders' && parts.orderList){ renderOrderList(msg.payload||[]); }
+});
+
+/* ===== Görünüm Butonları ===== */
+const views={'Right':new THREE.Vector3(1,0,0),'Left':new THREE.Vector3(-1,0,0),'Front':new THREE.Vector3(0,0,1),'Back':new THREE.Vector3(0,0,-1),'Top':new THREE.Vector3(0,1,0),'SW Iso':new THREE.Vector3(-1,1,-1),'NE Iso':new THREE.Vector3(1,1,1)};
+document.getElementById('viewbar')?.querySelectorAll('.vbtn').forEach(b=>b.addEventListener('click',()=>{
+  const d=views[b.dataset.v]; if(d) fitView(MODEL,{viewDir:d,preserveTarget:true,smooth:true,padding:P.fitPadding});
+}));
+
+/* ===== Başlat / Resize ===== */
+function resizeToContainer(){
+  if (!parts.scene) return;
+  const r=sceneWrap.getBoundingClientRect();
+  const w=Math.max(1,Math.floor(r.width)), h=Math.max(1,Math.floor(r.height));
+  R.setSize(w,h,false); LBL.setSize(w,h);
+  Cam.aspect=w/h||1; Cam.updateProjectionMatrix();
+  fitView(MODEL,{preserveTarget:true,smooth:false,padding:P.fitPadding});
+}
+addEventListener('resize',resizeToContainer);
+addEventListener('orientationchange',()=>setTimeout(resizeToContainer,50));
+
+/* İlk kurulum ve render */
+build(); if (parts.scene){ resizeToContainer();
+  (function anim(){
+    requestAnimationFrame(anim);
+    for(const m of screenSized){ const k=worldUnitsPerPixelAt(m.getWorldPosition(tmpV)); m.scale.set(k*6,k*16,k*6); }
+    Ctrl.update(); R.render(S,Cam); LBL.render(S,Cam);
+  })();
+}
+
+/* Siparişe ekle butonu */
+if (parts.orderAdd){
+  document.getElementById('oaAdd').addEventListener('click',()=>{
+    const qty=Math.max(1,Math.round(+document.getElementById('oaQty').value||1));
+    const item={type:'Düz Kanal',W1:P.W1,H1:P.H1,L:P.L,area:+totalArea().toFixed(3),qty};
+    try{ window.parent?.postMessage({type:'order-add',payload:item},'*'); }catch{}
+  });
+}
+</script>
+</body>
+</html>

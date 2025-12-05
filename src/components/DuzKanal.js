@@ -207,7 +207,8 @@ export class DuzKanal extends BasePart {
       new THREE.Vector3(W1 / 2, H1 / 2, L / 2),
       new THREE.Vector3(0, 1, 0),
       `W = ${this.params.W1.toFixed(1)} cm`,
-      this.params.colorW1
+      this.params.colorW1,
+      'W1'
     );
 
     // H boyutu (solda, dikey)
@@ -216,7 +217,8 @@ export class DuzKanal extends BasePart {
       new THREE.Vector3(-W1 / 2, H1 / 2, L / 2),
       new THREE.Vector3(-1, 0, 0),
       `H = ${this.params.H1.toFixed(1)} cm`,
-      this.params.colorH1
+      this.params.colorH1,
+      'H1'
     );
 
     // L boyutu (sağda, derinlik)
@@ -225,7 +227,8 @@ export class DuzKanal extends BasePart {
       new THREE.Vector3(W1 / 2, -H1 / 2, L / 2),
       new THREE.Vector3(1, 0, 0),
       `L = ${this.params.L.toFixed(1)} cm`,
-      this.params.colorL
+      this.params.colorL,
+      'L'
     );
   }
 

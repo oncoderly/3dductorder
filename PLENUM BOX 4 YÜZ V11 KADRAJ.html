@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"/>
+<title>Three.js – Çoklu Yüz Manşonları (v4, 3 Pencere Yerleşim)</title>
+<style>
+  :root{--bg:#0b0e12;--card:#111722;--border:#313949;--text:#e6edf3}
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:13px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+  /* --- 3 Pencere Izgara --- */
+  #layout{height:100vh;display:grid;grid-template-columns:1fr;grid-template-rows:50vh auto auto;gap:8px;padding:8px;box-sizing:border-box}
+  .pane{position:relative;background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  .pane>header{position:sticky;top:0;z-index:5;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,0));padding:8px 10px;border-bottom:1px solid var(--border);font-weight:700}
+  /* --- Sahne --- */
+  #scenePane{display:grid;grid-template-rows:auto 1fr}
+  #scene{position:relative;height:100%}
+  #c{position:absolute;inset:0;display:block}
+  #labels{position:absolute;inset:0;pointer-events:none}
+  #instr{position:absolute;left:10px;top:10px;z-index:6;background:rgba(18,24,34,.9);padding:4px 8px;border:1px solid var(--border);border-radius:8px}
+  #viewbar{position:absolute;left:50%;transform:translateX(-50%);bottom:10px;display:flex;gap:6px;z-index:6}
+  #viewbar .vbtn{background:#1b2230;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font:12px system-ui;cursor:pointer;opacity:.9}
+  #viewbar .vbtn:hover{opacity:1}
+  /* --- GUI --- */
+  #guiPane{display:grid;grid-template-rows:auto 1fr}
+  #guiContainer{position:relative;overflow:auto}
+  /* --- Alan HUD --- */
+  #hudPane{display:grid;grid-template-rows:auto auto;align-self:start;height:max-content;}
+  #hudContainer{padding:10px 10px 0 10px}
+  .meter{margin:0;padding:8px 10px;border:1px dashed var(--border);border-radius:8px}
+  /* --- Label stilleri --- */
+  .label{color:inherit;font-weight:700;background:rgba(18,24,34,.9);padding:4px 8px;border:1px solid var(--border);border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+  @media (max-width:700px){#layout{grid-template-columns:1fr;grid-auto-rows:minmax(260px,auto)}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"}}</script>
+</head>
+<body>
+  <div id="layout">
+    <!-- 1) Sahne -->
+    <section id="scenePane" class="pane">
+      <header>1) Sahne ve Şekil</header>
+      <div id="scene">
+        <div id="instr">Sol tık: döndür • Sağ tık: kaydır • Tekerlek: zoom</div>
+        <canvas id="c"></canvas>
+        <div id="labels"></div>
+        <div id="viewbar">
+          <button class="vbtn" data-v="Right">Right</button>
+          <button class="vbtn" data-v="Left">Left</button>
+          <button class="vbtn" data-v="Front">Front</button>
+          <button class="vbtn" data-v="Back">Back</button>
+          <button class="vbtn" data-v="Top">Top</button>
+          <button class="vbtn" data-v="SW Iso">SW Iso</button>
+          <button class="vbtn" data-v="NE Iso">NE Iso</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2) Parametreler (GUI) -->
+    <section id="guiPane" class="pane">
+      <header>2) Parametreler (Dashboard)</header>
+      <div id="guiContainer"></div>
+    </section>
+
+    <!-- 3) Alan m² HUD -->
+    <section id="hudPane" class="pane">
+      <header>3) Alan m² Hesabı</header>
+      <div id="hudContainer">
+        <div id="area" class="meter">Hesap bekleniyor…</div>
+      </div>
+    </section>
+  </div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import GUI from 'https://cdn.jsdelivr.net/npm/lil-gui@0.19/+esm';
+
+// ——— Temel kurulum ———
+const scenePane = document.getElementById('scene');
+const canvas = document.getElementById('c');
+const areaEl = document.getElementById('area');
+const viewbar = document.getElementById('viewbar');
+
+const R=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+const S=new THREE.Scene();
+const Cam=new THREE.PerspectiveCamera(45,1,0.01,1e4); Cam.position.set(3.2,1.9,3.2); S.add(Cam);
+S.add(new THREE.HemisphereLight(0xffffff,0x101018,0.9)); const DL=new THREE.DirectionalLight(0xffffff,0.7); DL.position.set(3,5,4); S.add(DL);
+const Ctrl=new OrbitControls(Cam,R.domElement); Ctrl.enableDamping=true;
+const Grid=new THREE.GridHelper(10,20,0x2a2e35,0x1a1d23); S.add(Grid);
+const Ax=new THREE.AxesHelper(1); S.add(Ax);
+
+// Label renderer artık sahne paneline ekleniyor
+const LBL=new CSS2DRenderer();
+LBL.domElement.style.position='absolute';
+LBL.domElement.style.inset='0';
+scenePane.querySelector('#labels').appendChild(LBL.domElement);
+
+// Boyutlandırma (panel bazlı)
+function sizeToPane(){
+  const rect=scenePane.getBoundingClientRect();
+  const w=Math.max(10,rect.width), h=Math.max(10,rect.height);
+  R.setSize(w,h,false);
+  LBL.setSize(w,h);
+  Cam.aspect=w/h; Cam.updateProjectionMatrix();
+}
+sizeToPane();
+
+const views={Right:new THREE.Vector3(1,0,0),Left:new THREE.Vector3(-1,0,0),Front:new THREE.Vector3(0,0,1),Back:new THREE.Vector3(0,0,-1),Top:new THREE.Vector3(0,1,0),'SW Iso':new THREE.Vector3(-1,1,-1),'NE Iso':new THREE.Vector3(1,1,1)};
+let lastCtr=new THREE.Vector3(), lastDist=3, didInitialFrame=false;
+function setView(dir){ const v=dir.clone().normalize().multiplyScalar(lastDist); Cam.position.copy(lastCtr.clone().add(v)); Cam.near=lastDist/100; Cam.far=lastDist*100; Cam.updateProjectionMatrix(); Ctrl.target.copy(lastCtr); Ctrl.update(); }
+viewbar.querySelectorAll('.vbtn').forEach(b=>b.addEventListener('click',()=>{ const v=views[b.dataset.v]; if(v) setView(v); }));
+
+// ——— Parametreler ———
+const P={ W1:100, H1:80, L:120, Phi:60, spigotLenCm:10, t:0.12, steps:80,
+  showEdges:true, showDims:true, showFlange:true,
+  flangeLip:3, flangeThick:0.6,
+  metalRough:0.35, metalness:0.85,
+  showAxis:false, showGrid:true, keepViewOnEdit:false,
+  dimOffsetCm:1.5, arrowHeadCm:4, arrowRadiusCm:1.2,
+  extLenCm:15, extGapCm:1, dimPlaneOffsetCm:20, labelOffsetCm:0.5, faceTagWidthCm:30,
+  showSideLabels:true, dimAlwaysOnTop:true, dimFixedOffset:true,
+  colorW1:'#3ea2ff', colorH1:'#ffd400', colorL:'#00bcd4', colorPhi:'#00c853',
+  areaIncludeFlange:false, wastePercent:25, kFactor:1,
+  modeW:'central', modeH:'central', offWcm:0, offHcm:0,
+  faces:{ right:{count:1,ports:[{diam:60}]}, left:{count:0,ports:[]}, front:{count:0,ports:[]}, back:{count:0,ports:[]}, top:{count:0,ports:[]} }
+};
+
+const metalMat=new THREE.MeshPhysicalMaterial({color:0xbfc7d2,roughness:P.metalRough,metalness:P.metalness,clearcoat:0.5,clearcoatRoughness:0.25,side:THREE.DoubleSide});
+const flangeMat=new THREE.MeshPhysicalMaterial({color:0x9aa3ad,roughness:0.6,metalness:0.9});
+const edgeMat=new THREE.LineBasicMaterial({color:0x3a3f46});
+const G=new THREE.Group(), GF=new THREE.Group(), GD=new THREE.Group(); S.add(G,GF,GD);
+[G,GF,GD].forEach(gr=>gr.rotation.x=Math.PI/2);
+
+// ——— Yardımcılar ———
+const V=(x=0,y=0,z=0)=>new THREE.Vector3(x,y,z);
+const cm=v=>v*0.01;
+const clear=g=>{ while(g.children.length){ const c=g.children.pop(); c.geometry?.dispose?.(); (Array.isArray(c.material)?c.material:[c.material]).forEach(m=>m?.dispose?.()); } };
+const addLabel=(txt,pos,color)=>{ const d=document.createElement('div'); d.className='label'; d.textContent=txt; if(color) d.style.color=color; const o=new CSS2DObject(d); o.position.copy(pos); S.add(o); GD.add(o); return o; };
+const arrowBoth=(p1,p2,color=0xff4d4d,head=0.04,rad=0.01)=>{ const ln=new THREE.Line(new THREE.BufferGeometry().setFromPoints([p1,p2]), new THREE.LineBasicMaterial({color,depthTest:!P.dimAlwaysOnTop,depthWrite:!P.dimAlwaysOnTop,transparent:P.dimAlwaysOnTop})); ln.renderOrder=P.dimAlwaysOnTop?999:0; const dir=V().subVectors(p2,p1).normalize(); const mk=(q,p)=>{ const c=new THREE.Mesh(new THREE.ConeGeometry(rad,head,12), new THREE.MeshBasicMaterial({color,depthTest:!P.dimAlwaysOnTop,depthWrite:!P.dimAlwaysOnTop,transparent:P.dimAlwaysOnTop})); c.quaternion.copy(q); c.position.copy(p); c.renderOrder=P.dimAlwaysOnTop?999:0; return c; }; const q2=new THREE.Quaternion().setFromUnitVectors(V(0,1,0),dir), q1=new THREE.Quaternion().setFromUnitVectors(V(0,1,0),dir.clone().negate()); GD.add(ln, mk(q2,p2), mk(q1,p1)); };
+const dimLine=(p1,p2,offsetDir,label,color)=>{ const n=offsetDir.clone().normalize(), gap=cm(P.extGapCm); const off=P.dimFixedOffset? cm(P.dimPlaneOffsetCm) : (gap+cm(P.extLenCm)); const s1=p1.clone().add(n.clone().multiplyScalar(gap)), e1=p1.clone().add(n.clone().multiplyScalar(off)); const s2=p2.clone().add(n.clone().multiplyScalar(gap)), e2=p2.clone().add(n.clone().multiplyScalar(off)); const mat=new THREE.LineBasicMaterial({color:new THREE.Color(color||0xff4d4d),depthTest:!P.dimAlwaysOnTop,depthWrite:!P.dimAlwaysOnTop,transparent:P.dimAlwaysOnTop}); const L1=new THREE.Line(new THREE.BufferGeometry().setFromPoints([s1,e1]),mat), L2=new THREE.Line(new THREE.BufferGeometry().setFromPoints([s2,e2]),mat); L1.renderOrder=L2.renderOrder=P.dimAlwaysOnTop?999:0; GD.add(L1,L2); const head=cm(P.arrowHeadCm), rad=cm(P.arrowRadiusCm), dir=V().subVectors(e2,e1).normalize(), midA=e1.clone().add(dir.clone().multiplyScalar(cm(P.dimOffsetCm))), midB=e2.clone().add(dir.clone().multiplyScalar(-cm(P.dimOffsetCm))); arrowBoth(midA,midB,color,head,rad); const mid=midA.clone().add(midB).multiplyScalar(0.5).add(n.clone().multiplyScalar(cm(P.labelOffsetCm))); return addLabel(label, mid, color); };
+const triA=(a,b,c)=>{ const ab=V().subVectors(b,a), ac=V().subVectors(c,a); return ab.cross(ac).length()*0.5; };
+const flangeRect=(Wm,Hm,lip,th)=>{ const sh=new THREE.Shape([new THREE.Vector2(-Wm/2-lip,-Hm/2-lip),new THREE.Vector2(Wm/2+lip,-Hm/2-lip),new THREE.Vector2(Wm/2+lip,Hm/2+lip),new THREE.Vector2(-Wm/2-lip,Hm/2+lip)]); const hole=new THREE.Path([new THREE.Vector2(-Wm/2,-Hm/2),new THREE.Vector2(Wm/2,-Hm/2),new THREE.Vector2(Wm/2,Hm/2),new THREE.Vector2(-Wm/2,Hm/2)]); sh.holes.push(hole); const g=new THREE.ExtrudeGeometry(sh,{depth:th,bevelEnabled:false}); g.center(); const m=new THREE.Mesh(g,flangeMat); m.add(new THREE.LineSegments(new THREE.EdgesGeometry(g),edgeMat)); return m; };
+const rectCorners=(hx,hy)=>[ new THREE.Vector3(-hx,-hy,0), new THREE.Vector3(hx,-hy,0), new THREE.Vector3(hx,hy,0), new THREE.Vector3(-hx,hy,0) ];
+const ensureFacePorts=(key,n)=>{ const f=P.faces[key]; if(!f) return; if(!Array.isArray(f.ports)) f.ports=[]; while(f.ports.length<n) f.ports.push({diam:P.Phi}); if(f.ports.length>n) f.ports.length=n; f.count=n; };
+const faceDefs=(W1,H1,L,cx,cy)=>({
+  right:{n:V(1,0,0), v:V(0,1,0), span:H1, base:V(cx(0.5)+W1/2, cy(0.5), L*0.5)},
+  left:{ n:V(-1,0,0),v:V(0,1,0), span:H1, base:V(cx(0.5)-W1/2, cy(0.5), L*0.5)},
+  front:{n:V(0,0,1), v:V(1,0,0), span:W1, base:V(cx(0.5), cy(0.5), L)},
+  back:{ n:V(0,0,-1),v:V(1,0,0), span:W1, base:V(cx(0.5), cy(0.5), 0)},
+  top:{  n:V(0,1,0), v:V(1,0,0), span:W1, base:V(cx(0.5), cy(0.5)+H1/2, L*0.5)},
+  bottom:{n:V(0,-1,0),v:V(1,0,0), span:W1, base:V(cx(0.5), cy(0.5)-H1/2, L*0.5)}
+});
+// --- Yüz etiketlerini yüzeye yapıştırmak için yardımcılar ---
+const makeTextPlane=(text,wCm,color='#ff6')=>{ const pad=20, font=64; const cvs=document.createElement('canvas'); const ctx=cvs.getContext('2d'); ctx.font=`700 ${font}px system-ui`; const tw=ctx.measureText(text).width; const th=font*1.4; cvs.width=Math.ceil(tw)+pad*2; cvs.height=Math.ceil(th)+pad*2; ctx.font=`700 ${font}px system-ui`; ctx.textAlign='center'; ctx.textBaseline='middle'; // arka plan (yuvarlatılmış)
+  const r=16, w=cvs.width, h=cvs.height; ctx.fillStyle='rgba(18,24,34,.9)'; ctx.beginPath(); ctx.moveTo(r,0); ctx.lineTo(w-r,0); ctx.quadraticCurveTo(w,0,w,r); ctx.lineTo(w,h-r); ctx.quadraticCurveTo(w,h,w-r,h); ctx.lineTo(r,h); ctx.quadraticCurveTo(0,h,0,h-r); ctx.lineTo(0,r); ctx.quadraticCurveTo(0,0,r,0); ctx.closePath(); ctx.fill(); ctx.strokeStyle='rgba(57,65,79,.9)'; ctx.lineWidth=2; ctx.stroke(); ctx.fillStyle=color; ctx.fillText(text,w/2,h/2); const tex=new THREE.CanvasTexture(cvs); tex.minFilter=THREE.LinearFilter; tex.magFilter=THREE.LinearFilter; tex.anisotropy=4; const aspect=w/h; const W=cm(wCm); const H=W/aspect; const geo=new THREE.PlaneGeometry(W,H); const mat=new THREE.MeshBasicMaterial({map:tex,transparent:true,depthTest:true,depthWrite:true}); return new THREE.Mesh(geo,mat); };
+const addFaceTag=(text,base,normal,color)=>{ const m=makeTextPlane(text,P.faceTagWidthCm,color); const eps=0.002; m.position.copy(base.clone().add(normal.clone().normalize().multiplyScalar(eps))); const q=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),normal.clone().normalize()); m.quaternion.copy(q); GD.add(m); return m; };
+
+function addPortsOnFace(key,fdef,diamList){ if(!diamList?.length) return; const n=fdef.n.clone().normalize(), v=fdef.v.clone().normalize(); const qCyl=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),n); const qRing=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),n); const len=cm(P.spigotLenCm), eps=0.0005; const Dm=diamList.map(d=>cm(d)); const sumDm=Dm.reduce((a,b)=>a+b,0), span=fdef.span; const g=Math.max(0,(span-sumDm)/(Dm.length+1)); if(span<sumDm) addLabel(`⚠ ${key}: ΣØ > span`, fdef.base.clone().add(n.clone().multiplyScalar(0.05)),'#f66'); let acc=0; for(let i=0;i<Dm.length;i++){ const D=Dm[i], r=Math.max(D/2,1e-5), off=-span/2+g+r+acc; acc+=D+g; const center=fdef.base.clone().add(v.clone().multiplyScalar(off)); const tube=new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,48,1,true),metalMat); tube.quaternion.copy(qCyl); tube.position.copy(center.clone().add(n.clone().multiplyScalar(len/2))); const ring=new THREE.Mesh(new THREE.RingGeometry(Math.max(r-cm(P.t),1e-5),r,48),metalMat); ring.quaternion.copy(qRing); ring.position.copy(center.clone().add(n.clone().multiplyScalar(eps))); const hole=new THREE.Mesh(new THREE.CircleGeometry(r*0.999,48),new THREE.MeshBasicMaterial({color:0x0b0e12,side:THREE.DoubleSide})); hole.quaternion.copy(qRing); hole.position.copy(center.clone().add(n.clone().multiplyScalar(eps*0.5))); GF.add(tube,ring,hole); const pA=center.clone().add(v.clone().multiplyScalar(-r)), pB=center.clone().add(v.clone().multiplyScalar(r)); dimsToDraw.push({pA,pB,off:n.clone(),text:`Ø = ${(Dm[i]*100).toFixed(1)} cm`}); } }
+const frameFitAll=()=>{ const box=new THREE.Box3().makeEmpty(); [G,GF,GD].forEach(o=>box.expandByObject(o)); const size=box.getSize(new THREE.Vector3()); const ctr=box.getCenter(new THREE.Vector3()); const md=Math.max(size.x,size.y,size.z); const dist=md/(2*Math.tan(THREE.MathUtils.degToRad(Cam.fov/2)))*1.4; const dir=new THREE.Vector3(1,0.8,1).normalize(); Cam.position.copy(ctr.clone().add(dir.multiplyScalar(dist))); Cam.near=dist/100; Cam.far=dist*100; Cam.updateProjectionMatrix(); Ctrl.target.copy(ctr); Ctrl.update(); lastCtr.copy(ctr); lastDist=dist; };
+
+let dimsToDraw=[];
+
+// ——— İnşa ———
+function build(){
+  try{
+    clear(G); clear(GF); clear(GD); document.querySelectorAll('.label').forEach(e=>e.remove()); dimsToDraw=[];
+    const W1=cm(P.W1), H1=cm(P.H1), L=cm(P.L), t=cm(P.t), lip=cm(P.flangeLip), fth=cm(P.flangeThick);
+    const n=V(1,0,0), b=V(0,1,0), tz=V(0,0,1);
+    const N=4;
+    const rectO=rectCorners(W1/2,H1/2), rectI=rectCorners(Math.max(W1/2-t,1e-5),Math.max(H1/2-t,1e-5));
+    const cx=u=>0, cy=u=>0;
+
+    // Gövde
+    const vs=[], idx=[], Rout=[], Rin=[]; for(let i=0;i<=P.steps;i++){ const u=i/P.steps, O=[], I=[]; for(let k=0;k<N;k++){ const po=rectO[k].clone(); po.x+=cx(u); po.y+=cy(u); po.z=u*L; const pi=rectI[k].clone(); pi.x+=cx(u); pi.y+=cy(u); pi.z=u*L; O.push(po); I.push(pi);} Rout.push(O); Rin.push(I);} const push=r=>{ for(const v of r){vs.push(v.x,v.y,v.z)} }; for(let i=0;i<=P.steps;i++) push(Rout[i]); const innerBase=vs.length/3; for(let i=0;i<=P.steps;i++) push(Rin[i]); const quad=(a,b,c,d)=>{idx.push(a,b,c,a,c,d)}; for(let i=0;i<P.steps;i++){ const b0=i*N, b1=(i+1)*N; for(let k=0;k<N;k++){ const a=b0+k, bI=b0+(k+1)%N, c=b1+(k+1)%N, d=b1+k; quad(a,bI,c,d); }} for(let i=0;i<P.steps;i++){ const b0=innerBase+i*N, b1=innerBase+(i+1)*N; for(let k=0;k<N;k++){ const a=b0+k, bI=b0+(k+1)%N, c=b1+(k+1)%N, d=b1+k; quad(d,c,bI,a); }} const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(vs,3)); geo.setIndex(idx); geo.computeVertexNormals(); const msh=new THREE.Mesh(geo,metalMat); G.add(msh); if(P.showEdges) G.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo,1),edgeMat)); const back=new THREE.Mesh(new THREE.PlaneGeometry(W1,H1),metalMat); back.position.set(cx(0),cy(0),0); G.add(back); if(P.showEdges) G.add(new THREE.LineSegments(new THREE.EdgesGeometry(back.geometry),edgeMat));
+
+    if(P.showFlange){ const p1=V(cx(1),cy(1),L); const F=flangeRect(W1,H1,lip,fth); const M=new THREE.Matrix4().makeBasis(n.clone(),b.clone(),tz.clone()); const Q=new THREE.Quaternion().setFromRotationMatrix(M); F.position.copy(p1.clone().add(tz.clone().multiplyScalar(fth*0.5))); F.quaternion.copy(Q); GF.add(F); }
+
+    // Manşonlar
+    const defs=faceDefs(W1,H1,L,cx,cy);
+    for(const k of ['right','left','front','back','top']){
+      const f=P.faces[k]; if(!f) continue;
+      ensureFacePorts(k,f.count||0);
+      const target=defs[k];
+      addPortsOnFace(k,target,f.ports.map(p=>Number(p.diam)||P.Phi));
+    }
+
+    // Alan
+    let Aout=0; for(let i=0;i<P.steps;i++){ const r0=Rout[i], r1=Rout[i+1]; for(let k=0;k<N;k++){ const v00=r0[k], v01=r0[(k+1)%N], v11=r1[(k+1)%N], v10=r1[k]; Aout+=triA(v00,v01,v11)+triA(v00,v11,v10); }} Aout+=W1*H1; const sheet=Aout*(P.kFactor??1), waste=sheet*(1+((P.wastePercent||0)/100));
+
+    // Dinamik flanş mesafesi: en büyük ölçünün 1/4'ü
+    { const largest = Math.max(P.W1,P.H1,P.L); P.dimPlaneOffsetCm = largest/5; if (window.__ctrlPlane && typeof window.__ctrlPlane.updateDisplay==='function') window.__ctrlPlane.updateDisplay(); }
+
+    // Ölçüler
+    if(P.showDims){ const nX=V(1,0,0), nY=V(0,1,0), nZ=V(0,0,1), p1=V(0,0,L); const xL=nX.clone().multiplyScalar(-W1/2), xR=nX.clone().multiplyScalar(W1/2), yT=nY.clone().multiplyScalar(H1/2), yB=nY.clone().multiplyScalar(-H1/2); dimLine(p1.clone().add(xL).add(yT), p1.clone().add(xR).add(yT), nY, `W1 = ${P.W1.toFixed(1)} cm`, P.colorW1); dimLine(p1.clone().add(xR).add(yB), p1.clone().add(xR).add(yT), nX, `H1 = ${P.H1.toFixed(1)} cm`, P.colorH1); dimLine(V(-W1/2,-H1/2,0), V(-W1/2,-H1/2,L), nX.clone().negate(), `L = ${P.L.toFixed(1)} cm`, P.colorL); dimsToDraw.forEach(d=>dimLine(d.pA,d.pB,d.off,d.text,P.colorPhi)); }
+
+    // Yüz etiketleri (yüzeye yapışık)
+    if(P.showSideLabels){
+      const defs2=faceDefs(W1,H1,L,cx,cy);
+      addFaceTag('SAĞ',  defs2.right.base,  defs2.right.n,  '#ff6');
+      addFaceTag('SOL',  defs2.left.base,   defs2.left.n,   '#ff6');
+      addFaceTag('ÖN',   defs2.front.base,  defs2.front.n,  '#ff6');
+      addFaceTag('ARKA', defs2.back.base,   defs2.back.n,   '#ff6');
+      addFaceTag('ÜST',  defs2.top.base,    defs2.top.n,    '#ff6');
+      addFaceTag('ALT',  defs2.bottom.base, defs2.bottom.n, '#ff6');
+    }
+
+    // Kadraj & HUD
+    if (P.keepViewOnEdit) {
+      if (!didInitialFrame) { frameFitAll(); didInitialFrame = true; }
+      lastCtr.copy(Ctrl.target);
+      lastDist = Cam.position.distanceTo(Ctrl.target);
+    } else {
+      frameFitAll();
+      didInitialFrame = true;
+    }
+    areaEl.textContent=`Dış: ${Aout.toFixed(3)} m² | k=${(P.kFactor??1).toFixed(2)} ⇒ ${sheet.toFixed(3)} m² | +%${(P.wastePercent||0).toFixed(1)} atık ⇒ ${waste.toFixed(3)} m²`;
+
+  }catch(err){ console.error('[BUILD ERROR]',err); areaEl.textContent='Hata: '+err.message; }
+}
+
+build();
+
+// ——— GUI ———
+const gui = new GUI({title:'Parametreler', container: document.getElementById('guiContainer')});
+const add=(f,o,k,min,max,step,name)=>f.add(o,k,min,max,step).name(name).onChange(build);
+const F1=gui.addFolder('Ölçüler (cm)'); [ ['W1',1,400,0.1,'W1 (genişlik) cm'], ['H1',1,400,0.1,'H1 (yükseklik) cm'], ['L',1,1000,0.1,'L (derinlik) cm'], ['Phi',1,400,0.1,'Ø varsayılan (cm)'], ['spigotLenCm',1,100,0.1,'Manşon Uzunluğu (cm)'], ['t',0.02,1,0.01,'Sac Kalınlığı t'], ['steps',8,400,1,'Boyuna Segment (steps)'] ].forEach(p=>add(F1,P,p[0],p[1],p[2],p[3],p[4]));
+function rebuildFaceInputs(key,folder){ if(folder.__portsFolder){ folder.__portsFolder.destroy(); } const f=P.faces[key]; ensureFacePorts(key,f.count||0); const sub=folder.addFolder('Çaplar'); folder.__portsFolder=sub; f.ports.forEach((obj,i)=>{ sub.add(obj,'diam',1,400,0.1).name(`${i+1}. Ø (cm)`).onChange(build); }); sub.open(); }
+function faceFolder(name,key){ const fldr=gui.addFolder(name); fldr.add(P.faces[key],'count',0,20,1).name('Adet').onChange(v=>{ ensureFacePorts(key,v); rebuildFaceInputs(key,fldr); build(); }); rebuildFaceInputs(key,fldr); return fldr; }
+let FRight=faceFolder('Sağ Yüz','right');
+let FLeft =faceFolder('Sol Yüz','left');
+let FFront=faceFolder('Ön Yüz','front');
+let FBack =faceFolder('Arka Yüz','back');
+let FTop  =faceFolder('Üst Yüz','top');
+const F2=gui.addFolder('Görünüm / Flanş'); ['showEdges','showDims','showFlange','showSideLabels'].forEach(k=>F2.add(P,k).name({showEdges:'Kenar Çizgileri',showDims:'Ölçülendirme',showFlange:'Flanşı Göster',showSideLabels:'Yüz Etiketleri'}[k]).onChange(build)); F2.add(P,'keepViewOnEdit').name('Ölçü değişince görüşü koru'); add(F2,P,'flangeLip',0.5,8,0.1,'Flanş Payı (lip) cm'); add(F2,P,'flangeThick',0.2,2,0.05,'Flanş Kalınlığı cm'); F2.add(P,'metalRough',0,1,0.01).name('Roughness').onChange(()=>{ metalMat.roughness=P.metalRough; R.render(S,Cam); }); F2.add(P,'metalness',0,1,0.01).name('Metalness').onChange(()=>{ metalMat.metalness=P.metalness; R.render(S,Cam); }); F2.add(P,'showAxis').name('Eksenleri Göster').onChange(v=>Ax.visible=v); F2.add(P,'showGrid').name('Grid Göster').onChange(v=>Grid.visible=v); F2.add(P,'dimAlwaysOnTop').name('Ölçüler hep üstte').onChange(build); F2.add(P,'dimFixedOffset').name('Flanştan sabit uzaklık').onChange(build); [ ['dimOffsetCm',0.5,5,0.1,'Ok Ucu Kısalt (cm)'], ['arrowHeadCm',1,8,0.1,'Ok Boyu (cm)'], ['arrowRadiusCm',0.5,3,0.1,'Ok Kalınlığı (cm)'], ['extLenCm',2,40,0.5,'Uzatma Uzunluğu (cm)'], ['extGapCm',0.2,5,0.1,'Parça Boşluğu (cm)'], ['labelOffsetCm',0,5,0.1,'Etiket Ofset (cm)'] ].forEach(p=>add(F2,P,p[0],p[1],p[2],p[3],p[4]));
+const ctrlPlane = F2.add(P,'dimPlaneOffsetCm',1,1000,0.5).name('Flanştan Mesafe (cm)').onChange(build);
+window.__ctrlPlane = ctrlPlane;
+const F3=gui.addFolder('Renkler'); [ ['colorW1','W1 Rengi'], ['colorH1','H1 Rengi'], ['colorL','L Rengi'], ['colorPhi','Ø Rengi'] ].forEach(p=>F3.addColor(P,p[0]).name(p[1]).onChange(build));
+const FA=gui.addFolder('Alan Hesabı'); FA.add(P,'areaIncludeFlange').name('Flanşı dahil et').onChange(build); FA.add(P,'wastePercent',0,100,1).name('% Atık/Pay').onChange(build); FA.add(P,'kFactor',0,2,0.01).name('Düzeltme Katsayısı k').onChange(build);
+
+// ——— Döngü & Olaylar ———
+addEventListener('resize',()=>{ sizeToPane(); });
+(function anim(){ requestAnimationFrame(anim); Ctrl.update(); R.render(S,Cam); LBL.render(S,Cam); })();
+
+// frameFit çağrısından sonra panel boyutu değişmiş olabilir
+const obs=new ResizeObserver(sizeToPane); obs.observe(scenePane);
+
+// frameFit fonksiyonu ilk build içinde çağrılıyor, ardından sizeToPane ile eşleştiriyoruz
+</script>
+</body>
+</html>

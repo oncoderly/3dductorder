@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<title>Parametreler - W H L Kontrolleri</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root{
+    --bg:#f6f8fb; --panel:#ffffff; --text:#111418; --muted:#d0d7de;
+    --blue:#1e5bff; --minus:#ff6b6b; --plus:#2ecc71;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
+  body{font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;padding:16px}
+
+  .container{
+    max-width:500px;margin:0 auto;
+    background:var(--panel);border:1px solid var(--muted);
+    border-radius:12px;padding:20px;
+  }
+
+  .param-group{
+    margin-bottom:20px;
+    background:#f8fafc;border-radius:8px;padding:16px;
+    border:1px solid #e2e8f0;
+  }
+  .param-group:last-child{margin-bottom:0}
+
+  .param-label{
+    font-weight:600;color:#1f2328;margin-bottom:12px;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .param-value{
+    background:var(--blue);color:white;
+    padding:4px 8px;border-radius:4px;font-size:12px;
+    min-width:60px;text-align:center;font-weight:700;
+  }
+
+  .param-controls{
+    display:flex;align-items:center;gap:8px;
+  }
+  .param-btn{
+    width:40px;height:40px;border:none;border-radius:8px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px;font-weight:700;cursor:pointer;
+    transition:all 0.2s;
+  }
+  .param-btn.minus{background:var(--minus);color:white}
+  .param-btn.plus{background:var(--plus);color:white}
+  .param-btn:hover{transform:scale(1.05);filter:brightness(1.1)}
+
+  .param-slider{
+    flex:1;margin:0 8px;height:8px;border-radius:4px;
+    background:#e2e8f0;outline:none;cursor:pointer;
+    -webkit-appearance:none;appearance:none;
+  }
+  .param-slider::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;
+    width:20px;height:20px;border-radius:50%;
+    background:var(--blue);cursor:pointer;
+    box-shadow:0 2px 4px rgba(0,0,0,0.2);
+  }
+  .param-slider::-moz-range-thumb{
+    width:20px;height:20px;border-radius:50%;
+    background:var(--blue);cursor:pointer;border:none;
+    box-shadow:0 2px 4px rgba(0,0,0,0.2);
+  }
+
+  .param-input{
+    width:80px;text-align:center;padding:8px;
+    border:1px solid var(--muted);border-radius:6px;
+    background:white;font-size:14px;font-weight:600;
+  }
+  .param-unit{
+    color:var(--muted);font-size:12px;font-weight:600;
+    min-width:30px;text-align:center;
+  }
+
+  @media (max-width:480px){
+    body{padding:12px}
+    .container{padding:16px}
+    .param-group{padding:12px}
+    .param-controls{gap:6px}
+    .param-btn{width:36px;height:36px;font-size:16px}
+    .param-input{width:70px;font-size:13px}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- W1 Parametresi -->
+  <div class="param-group">
+    <div class="param-label">
+      <span>W1: Genişlik</span>
+      <span class="param-value" id="w-value">25</span>
+    </div>
+    <div class="param-controls">
+      <button class="param-btn minus" data-param="w" data-action="minus">−</button>
+      <input type="range" class="param-slider" id="w-slider" min="10" max="200" value="25" />
+      <button class="param-btn plus" data-param="w" data-action="plus">+</button>
+      <input type="number" class="param-input" id="w-input" min="10" max="200" value="25" />
+      <span class="param-unit">cm</span>
+    </div>
+  </div>
+
+  <!-- H1 Parametresi -->
+  <div class="param-group">
+    <div class="param-label">
+      <span>H1: Yükseklik</span>
+      <span class="param-value" id="h-value">30</span>
+    </div>
+    <div class="param-controls">
+      <button class="param-btn minus" data-param="h" data-action="minus">−</button>
+      <input type="range" class="param-slider" id="h-slider" min="10" max="200" value="30" />
+      <button class="param-btn plus" data-param="h" data-action="plus">+</button>
+      <input type="number" class="param-input" id="h-input" min="10" max="200" value="30" />
+      <span class="param-unit">cm</span>
+    </div>
+  </div>
+
+  <!-- L Parametresi -->
+  <div class="param-group">
+    <div class="param-label">
+      <span>L: Uzunluk</span>
+      <span class="param-value" id="l-value">120</span>
+    </div>
+    <div class="param-controls">
+      <button class="param-btn minus" data-param="l" data-action="minus">−</button>
+      <input type="range" class="param-slider" id="l-slider" min="30" max="600" value="120" />
+      <button class="param-btn plus" data-param="l" data-action="plus">+</button>
+      <input type="number" class="param-input" id="l-input" min="30" max="600" value="120" />
+      <span class="param-unit">cm</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// Parametreler
+let params = { w: 25, h: 30, l: 120 };
+
+// Element referansları
+const elements = {
+  w: {
+    value: document.getElementById('w-value'),
+    slider: document.getElementById('w-slider'),
+    input: document.getElementById('w-input')
+  },
+  h: {
+    value: document.getElementById('h-value'),
+    slider: document.getElementById('h-slider'),
+    input: document.getElementById('h-input')
+  },
+  l: {
+    value: document.getElementById('l-value'),
+    slider: document.getElementById('l-slider'),
+    input: document.getElementById('l-input')
+  }
+};
+
+// Parametre güncelleme
+function updateParam(param, value) {
+  value = Math.max(param === 'l' ? 30 : 10, Math.min(param === 'l' ? 600 : 200, value));
+  params[param] = value;
+  
+  // UI güncelle
+  elements[param].value.textContent = value;
+  elements[param].slider.value = value;
+  elements[param].input.value = value;
+  
+  // Parent'a bildir
+  notifyParent();
+  
+  // 3D sahneye bildir
+  try {
+    parent.postMessage({
+      type: 'update-dimensions',
+      w: params.w,
+      h: params.h,
+      l: params.l
+    }, '*');
+  } catch(e) { /* ignore */ }
+}
+
+// Parent'a değerleri gönder
+function notifyParent() {
+  try {
+    parent.postMessage({
+      type: 'dimensions-update',
+      dimensions: {
+        w: params.w,
+        h: params.h,
+        l: params.l
+      },
+      area: calculateArea()
+    }, '*');
+  } catch(e) { /* ignore */ }
+}
+
+// Alan hesapla (basit)
+function calculateArea() {
+  const w = params.w / 100; // cm to m
+  const h = params.h / 100;
+  const l = params.l / 100;
+  
+  // Dış yüzey alanı (6 yüz)
+  const outerArea = 2 * (w*l + w*h + h*l);
+  
+  return {
+    outer: outerArea.toFixed(3) + ' m²',
+    inner: 'N/A',
+    waste: '+0.0%'
+  };
+}
+
+// Event listeners
+document.addEventListener('click', (e) => {
+  if (!e.target.classList.contains('param-btn')) return;
+  
+  const param = e.target.getAttribute('data-param');
+  const action = e.target.getAttribute('data-action');
+  const step = param === 'l' ? 10 : 5;
+  
+  if (action === 'plus') {
+    updateParam(param, params[param] + step);
+  } else if (action === 'minus') {
+    updateParam(param, params[param] - step);
+  }
+});
+
+// Slider değişimleri
+Object.keys(elements).forEach(param => {
+  elements[param].slider.addEventListener('input', (e) => {
+    updateParam(param, parseInt(e.target.value));
+  });
+  
+  elements[param].input.addEventListener('change', (e) => {
+    updateParam(param, parseInt(e.target.value));
+  });
+});
+
+// İlk değerleri gönder
+setTimeout(notifyParent, 100);
+
+// Parent'a hazır olduğunu bildir
+try {
+  parent.postMessage({type: 'params-ready'}, '*');
+} catch(e) { /* ignore */ }
+</script>
+</body>
+</html>

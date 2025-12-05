@@ -9,6 +9,7 @@ import { KaredenYuvarlaga } from './components/KaredenYuvarlaga.js';
 import { Reduksiyon } from './components/Reduksiyon.js';
 import { ParameterPanel } from './ui/ParameterPanel.js';
 import { ViewControls } from './ui/ViewControls.js';
+import { DimensionPopup } from './ui/DimensionPopup.js';
 import { getAllParts } from './config/parts-config.js';
 
 class App {
@@ -18,6 +19,7 @@ class App {
     this.materials = null;
     this.paramPanel = null;
     this.viewControls = null;
+    this.dimensionPopup = null;
 
     this.init();
   }
@@ -33,6 +35,13 @@ class App {
     // Scene ve Materials oluştur
     this.scene = new Scene3D(canvas);
     this.materials = new Materials();
+
+    // Dimension Popup oluştur (canvas wrapper'ı kullan)
+    const viewerContainer = document.querySelector('.canvas-wrapper') || document.body;
+    this.dimensionPopup = new DimensionPopup(viewerContainer, () => {
+      this.updateHUD();
+    });
+    this.scene.dimensionPopup = this.dimensionPopup;
 
     // UI elementlerini hazırla
     this.setupPartSelector();
@@ -172,6 +181,9 @@ class App {
         console.error('Bilinmeyen parça:', partKey);
         return;
     }
+
+    // Scene'e current part referansını ekle (popup için)
+    this.scene.currentPart = this.currentPart;
 
     // Parçayı oluştur
     this.currentPart.rebuild();

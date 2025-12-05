@@ -1,0 +1,244 @@
+/* Dimension Popup - Mobil Dokunmatik Ölçü Düzenleme */
+
+/* Popup Container */
+.dimension-popup {
+  position: fixed;
+  z-index: 9999;
+  background: linear-gradient(135deg, #2c2c3e 0%, #1a1a2e 100%);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  min-width: 320px;
+  max-width: 90vw;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.dimension-popup.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Header - Parametre Adı */
+.dimension-popup-header {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Controls Container */
+.dimension-popup-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Sol İkon (Mavi Daire) */
+.dimension-popup-icon {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.4);
+}
+
+/* -5 ve +5 Butonları */
+.dimension-popup-btn {
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dimension-popup-btn:active {
+  transform: scale(0.95);
+}
+
+/* -5 Butonu (Kırmızı) */
+.dimension-popup-btn.minus {
+  background: linear-gradient(135deg, #ff4757 0%, #e84118 100%);
+  color: white;
+}
+
+.dimension-popup-btn.minus:hover {
+  background: linear-gradient(135deg, #ff6348 0%, #ff4757 100%);
+  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.5);
+}
+
+/* +5 Butonu (Yeşil) */
+.dimension-popup-btn.plus {
+  background: linear-gradient(135deg, #00d2ff 0%, #00c853 100%);
+  color: white;
+}
+
+.dimension-popup-btn.plus:hover {
+  background: linear-gradient(135deg, #00e676 0%, #00d2ff 100%);
+  box-shadow: 0 4px 12px rgba(0, 200, 83, 0.5);
+}
+
+/* Slider */
+.dimension-popup-slider {
+  flex: 1;
+  height: 8px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(90deg, #3a3a4e 0%, #4a4a5e 100%);
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+  min-width: 100px;
+}
+
+.dimension-popup-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.5);
+  transition: all 0.2s ease;
+}
+
+.dimension-popup-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.7);
+}
+
+.dimension-popup-slider::-webkit-slider-thumb:active {
+  transform: scale(1.05);
+}
+
+.dimension-popup-slider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.5);
+  transition: all 0.2s ease;
+}
+
+.dimension-popup-slider::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.7);
+}
+
+/* Değer Display (Beyaz Kutu) */
+.dimension-popup-value {
+  min-width: 50px;
+  height: 48px;
+  background: #ffffff;
+  color: #1a1a2e;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Birim (cm) */
+.dimension-popup-unit {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+/* Mobil Optimizasyon */
+@media (max-width: 768px) {
+  .dimension-popup {
+    min-width: 280px;
+    padding: 12px;
+  }
+
+  .dimension-popup-controls {
+    gap: 6px;
+  }
+
+  .dimension-popup-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  .dimension-popup-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 14px;
+  }
+
+  .dimension-popup-value {
+    min-width: 45px;
+    height: 44px;
+    font-size: 16px;
+  }
+
+  .dimension-popup-slider {
+    min-width: 80px;
+  }
+}
+
+/* Küçük mobil cihazlar */
+@media (max-width: 480px) {
+  .dimension-popup {
+    min-width: 260px;
+    padding: 10px;
+  }
+
+  .dimension-popup-controls {
+    gap: 4px;
+  }
+
+  .dimension-popup-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+
+  .dimension-popup-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 13px;
+  }
+
+  .dimension-popup-value {
+    min-width: 40px;
+    height: 40px;
+    font-size: 15px;
+  }
+}
+
+/* Animasyonlar */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

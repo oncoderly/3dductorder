@@ -412,7 +412,8 @@ export class KaredenYuvarlaga extends BasePart {
       p0.clone().add(x0R).add(y0T),
       b,
       `W1 = ${this.params.W1.toFixed(1)} cm`,
-      this.params.colorW1
+      this.params.colorW1,
+      'W1'
     );
 
     this.createDimensionLine(
@@ -420,7 +421,8 @@ export class KaredenYuvarlaga extends BasePart {
       p0.clone().add(x0R).add(y0T),
       n,
       `H1 = ${this.params.H1.toFixed(1)} cm`,
-      this.params.colorH1
+      this.params.colorH1,
+      'H1'
     );
 
     // Daire çapı
@@ -432,7 +434,8 @@ export class KaredenYuvarlaga extends BasePart {
       p1.clone().add(xR),
       b,
       `Ø = ${this.params.Phi.toFixed(1)} cm`,
-      this.params.colorPhi
+      this.params.colorPhi,
+      'Phi'
     );
 
     // L ölçüsü
@@ -448,7 +451,8 @@ export class KaredenYuvarlaga extends BasePart {
       new THREE.Vector3(xr, yr, L / 2),
       n.clone().negate(),
       `L = ${this.params.L.toFixed(1)} cm`,
-      this.params.colorL
+      this.params.colorL,
+      'L'
     );
 
     // Yüz etiketleri

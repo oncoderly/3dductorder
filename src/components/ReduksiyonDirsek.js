@@ -285,10 +285,10 @@ export class ReduksiyonDirsek extends BasePart {
     const p0_LT = p0.clone().add(n0.clone().multiplyScalar(-W2m / 2)).add(b0.clone().multiplyScalar(H2m / 2));
 
     // W2: alt kenar boyunca, uzatma aşağı
-    this.createDimensionLine(p0_LB, p0_RB, b0.clone().negate(), `W2 = ${this.params.W2.toFixed(1)} cm`, this.params.colorW2);
+    this.createDimensionLine(p0_LB, p0_RB, b0.clone().negate(), `W2 = ${this.params.W2.toFixed(1)} cm`, this.params.colorW2, 'W2');
 
     // H2: sol kenar boyunca, uzatma sola
-    this.createDimensionLine(p0_LB, p0_LT, n0.clone().negate(), `H2 = ${this.params.H2.toFixed(1)} cm`, this.params.colorH2);
+    this.createDimensionLine(p0_LB, p0_LT, n0.clone().negate(), `H2 = ${this.params.H2.toFixed(1)} cm`, this.params.colorH2, 'H2');
 
     // Bitiş ağız W1, H1 ölçüleri
     const p1_LB = p1.clone().add(n1.clone().multiplyScalar(-W1m / 2)).add(b1.clone().multiplyScalar(-H1m / 2));
@@ -296,10 +296,10 @@ export class ReduksiyonDirsek extends BasePart {
     const p1_LT = p1.clone().add(n1.clone().multiplyScalar(-W1m / 2)).add(b1.clone().multiplyScalar(H1m / 2));
 
     // W1: alt kenar boyunca, uzatma aşağı
-    this.createDimensionLine(p1_LB, p1_RB, b1.clone().negate(), `W1 = ${this.params.W1.toFixed(1)} cm`, this.params.colorW1);
+    this.createDimensionLine(p1_LB, p1_RB, b1.clone().negate(), `W1 = ${this.params.W1.toFixed(1)} cm`, this.params.colorW1, 'W1');
 
     // H1: sol kenar boyunca, uzatma sola
-    this.createDimensionLine(p1_LB, p1_LT, n1.clone().negate(), `H1 = ${this.params.H1.toFixed(1)} cm`, this.params.colorH1);
+    this.createDimensionLine(p1_LB, p1_LT, n1.clone().negate(), `H1 = ${this.params.H1.toFixed(1)} cm`, this.params.colorH1, 'H1');
 
     // R(iç) yarıçapı gösterimi (merkezde)
     const center = new THREE.Vector3(0 - centerX, 0, 0 - centerZ);

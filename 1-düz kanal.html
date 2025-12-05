@@ -1,0 +1,121 @@
+<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"/>
+<title>Three.js – Düz Kanal (W1,H1,L) • Çift Flanş</title>
+<link rel="stylesheet" href="./css/3d-viewer.css">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"}}</script>
+</head><body>
+<div class="main-container">
+  <!-- Üst Kısım: 3D Sahne -->
+  <div class="scene-container">
+    <div style="position:absolute;top:10px;left:10px;z-index:100;background:rgba(0,0,0,0.6);padding:8px 12px;border-radius:8px;display:flex;align-items:center;gap:10px;">
+      <a href="/" style="display:flex;align-items:center;">
+        <img src="/logo23dductorder.png" alt="3D Duct Order Logo" style="height:30px;width:auto;">
+      </a>
+      <span style="color:white;font-weight:600;font-size:14px;">Düz Kanal</span>
+    </div>
+    <div id="hud">Sol tık: döndür • Sağ tık: kaydır • Tekerlek: zoom</div>
+    <canvas id="c"></canvas>
+    <div id="viewbar">
+      <button class="vbtn" data-v="Right">Right</button>
+      <button class="vbtn" data-v="Left">Left</button>
+      <button class="vbtn" data-v="Front">Front</button>
+      <button class="vbtn" data-v="Back">Back</button>
+      <button class="vbtn" data-v="Top">Top</button>
+      <button class="vbtn" data-v="SW Iso">SW Iso</button>
+      <button class="vbtn" data-v="NE Iso">NE Iso</button>
+    </div>
+  </div>
+
+  <!-- Alt Kısım: GUI Kontrolleri -->
+  <div class="controls-container">
+    <div class="gui-container">
+      <div class="gui-grid">
+        
+
+        <!-- Görünüm/Flanş Bölümü -->
+        <div class="gui-section">
+          <h3>Görünüm / Flanş</h3>
+          
+          <div class="gui-row">
+            <input type="checkbox" class="gui-checkbox" id="show-edges" checked>
+            <label for="show-edges">Kenar Çizgileri</label>
+          </div>
+          
+          <div class="gui-row">
+            <input type="checkbox" class="gui-checkbox" id="show-dims" checked>
+            <label for="show-dims">Ölçülendirme</label>
+          </div>
+          
+          <div class="gui-row">
+            <input type="checkbox" class="gui-checkbox" id="show-flange" checked>
+            <label for="show-flange">Çift Flanş</label>
+          </div>
+          
+          <div class="gui-row">
+            <input type="checkbox" class="gui-checkbox" id="keep-view" checked>
+            <label for="keep-view">Görüşü Koru</label>
+          </div>
+
+          <div class="gui-control">
+            <div class="gui-row">
+              <label>Flanş Payı (cm)</label>
+              <span class="gui-value" id="flange-lip-display">3.0</span>
+            </div>
+            <input type="range" class="gui-range" id="flange-lip-range" min="0.5" max="8" step="0.1" value="3">
+          </div>
+
+          <div class="gui-control">
+            <div class="gui-row">
+              <label>Flanş Kalınlığı (cm)</label>
+              <span class="gui-value" id="flange-thick-display">0.6</span>
+            </div>
+            <input type="range" class="gui-range" id="flange-thick-range" min="0.2" max="2" step="0.05" value="0.6">
+          </div>
+
+          <div class="gui-control">
+            <div class="gui-row">
+              <label>Pürüzlülük</label>
+              <span class="gui-value" id="metal-rough-display">0.35</span>
+            </div>
+            <input type="range" class="gui-range" id="metal-rough-range" min="0" max="1" step="0.01" value="0.35">
+          </div>
+
+          <div class="gui-control">
+            <div class="gui-row">
+              <label>Metallik</label>
+              <span class="gui-value" id="metalness-display">0.85</span>
+            </div>
+            <input type="range" class="gui-range" id="metalness-range" min="0" max="1" step="0.01" value="0.85">
+          </div>
+        </div>
+
+        <!-- Renkler Bölümü -->
+        <div class="gui-section">
+          <h3>Renkler</h3>
+          
+          <div class="gui-row">
+            <label>W1 Rengi</label>
+            <input type="color" class="gui-color" id="color-w1" value="#207aff">
+          </div>
+          
+          <div class="gui-row">
+            <label>H1 Rengi</label>
+            <input type="color" class="gui-color" id="color-h1" value="#ff2d2d">
+          </div>
+          
+          <div class="gui-row">
+            <label>L Rengi</label>
+            <input type="color" class="gui-color" id="color-l" value="#00bcd4">
+          </div>
+        </div>
+
+
+      </div>
+    </div>
+  </div>
+</div>
+<script type="module">
+import { init } from './js/duz-kanal.js';
+init();
+</script>
+<script src="./js/child-bridge.js"></script>
+</body></html>

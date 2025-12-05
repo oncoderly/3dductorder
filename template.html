@@ -1,0 +1,180 @@
+<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"/>
+<title>Three.js – Yeni Parça Template</title>
+<link rel="stylesheet" href="./css/3d-viewer.css">
+<style>
+/* Template-specific overrides */
+.logo-header{position:absolute;top:10px;left:10px;z-index:100;background:rgba(0,0,0,0.5);padding:8px 12px;border-radius:8px;display:flex;align-items:center;gap:10px;}
+.logo-header img{height:30px;width:auto;}
+.logo-header span{color:white;font-weight:600;font-size:14px;}
+.controls-container{height:200px !important;}
+@media (max-width: 768px) {
+  .controls-container{height:250px !important;}
+}
+@media (max-width: 480px) {
+  .controls-container{height:300px !important;}
+}
+.gui-container{padding:15px;}
+.gui-section{margin-bottom:20px;padding:15px;border-radius:8px;}
+.gui-section h3{margin:0 0 15px 0;font-size:14px;padding-bottom:8px;}
+.gui-grid{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;}
+.gui-control{margin-bottom:12px;}
+.gui-row{margin-bottom:8px;gap:10px;}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"}}</script>
+</head><body>
+<div class="main-container">
+  <!-- Üst Kısım: 3D Sahne -->
+  <div class="scene-container">
+    <div class="logo-header">
+      <a href="/" style="display:flex;align-items:center;">
+        <img src="/logo23dductorder.png" alt="3D Duct Order Logo">
+      </a>
+      <span>3D Duct Order</span>
+    </div>
+    <div id="hud">Sol tık: döndür • Sağ tık: kaydır • Tekerlek: zoom</div>
+    <canvas id="c"></canvas>
+    <div id="viewbar">
+      <button class="vbtn" data-v="Right">Right</button>
+      <button class="vbtn" data-v="Left">Left</button>
+      <button class="vbtn" data-v="Front">Front</button>
+      <button class="vbtn" data-v="Back">Back</button>
+      <button class="vbtn" data-v="Top">Top</button>
+      <button class="vbtn" data-v="SW Iso">SW Iso</button>
+      <button class="vbtn" data-v="NE Iso">NE Iso</button>
+    </div>
+  </div>
+
+  <!-- Alt Kısım: GUI Kontrolleri -->
+  <div class="controls-container">
+    <div class="gui-container">
+      <div class="gui-grid">
+        
+        <!-- Görünüm/Flanş Bölümü -->
+        <div class="gui-section">
+          <h3>Parça Parametreleri</h3>
+          
+          <!-- BURAYA YENİ PARÇA İÇİN ÖZEL KONTROLLER EKLEYİN -->
+          
+          <div class="gui-row">
+            <input type="checkbox" class="gui-checkbox" id="show-edges" checked>
+            <label for="show-edges">Kenar Çizgileri</label>
+          </div>
+          
+          <div class="gui-row">
+            <input type="checkbox" class="gui-checkbox" id="show-dims" checked>
+            <label for="show-dims">Ölçülendirme</label>
+          </div>
+          
+        </div>
+
+        <!-- Renkler Bölümü -->
+        <div class="gui-section">
+          <h3>Renkler</h3>
+          
+          <div class="gui-row">
+            <label>Renk</label>
+            <input type="color" class="gui-color" id="main-color" value="#207aff">
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// === Temel kurulum ===
+const C=document.getElementById('c');
+const R=new THREE.WebGLRenderer({canvas:C,antialias:true,alpha:true});
+R.setSize(innerWidth,innerHeight); R.setPixelRatio(Math.min(2,devicePixelRatio));
+const S=new THREE.Scene();
+const Cam=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,0.01,1e4);
+Cam.position.set(3.2,1.9,3.2); S.add(Cam);
+S.add(new THREE.HemisphereLight(0xffffff,0x101018,0.9));
+const DL=new THREE.DirectionalLight(0xffffff,0.7); DL.position.set(3,5,4); S.add(DL);
+const Ctrl=new OrbitControls(Cam,R.domElement); Ctrl.enableDamping=true;
+const Grid=new THREE.GridHelper(10,20,0x2a2e35,0x1a1d23); S.add(Grid);
+const Ax=new THREE.AxesHelper(1); S.add(Ax);
+
+// === Parametreler (YENİ PARÇA İÇİN DÜZENLEYİN) ===
+const P = { 
+  showEdges: true, 
+  showDims: true,
+  mainColor: '#207aff'
+};
+
+// === View Controls ===
+const hud=document.getElementById('hud');
+const viewbar=document.getElementById('viewbar');
+let lastCtr=new THREE.Vector3(); let lastDist=3; let didInitialFrame=false;
+const views={ 'Right':new THREE.Vector3(1,0,0),'Left':new THREE.Vector3(-1,0,0),'Front':new THREE.Vector3(0,0,1),'Back':new THREE.Vector3(0,0,-1),'Top':new THREE.Vector3(0,1,0),'SW Iso':new THREE.Vector3(-1,1,-1),'NE Iso':new THREE.Vector3(1,1,1)};
+function setView(dir){ const v=dir.clone().normalize().multiplyScalar(lastDist); Cam.position.copy(lastCtr.clone().add(v)); Cam.near=lastDist/100; Cam.far=lastDist*100; Cam.updateProjectionMatrix(); Ctrl.target.copy(lastCtr); Ctrl.update(); }
+viewbar?.querySelectorAll('.vbtn').forEach(b=>b.addEventListener('click',()=>{ const v=views[b.dataset.v]; if(v) setView(v); }));
+
+// === 3D İçerik (YENİ PARÇA İÇİN DÜZENLEYİN) ===
+function build(){
+  // Temizle
+  while(S.children.length > 4) S.remove(S.children[4]); // Temel ışık/kamera/grid dışındakini sil
+  
+  // Örnek geometri - değiştirin
+  const geometry = new THREE.BoxGeometry(1, 1, 1);
+  const material = new THREE.MeshPhysicalMaterial({color: P.mainColor});
+  const mesh = new THREE.Mesh(geometry, material);
+  S.add(mesh);
+  
+  // Kadraj ayarla
+  if (!didInitialFrame) {
+    frameFit();
+    didInitialFrame = true;
+  }
+}
+
+function frameFit(){
+  const box = new THREE.Box3().setFromObject(S);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  const maxDim = Math.max(size.x, size.y, size.z);
+  const distance = maxDim / (2 * Math.tan(THREE.MathUtils.degToRad(Cam.fov / 2))) * 1.4;
+  const direction = new THREE.Vector3(1, 0.8, 1).normalize();
+  Cam.position.copy(center.clone().add(direction.multiplyScalar(distance)));
+  Ctrl.target.copy(center);
+  Ctrl.update();
+  lastCtr.copy(center);
+  lastDist = distance;
+}
+
+// === Event Listeners ===
+function setupGUI() {
+  // Checkbox controls
+  document.getElementById('show-edges')?.addEventListener('change', (e) => {
+    P.showEdges = e.target.checked;
+    build();
+  });
+
+  document.getElementById('show-dims')?.addEventListener('change', (e) => {
+    P.showDims = e.target.checked;
+    build();
+  });
+
+  // Color control
+  document.getElementById('main-color')?.addEventListener('change', (e) => {
+    P.mainColor = e.target.value;
+    build();
+  });
+}
+
+// === Başlat ===
+setupGUI();
+build();
+
+// === Render Loop ===
+addEventListener('resize',()=>{ Cam.aspect=innerWidth/innerHeight; Cam.updateProjectionMatrix(); R.setSize(innerWidth,innerHeight); });
+(function anim(){ requestAnimationFrame(anim); Ctrl.update(); R.render(S,Cam); })();
+
+// === Parent Communication ===
+window.P = P; // Export parameters
+</script>
+<script src="./js/child-bridge.js"></script>
+</body></html>

@@ -14,6 +14,10 @@ export class Scene3D {
       backgroundColor: 0xf5f5f5
     };
 
+    // Dimension popup referansı (dışarıdan set edilecek)
+    this.dimensionPopup = null;
+    this.currentPart = null;
+
     this.setupRenderer();
     this.setupScene();
     this.setupCamera();
@@ -298,11 +302,46 @@ export class Scene3D {
   }
 
   // Label Management
-  addLabel(text, position, color = null) {
+  addLabel(text, position, color = null, paramData = null) {
     const div = document.createElement('div');
     div.className = 'label';
     div.textContent = text;
     if (color) div.style.color = color;
+
+    // Debug log
+    if (paramData) {
+      console.log('📍 Label created:', text, 'paramData:', paramData, 'popup:', !!this.dimensionPopup, 'part:', !!this.currentPart);
+    }
+
+    // Eğer paramData varsa (dimension label), tıklanabilir yap
+    if (paramData && this.dimensionPopup && this.currentPart) {
+      div.style.cursor = 'pointer';
+      div.style.userSelect = 'none';
+      div.style.touchAction = 'manipulation';
+      div.classList.add('dimension-label');
+
+      // Click event (desktop ve mobil)
+      div.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.dimensionPopup.show(paramData, this.currentPart, e);
+      });
+
+      // Touch event (mobil için özel)
+      div.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Touch pozisyonunu clientX/Y'ye çevir
+        const touch = e.changedTouches[0];
+        const fakeEvent = {
+          clientX: touch.clientX,
+          clientY: touch.clientY
+        };
+
+        this.dimensionPopup.show(paramData, this.currentPart, fakeEvent);
+      });
+    }
 
     const label = new CSS2DObject(div);
     label.position.copy(position);

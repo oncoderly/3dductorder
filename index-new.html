@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>3D Kanal Sipariş Sistemi</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      width: 100%;
+    }
+
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 40px;
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .logo-link {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+    }
+
+    .app-logo {
+      height: 80px;
+      width: auto;
+      transition: transform 0.3s ease;
+    }
+
+    .app-logo:hover {
+      transform: scale(1.05);
+    }
+
+    .header h1 {
+      font-size: 42px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+
+    .header p {
+      font-size: 18px;
+      opacity: 0.9;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      transition: transform 0.3s, box-shadow 0.3s;
+      cursor: pointer;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+    }
+
+    .card-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 12px;
+    }
+
+    .card-desc {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .card-btn {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: opacity 0.3s;
+    }
+
+    .card-btn:hover {
+      opacity: 0.9;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #4ade80;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .badge.old {
+      background: #94a3b8;
+    }
+
+    .features {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .features h2 {
+      font-size: 28px;
+      color: #333;
+      margin-bottom: 24px;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+
+    .feature {
+      display: flex;
+      align-items: start;
+      gap: 12px;
+    }
+
+    .feature-icon {
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    .feature-text {
+      flex: 1;
+    }
+
+    .feature-title {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .feature-desc {
+      font-size: 13px;
+      color: #666;
+    }
+
+    @media (max-width: 768px) {
+      .header h1 {
+        font-size: 32px;
+      }
+
+      .header p {
+        font-size: 16px;
+      }
+
+      .cards {
+        grid-template-columns: 1fr;
+      }
+
+      .feature-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-content">
+        <a href="/" class="logo-link">
+          <img src="/logo23dductorder.png" alt="3D Duct Order Logo" class="app-logo">
+        </a>
+        <div>
+          <h1>3D Kanal Sipariş Sistemi</h1>
+          <p>Modern, mobil-uyumlu hava kanalı tasarım platformu</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="cards">
+      <!-- Yeni Sistem -->
+      <div class="card" onclick="window.location.href='viewer.html'">
+        <span class="badge">YENİ</span>
+        <div class="card-icon">🚀</div>
+        <h2 class="card-title">Modüler Viewer</h2>
+        <p class="card-desc">
+          Yeni modüler mimarili, mobil-uyumlu 3D görüntüleyici.
+          Tüm parçalar standart arayüzle, kolay parametre ayarları.
+        </p>
+        <a href="viewer.html" class="card-btn">Viewer'ı Aç →</a>
+      </div>
+
+      <!-- Sipariş Sistemi -->
+      <div class="card" onclick="window.location.href='index.html'">
+        <span class="badge">AKTİF</span>
+        <div class="card-icon">📋</div>
+        <h2 class="card-title">Sipariş Sistemi</h2>
+        <p class="card-desc">
+          Tam entegre sipariş yönetim sistemi.
+          Parça seç, boyutlandır, sipariş listesine ekle, PDF olarak indir.
+        </p>
+        <a href="index.html" class="card-btn">Sistemi Aç →</a>
+      </div>
+
+      <!-- Eski Parçalar -->
+      <div class="card" onclick="window.location.href='1-düz kanal.html'">
+        <span class="badge old">ESKİ</span>
+        <div class="card-icon">📦</div>
+        <h2 class="card-title">Tekil Parçalar</h2>
+        <p class="card-desc">
+          Eski sistem - Her parça için ayrı HTML sayfası.
+          Referans ve test amaçlı korunmuştur.
+        </p>
+        <a href="1-düz kanal.html" class="card-btn">Parçalara Git →</a>
+      </div>
+    </div>
+
+    <div class="features">
+      <h2>✨ Yeni Sistem Özellikleri</h2>
+      <div class="feature-grid">
+        <div class="feature">
+          <div class="feature-icon">📱</div>
+          <div class="feature-text">
+            <div class="feature-title">Mobil Uyumlu</div>
+            <div class="feature-desc">Telefon, tablet ve desktop'ta mükemmel deneyim</div>
+          </div>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">🎨</div>
+          <div class="feature-text">
+            <div class="feature-title">Standart Arayüz</div>
+            <div class="feature-desc">Tüm parçalarda tutarlı kullanıcı deneyimi</div>
+          </div>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">⚡</div>
+          <div class="feature-text">
+            <div class="feature-title">Hızlı & Performanslı</div>
+            <div class="feature-desc">Optimize edilmiş 3D render ve hesaplamalar</div>
+          </div>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">🔧</div>
+          <div class="feature-text">
+            <div class="feature-title">Modüler Mimari</div>
+            <div class="feature-desc">Yeni parça eklemek çok kolay</div>
+          </div>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">📊</div>
+          <div class="feature-text">
+            <div class="feature-title">Otomatik Hesaplama</div>
+            <div class="feature-desc">Alan, atık ve malzeme hesabı</div>
+          </div>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">💾</div>
+          <div class="feature-text">
+            <div class="feature-title">Export/Import</div>
+            <div class="feature-desc">Tasarımları kaydet ve paylaş</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

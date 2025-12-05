@@ -127,7 +127,7 @@ export class BasePart {
   }
 
   // Ortak ölçülendirme fonksiyonları
-  createDimensionLine(p1, p2, offsetDir, label, color) {
+  createDimensionLine(p1, p2, offsetDir, label, color, paramKey = null) {
     const n = offsetDir.clone().normalize();
     const gap = BasePart.cm(this.params.extGapCm);
     const targetOff = this.params.dimFixedOffset
@@ -158,7 +158,37 @@ export class BasePart {
 
     const mid = a1.clone().add(a2).multiplyScalar(0.5)
       .add(n.clone().multiplyScalar(BasePart.cm(this.params.labelOffsetCm)));
-    return this.scene.addLabel(label, mid, color);
+
+    // ParamKey varsa, parametre tanımını bul ve popup data oluştur
+    let paramData = null;
+    if (paramKey) {
+      const definitions = this.getParameterDefinitions();
+      let allParams = [];
+
+      // Eski yapı (dimensions, material, view)
+      if (definitions.dimensions || definitions.material || definitions.view) {
+        allParams = [
+          ...(definitions.dimensions || []),
+          ...(definitions.material || []),
+          ...(definitions.view || [])
+        ];
+      }
+      // Yeni yapı (groups)
+      else if (definitions.groups) {
+        definitions.groups.forEach(group => {
+          if (group.params) {
+            allParams.push(...group.params);
+          }
+        });
+      }
+
+      const paramDef = allParams.find(p => p.key === paramKey);
+      if (paramDef) {
+        paramData = paramDef;
+      }
+    }
+
+    return this.scene.addLabel(label, mid, color, paramData);
   }
 
   createArrow(p1, p2, color, head, rad) {

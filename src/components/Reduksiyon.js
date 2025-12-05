@@ -374,7 +374,7 @@ export class Reduksiyon extends BasePart {
   }
 
   // Override createDimensionLine to use rotatedDimensionGroup
-  createDimensionLine(p1, p2, offsetDir, label, color) {
+  createDimensionLine(p1, p2, offsetDir, label, color, paramKey) {
     const n = offsetDir.clone().normalize();
     const gap = BasePart.cm(this.params.extGapCm);
     const targetOff = this.params.dimFixedOffset
@@ -409,7 +409,22 @@ export class Reduksiyon extends BasePart {
     const midRotated = a1.clone().add(a2).multiplyScalar(0.5).add(n.clone().multiplyScalar(BasePart.cm(this.params.labelOffsetCm)));
     const midWorld = new THREE.Vector3(midRotated.z, midRotated.y, -midRotated.x);
 
-    return this.scene.addLabel(label, midWorld, color);
+    // ParamKey varsa, parametre tanımını bul ve popup data oluştur
+    let paramData = null;
+    if (paramKey) {
+      const definitions = this.getParameterDefinitions();
+      const allParams = [
+        ...(definitions.dimensions || []),
+        ...(definitions.material || []),
+        ...(definitions.view || [])
+      ];
+      const paramDef = allParams.find(p => p.key === paramKey);
+      if (paramDef) {
+        paramData = paramDef;
+      }
+    }
+
+    return this.scene.addLabel(label, midWorld, color, paramData);
   }
 
   createArrowForDimension(p1, p2, color, head, rad) {
@@ -467,7 +482,8 @@ export class Reduksiyon extends BasePart {
       p0.clone().add(x0R).add(y0T),
       b,
       `W2 = ${this.params.W2.toFixed(1)} cm`,
-      this.params.colorW2
+      this.params.colorW2,
+      'W2'
     );
 
     this.createDimensionLine(
@@ -475,7 +491,8 @@ export class Reduksiyon extends BasePart {
       p0.clone().add(x0R).add(y0T),
       n,
       `H2 = ${this.params.H2.toFixed(1)} cm`,
-      this.params.colorH2
+      this.params.colorH2,
+      'H2'
     );
 
     // Bitiş (W1, H1) ölçüleri
@@ -489,7 +506,8 @@ export class Reduksiyon extends BasePart {
       p1.clone().add(x1R).add(y1T),
       b,
       `W1 = ${this.params.W1.toFixed(1)} cm`,
-      this.params.colorW1
+      this.params.colorW1,
+      'W1'
     );
 
     this.createDimensionLine(
@@ -497,7 +515,8 @@ export class Reduksiyon extends BasePart {
       p1.clone().add(x1R).add(y1T),
       n,
       `H1 = ${this.params.H1.toFixed(1)} cm`,
-      this.params.colorH1
+      this.params.colorH1,
+      'H1'
     );
 
     // L ölçüsü
@@ -513,7 +532,8 @@ export class Reduksiyon extends BasePart {
       new THREE.Vector3(xr, yr, L / 2),
       n.clone().negate(),
       `L = ${this.params.L.toFixed(1)} cm`,
-      this.params.colorL
+      this.params.colorL,
+      'L'
     );
 
     // Yüz etiketleri - yüzeye yapışık 3D mesh etiketler
