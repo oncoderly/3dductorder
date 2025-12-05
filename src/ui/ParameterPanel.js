@@ -1,15 +1,21 @@
 // ParameterPanel - Mobil-uyumlu standart parametre paneli
 export class ParameterPanel {
-  constructor(container, part, onUpdate) {
+  constructor(container, part, onUpdate, scene = null) {
     this.container = container;
     this.part = part;
     this.onUpdate = onUpdate;
+    this.scene = scene; // Scene3D instance for scene controls
     this.controls = {};
   }
 
   render() {
     this.container.innerHTML = '';
     const definitions = this.part.getParameterDefinitions();
+
+    // SAHNE KONTROLLERI (en üstte, tüm parçalar için ortak)
+    if (this.scene) {
+      this.renderSceneControlsSection();
+    }
 
     // Yeni groups yapısını destekle
     if (definitions.groups && definitions.groups.length > 0) {
@@ -642,6 +648,107 @@ export class ParameterPanel {
 
     wrapper.appendChild(label);
     wrapper.appendChild(input);
+
+    return wrapper;
+  }
+
+  // Sahne kontrolleri bölümü (Grid, Eksenler, Arkaplan vb.)
+  renderSceneControlsSection() {
+    if (!this.scene) return;
+
+    const section = document.createElement('div');
+    section.className = 'param-section';
+
+    const header = document.createElement('h3');
+    header.className = 'param-section-title';
+    header.textContent = '🌐 Sahne Ayarları';
+
+    header.addEventListener('click', () => {
+      section.classList.toggle('collapsed');
+    });
+
+    section.appendChild(header);
+
+    const content = document.createElement('div');
+    content.className = 'param-section-content';
+
+    const grid = document.createElement('div');
+    grid.className = 'param-grid';
+
+    // Sahne parametrelerini al
+    const sceneParams = this.scene.getSceneParameterDefinitions();
+
+    sceneParams.forEach(param => {
+      let control;
+
+      if (param.type === 'checkbox') {
+        control = this.createSceneCheckboxControl(param.key, param.label);
+      } else if (param.type === 'color') {
+        control = this.createSceneColorControl(param.key, param.label);
+      }
+
+      if (control) {
+        grid.appendChild(control);
+      }
+    });
+
+    content.appendChild(grid);
+    section.appendChild(content);
+    this.container.appendChild(section);
+  }
+
+  createSceneCheckboxControl(key, label) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'param-row checkbox-row';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = `scene-${key}`;
+    checkbox.className = 'param-checkbox';
+    checkbox.checked = this.scene.sceneParams[key];
+
+    checkbox.addEventListener('change', (e) => {
+      this.scene.updateSceneParam(key, e.target.checked);
+    });
+
+    const labelEl = document.createElement('label');
+    labelEl.htmlFor = `scene-${key}`;
+    labelEl.className = 'param-label';
+    labelEl.textContent = label;
+
+    wrapper.appendChild(checkbox);
+    wrapper.appendChild(labelEl);
+
+    this.controls[`scene-${key}`] = checkbox;
+
+    return wrapper;
+  }
+
+  createSceneColorControl(key, label) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'param-row';
+
+    const labelEl = document.createElement('label');
+    labelEl.className = 'param-label';
+    labelEl.textContent = label;
+
+    const input = document.createElement('input');
+    input.type = 'color';
+    input.className = 'param-color';
+
+    // Convert hex number to color string
+    const colorValue = this.scene.sceneParams[key];
+    const hexString = '#' + colorValue.toString(16).padStart(6, '0');
+    input.value = hexString;
+
+    input.addEventListener('change', (e) => {
+      this.scene.updateSceneParam(key, e.target.value);
+    });
+
+    wrapper.appendChild(labelEl);
+    wrapper.appendChild(input);
+
+    this.controls[`scene-${key}`] = input;
 
     return wrapper;
   }

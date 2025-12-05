@@ -100,9 +100,7 @@ export class KaredenYuvarlaga extends BasePart {
             { key: 'showEdges', label: 'Kenar Çizgileri', type: 'checkbox' },
             { key: 'showDims', label: 'Ölçülendirme', type: 'checkbox' },
             { key: 'showFlange', label: 'Flanşları Göster', type: 'checkbox' },
-            { key: 'showSideLabels', label: 'Yüz Etiketleri', type: 'checkbox' },
-            { key: 'showGrid', label: 'Grid Göster', type: 'checkbox' },
-            { key: 'showAxes', label: 'Eksenler Göster', type: 'checkbox' }
+            { key: 'showSideLabels', label: 'Yüz Etiketleri', type: 'checkbox' }
           ]
         },
         {

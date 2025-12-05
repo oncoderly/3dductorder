@@ -15,13 +15,12 @@ export class BasePart {
   // Her parça kendi default parametrelerini set eder
   initDefaultParams() {
     this.defaultParams = {
-      // Görünüm
+      // Görünüm (parça-specific)
       showEdges: true,
       showDims: true,
       showFlange: true,
       keepViewOnEdit: true,
-      showGrid: false,
-      showAxes: false,
+      // showGrid ve showAxes artık Scene3D'de yönetiliyor
 
       // Flanş
       flangeLip: 3.0,
@@ -106,9 +105,8 @@ export class BasePart {
       this.addEdges();
     }
 
-    // Grid ve Eksen görünürlüğünü ayarla
-    this.scene.setGridVisible(this.params.showGrid);
-    this.scene.setAxesVisible(this.params.showAxes);
+    // Grid ve Eksen görünürlüğü artık Scene3D tarafından yönetiliyor
+    // (sahne parametreleri değiştiğinde otomatik güncellenir)
 
     // Kadraj ayarla
     if (!preserve) {

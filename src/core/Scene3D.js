@@ -6,6 +6,14 @@ import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer
 export class Scene3D {
   constructor(canvas) {
     this.canvas = canvas;
+
+    // Sahne bazlı parametreler (tüm parçalar için ortak)
+    this.sceneParams = {
+      showGrid: false,
+      showAxes: false,
+      backgroundColor: 0xf5f5f5
+    };
+
     this.setupRenderer();
     this.setupScene();
     this.setupCamera();
@@ -17,6 +25,33 @@ export class Scene3D {
     this.setupViewState();
     this.setupResize();
     this.startAnimation();
+  }
+
+  // Sahne parametrelerini döndür (GUI için)
+  getSceneParameterDefinitions() {
+    return [
+      { key: 'showGrid', label: 'Grid Göster', type: 'checkbox' },
+      { key: 'showAxes', label: 'Eksenler Göster', type: 'checkbox' },
+      { key: 'backgroundColor', label: 'Arkaplan Rengi', type: 'color' }
+    ];
+  }
+
+  // Sahne parametrelerini güncelle
+  updateSceneParam(key, value) {
+    this.sceneParams[key] = value;
+
+    switch (key) {
+      case 'showGrid':
+        this.setGridVisible(value);
+        break;
+      case 'showAxes':
+        this.setAxesVisible(value);
+        break;
+      case 'backgroundColor':
+        const colorValue = typeof value === 'string' ? parseInt(value.replace('#', '0x'), 16) : value;
+        this.scene.background = new THREE.Color(colorValue);
+        break;
+    }
   }
 
   setupRenderer() {

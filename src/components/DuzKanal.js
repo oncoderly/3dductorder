@@ -37,9 +37,7 @@ export class DuzKanal extends BasePart {
       view: [
         { key: 'showEdges', label: 'Kenar Çizgileri', type: 'checkbox' },
         { key: 'showDims', label: 'Ölçülendirme', type: 'checkbox' },
-        { key: 'showFlange', label: 'Flanşları Göster', type: 'checkbox' },
-        { key: 'showGrid', label: 'Grid Göster', type: 'checkbox' },
-        { key: 'showAxes', label: 'Eksenler Göster', type: 'checkbox' }
+        { key: 'showFlange', label: 'Flanşları Göster', type: 'checkbox' }
       ],
       colors: [
         { key: 'colorW1', label: 'W Rengi', default: '#207aff' },

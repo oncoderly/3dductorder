@@ -193,7 +193,8 @@ class App {
       () => {
         this.currentPart.rebuild();
         this.updateHUD();
-      }
+      },
+      this.scene // Scene3D instance'ı sahne kontrollerine için
     );
 
     this.paramPanel.render();
