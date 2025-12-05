@@ -270,6 +270,7 @@ export class Scene3D {
     if (color) div.style.color = color;
     div.style.fontWeight = '700';
     div.style.fontSize = '14px';
+    div.style.display = 'none'; // Başlangıçta gizli (axes default false)
 
     const label = new CSS2DObject(div);
     label.position.copy(position);
