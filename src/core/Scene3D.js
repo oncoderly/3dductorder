@@ -42,16 +42,20 @@ export class Scene3D {
 
   // Sahne parametrelerini güncelle
   updateSceneParam(key, value) {
+    console.log('📝 updateSceneParam called:', key, '=', value);
     this.sceneParams[key] = value;
 
     switch (key) {
       case 'showGrid':
+        console.log('  → Calling setGridVisible');
         this.setGridVisible(value);
         break;
       case 'showAxes':
+        console.log('  → Calling setAxesVisible');
         this.setAxesVisible(value);
         break;
       case 'backgroundColor':
+        console.log('  → Setting background color');
         const colorValue = typeof value === 'string' ? parseInt(value.replace('#', '0x'), 16) : value;
         this.scene.background = new THREE.Color(colorValue);
         break;
