@@ -25,6 +25,10 @@ export class Scene3D {
     this.setupViewState();
     this.setupResize();
     this.startAnimation();
+
+    // Başlangıç görünürlük durumlarını zorla uygula
+    this.setGridVisible(this.sceneParams.showGrid);
+    this.setAxesVisible(this.sceneParams.showAxes);
   }
 
   // Sahne parametrelerini döndür (GUI için)
