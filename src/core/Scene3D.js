@@ -115,14 +115,17 @@ export class Scene3D {
   setupHelpers() {
     // Açık gri grid (resimdeki gibi)
     this.grid = new THREE.GridHelper(10, 20, 0xd0d5db, 0xe5e7eb);
+    this.grid.visible = false; // Varsayılan kapalı
     this.scene.add(this.grid);
 
     this.axes = new THREE.AxesHelper(1.2);
+    this.axes.visible = false; // Varsayılan kapalı
     this.scene.add(this.axes);
 
     // Eksen etiketleri ekle (X, Y, Z)
     this.axisLabels = new THREE.Group();
     this.axisLabels.name = 'axis-labels';
+    this.axisLabels.visible = false; // Varsayılan kapalı
 
     const axisLength = 1.3; // AxesHelper'dan biraz daha uzun
 
@@ -136,6 +139,23 @@ export class Scene3D {
     this.addAxisLabel('Z', new THREE.Vector3(0, 0, axisLength), '#4444ff');
 
     this.scene.add(this.axisLabels);
+  }
+
+  // Grid görünürlüğünü ayarla
+  setGridVisible(visible) {
+    if (this.grid) {
+      this.grid.visible = visible;
+    }
+  }
+
+  // Eksen görünürlüğünü ayarla
+  setAxesVisible(visible) {
+    if (this.axes) {
+      this.axes.visible = visible;
+    }
+    if (this.axisLabels) {
+      this.axisLabels.visible = visible;
+    }
   }
 
   setupViewState() {

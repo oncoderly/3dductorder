@@ -81,6 +81,14 @@ export class PlenumBox extends BasePart {
         { key: 'back', label: 'Arka Yüz' },
         { key: 'top', label: 'Üst Yüz' }
       ],
+      view: [
+        { key: 'showEdges', label: 'Kenar Çizgileri', type: 'checkbox' },
+        { key: 'showDims', label: 'Ölçülendirme', type: 'checkbox' },
+        { key: 'showFlange', label: 'Flanşları Göster', type: 'checkbox' },
+        { key: 'showSideLabels', label: 'Yüz Etiketleri', type: 'checkbox' },
+        { key: 'showGrid', label: 'Grid Göster', type: 'checkbox' },
+        { key: 'showAxes', label: 'Eksenler Göster', type: 'checkbox' }
+      ],
       colors: [
         { key: 'colorW1', label: 'W Rengi', default: '#3ea2ff' },
         { key: 'colorH1', label: 'H Rengi', default: '#ffd400' },

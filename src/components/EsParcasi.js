@@ -44,6 +44,13 @@ export class EsParcasi extends BasePart {
         { key: 't', label: 'Sac Kalınlığı', min: 0.02, max: 1.0, step: 0.01, unit: 'cm', default: 0.12 },
         { key: 'steps', label: 'Segment Sayısı', min: 8, max: 200, step: 1, unit: '', default: 64 }
       ],
+      view: [
+        { key: 'showEdges', label: 'Kenar Çizgileri', type: 'checkbox' },
+        { key: 'showDims', label: 'Ölçülendirme', type: 'checkbox' },
+        { key: 'showFlange', label: 'Flanşları Göster', type: 'checkbox' },
+        { key: 'showGrid', label: 'Grid Göster', type: 'checkbox' },
+        { key: 'showAxes', label: 'Eksenler Göster', type: 'checkbox' }
+      ],
       colors: [
         { key: 'colorW1', label: 'W1 Rengi', default: '#207aff' },
         { key: 'colorH1', label: 'H1 Rengi', default: '#ff2d2d' },

@@ -20,6 +20,8 @@ export class BasePart {
       showDims: true,
       showFlange: true,
       keepViewOnEdit: true,
+      showGrid: false,
+      showAxes: false,
 
       // Flanş
       flangeLip: 3.0,
@@ -103,6 +105,10 @@ export class BasePart {
     if (this.params.showEdges) {
       this.addEdges();
     }
+
+    // Grid ve Eksen görünürlüğünü ayarla
+    this.scene.setGridVisible(this.params.showGrid);
+    this.scene.setAxesVisible(this.params.showAxes);
 
     // Kadraj ayarla
     if (!preserve) {

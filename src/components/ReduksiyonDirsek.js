@@ -42,6 +42,13 @@ export class ReduksiyonDirsek extends BasePart {
         { key: 'A', label: 'Açı', min: 10, max: 180, step: 1, unit: '°', default: 90 },
         { key: 'steps', label: 'Segment Sayısı', min: 16, max: 400, step: 1, unit: '', default: 100 }
       ],
+      view: [
+        { key: 'showEdges', label: 'Kenar Çizgileri', type: 'checkbox' },
+        { key: 'showDims', label: 'Ölçülendirme', type: 'checkbox' },
+        { key: 'showFlange', label: 'Flanşları Göster', type: 'checkbox' },
+        { key: 'showGrid', label: 'Grid Göster', type: 'checkbox' },
+        { key: 'showAxes', label: 'Eksenler Göster', type: 'checkbox' }
+      ],
       colors: [
         { key: 'colorW1', label: 'W1 Rengi', default: '#007bff' },
         { key: 'colorH1', label: 'H1 Rengi', default: '#ffd400' },
@@ -216,13 +223,35 @@ export class ReduksiyonDirsek extends BasePart {
   }
 
   addEdges() {
-    if (this.mainGeometry) {
-      const edges = new THREE.LineSegments(
-        new THREE.EdgesGeometry(this.mainGeometry, 1),
-        this.materials.get('edge')
-      );
-      this.scene.geometryGroup.add(edges);
+    // Çeyrek daire boyunca segment çizgilerini ekle
+    if (!this.ringsOuter || this.ringsOuter.length === 0) return;
+
+    const segments = [];
+
+    // 1. Halkalar arası uzunlamasına çizgiler (dönüş çizgileri - 4 çizgi)
+    for (let i = 0; i < this.ringsOuter.length - 1; i++) {
+      const ring0 = this.ringsOuter[i];
+      const ring1 = this.ringsOuter[i + 1];
+      for (let k = 0; k < 4; k++) {
+        segments.push(ring0[k], ring1[k]);
+      }
     }
+
+    // 2. Başlangıç ağız kenarı (ilk halka)
+    const firstRing = this.ringsOuter[0];
+    for (let k = 0; k < 4; k++) {
+      segments.push(firstRing[k], firstRing[(k + 1) % 4]);
+    }
+
+    // 3. Bitiş ağız kenarı (son halka)
+    const lastRing = this.ringsOuter[this.ringsOuter.length - 1];
+    for (let k = 0; k < 4; k++) {
+      segments.push(lastRing[k], lastRing[(k + 1) % 4]);
+    }
+
+    const geometry = new THREE.BufferGeometry().setFromPoints(segments);
+    const lines = new THREE.LineSegments(geometry, this.materials.get('edge'));
+    this.scene.geometryGroup.add(lines);
   }
 
   drawDimensions() {

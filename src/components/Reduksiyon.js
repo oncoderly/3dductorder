@@ -103,7 +103,9 @@ export class Reduksiyon extends BasePart {
             { key: 'showEdges', label: 'Kenar Çizgileri', type: 'checkbox' },
             { key: 'showDims', label: 'Ölçülendirme', type: 'checkbox' },
             { key: 'showFlange', label: 'Flanşları Göster', type: 'checkbox' },
-            { key: 'showSideLabels', label: 'Yüz Etiketleri', type: 'checkbox' }
+            { key: 'showSideLabels', label: 'Yüz Etiketleri', type: 'checkbox' },
+            { key: 'showGrid', label: 'Grid Göster', type: 'checkbox' },
+            { key: 'showAxes', label: 'Eksenler Göster', type: 'checkbox' }
           ]
         },
         {
@@ -521,7 +523,7 @@ export class Reduksiyon extends BasePart {
       const mid = new THREE.Vector3(0, 0, 0);
       const widthCm = 30; // Etiket genişliği (cm cinsinden)
 
-      // Orta noktada ortalama boyutları kullan
+      // Ortalama boyutları kullan
       const Wavg = (W1 + W2) / 2;
       const Havg = (H1 + H2) / 2;
 
@@ -612,8 +614,8 @@ export class Reduksiyon extends BasePart {
   addFaceTag(text, base, normal, widthCm, color) {
     const mesh = this.makeTextPlane(text, widthCm, color);
 
-    // Epsilon - yüzeyden mesafe (eğimli yüzeylerde tamamen görünmesi için)
-    const eps = 0.025;
+    // Epsilon - yüzeyden mesafe (tamamen dışarıda olması için büyük değer)
+    const eps = 0.20;
 
     // Pozisyon: rotated space'de base + normal * eps
     const posRotated = base.clone().add(normal.clone().normalize().multiplyScalar(eps));
@@ -625,6 +627,71 @@ export class Reduksiyon extends BasePart {
       normal.clone().normalize()
     );
     mesh.quaternion.copy(quaternion);
+
+    // Rotated dimension group'a ekle
+    this.rotatedDimensionGroup.add(mesh);
+
+    return mesh;
+  }
+
+  // Eğimli yüz etiketi ekle - center, başlangıç ve bitiş noktalarına göre
+  addSlopedFaceTag(text, center, p0, p1, widthCm, color) {
+    const mesh = this.makeTextPlane(text, widthCm, color);
+
+    // Merkez nokta - etiket pozisyonu (parametre olarak geldi)
+    const mid = center.clone();
+
+    // Z ekseni (uzunluk ekseni)
+    const tz = new THREE.Vector3(0, 0, 1);
+
+    // Yüzey üzerinde iki vektör oluştur
+    const v1 = new THREE.Vector3().subVectors(p1, p0); // Başlangıçtan bitişe
+    const v2 = tz.clone(); // Z ekseni boyunca
+
+    // Yüzey normali - iki vektörün cross product'u
+    const normal = new THREE.Vector3().crossVectors(v1, v2).normalize();
+
+    // Yüzey teğeti (Z ekseni boyunca)
+    const tangentZ = tz.clone();
+
+    // Yüzey teğeti (eğim yönünde)
+    const tangentSlope = v1.clone().normalize();
+
+    // Koordinat sistemi oluştur: normal (dışarı), tangentZ (yukarı), tangentSlope (sağa)
+    const matrix = new THREE.Matrix4();
+    matrix.makeBasis(
+      new THREE.Vector3().crossVectors(tangentZ, normal).normalize(), // right (x)
+      tangentZ.clone(), // up (y)
+      normal.clone()    // forward (z)
+    );
+
+    mesh.quaternion.setFromRotationMatrix(matrix);
+
+    // 90 derece daha döndür (Z ekseni etrafında)
+    const additionalRotation = new THREE.Quaternion().setFromAxisAngle(
+      new THREE.Vector3(0, 0, 1),
+      Math.PI / 2
+    );
+    mesh.quaternion.premultiply(additionalRotation);
+
+    // Etiket yüksekliğini hesapla (mesh döndürüldükten sonra)
+    const W = BasePart.cm(widthCm);
+    const aspect = mesh.geometry.parameters.width / mesh.geometry.parameters.height;
+    const H = W / aspect;
+
+    // Eğim açısını hesapla - v1'in XY düzlemi ile açısı
+    const v1XY = new THREE.Vector2(v1.x, v1.y).length();
+    const v1Z = Math.abs(v1.z);
+    const slopeAngle = Math.atan2(v1XY, v1Z);
+
+    // Normal offset - etiketi tamamen dışarıda tut
+    // Eğimli yüzeylerde etiketin yüksekliğinin tamamını kullan
+    const baseOffset = H * 0.7; // Etiket yüksekliğinin çoğu
+    const slopeExtra = H * Math.sin(slopeAngle) * 1.2; // Eğime göre ekstra
+    const normalOffset = baseOffset + slopeExtra;
+
+    // Pozisyonu ayarla - normal yönünde offset ekle
+    mesh.position.copy(mid.clone().add(normal.clone().multiplyScalar(normalOffset)));
 
     // Rotated dimension group'a ekle
     this.rotatedDimensionGroup.add(mesh);
@@ -716,6 +783,40 @@ export class Reduksiyon extends BasePart {
       outer: sheet,
       inner: 0
     };
+  }
+
+  addEdges() {
+    // Yamuk geçiş formunda 4 kenar çizgisini ekle
+    if (!this.Rout || this.Rout.length === 0) return;
+
+    const segments = [];
+    const per = Math.max(2, Math.floor(this.params.edgeSegs));
+
+    // İlk halka (başlangıç ağzı)
+    const firstRing = this.Rout[0];
+    for (let k = 0; k < firstRing.length; k++) {
+      segments.push(firstRing[k], firstRing[(k + 1) % firstRing.length]);
+    }
+
+    // Son halka (bitiş ağzı)
+    const lastRing = this.Rout[this.Rout.length - 1];
+    for (let k = 0; k < lastRing.length; k++) {
+      segments.push(lastRing[k], lastRing[(k + 1) % lastRing.length]);
+    }
+
+    // 4 köşe çizgisi - uzunlamasına yamuk kenarları
+    // Her kenarın ortasındaki noktayı al (per segmenti olan her kenar için)
+    const corners = [0, per, per * 2, per * 3]; // 4 köşenin indeksleri
+
+    for (const cornerIdx of corners) {
+      for (let i = 0; i < this.Rout.length - 1; i++) {
+        segments.push(this.Rout[i][cornerIdx], this.Rout[i + 1][cornerIdx]);
+      }
+    }
+
+    const geometry = new THREE.BufferGeometry().setFromPoints(segments);
+    const lines = new THREE.LineSegments(geometry, this.materials.get('edge'));
+    this.rotatedGeometryGroup.add(lines);
   }
 
   getDimensions() {
