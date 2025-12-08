@@ -346,7 +346,7 @@ export class PlenumBox extends BasePart {
         pA: pA,
         pB: pB,
         off: n.clone(),
-        text: `Ø = ${(D * 100).toFixed(1)} cm`
+        text: `Ø = ${BasePart.formatDimension(D * 100)} cm`
       });
     }
   }
@@ -478,7 +478,7 @@ export class PlenumBox extends BasePart {
       p1.clone().add(xL).add(yT),
       p1.clone().add(xR).add(yT),
       nY,
-      `W1 = ${this.params.W1.toFixed(1)} cm`,
+      `W1 = ${BasePart.formatDimension(this.params.W1)} cm`,
       this.params.colorW1,
       'W1'
     );
@@ -488,7 +488,7 @@ export class PlenumBox extends BasePart {
       p1.clone().add(xR).add(yB),
       p1.clone().add(xR).add(yT),
       nX,
-      `H1 = ${this.params.H1.toFixed(1)} cm`,
+      `H1 = ${BasePart.formatDimension(this.params.H1)} cm`,
       this.params.colorH1,
       'H1'
     );
@@ -498,7 +498,7 @@ export class PlenumBox extends BasePart {
       new THREE.Vector3(-W1 / 2, 0, -L / 2),
       new THREE.Vector3(-W1 / 2, 0, L / 2),
       nX.clone().negate(),
-      `L = ${this.params.L.toFixed(1)} cm`,
+      `L = ${BasePart.formatDimension(this.params.L)} cm`,
       this.params.colorL,
       'L'
     );

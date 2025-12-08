@@ -205,7 +205,7 @@ export class DuzKanal extends BasePart {
       new THREE.Vector3(-W1 / 2, H1 / 2, L / 2),
       new THREE.Vector3(W1 / 2, H1 / 2, L / 2),
       new THREE.Vector3(0, 1, 0),
-      `W = ${this.params.W1.toFixed(1)} cm`,
+      `W = ${BasePart.formatDimension(this.params.W1)} cm`,
       this.params.colorW1,
       'W1'
     );
@@ -215,7 +215,7 @@ export class DuzKanal extends BasePart {
       new THREE.Vector3(-W1 / 2, -H1 / 2, L / 2),
       new THREE.Vector3(-W1 / 2, H1 / 2, L / 2),
       new THREE.Vector3(-1, 0, 0),
-      `H = ${this.params.H1.toFixed(1)} cm`,
+      `H = ${BasePart.formatDimension(this.params.H1)} cm`,
       this.params.colorH1,
       'H1'
     );
@@ -225,7 +225,7 @@ export class DuzKanal extends BasePart {
       new THREE.Vector3(W1 / 2, -H1 / 2, -L / 2),
       new THREE.Vector3(W1 / 2, -H1 / 2, L / 2),
       new THREE.Vector3(1, 0, 0),
-      `L = ${this.params.L.toFixed(1)} cm`,
+      `L = ${BasePart.formatDimension(this.params.L)} cm`,
       this.params.colorL,
       'L'
     );

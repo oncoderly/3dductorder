@@ -429,7 +429,7 @@ export class KaredenYuvarlaga extends BasePart {
       p0.clone().add(x0L).add(y0T),
       p0.clone().add(x0R).add(y0T),
       b,
-      `W1 = ${this.params.W1.toFixed(1)} cm`,
+      `W1 = ${BasePart.formatDimension(this.params.W1)} cm`,
       this.params.colorW1,
       'W1'
     );
@@ -438,7 +438,7 @@ export class KaredenYuvarlaga extends BasePart {
       p0.clone().add(x0R).add(y0B),
       p0.clone().add(x0R).add(y0T),
       n,
-      `H1 = ${this.params.H1.toFixed(1)} cm`,
+      `H1 = ${BasePart.formatDimension(this.params.H1)} cm`,
       this.params.colorH1,
       'H1'
     );
@@ -451,7 +451,7 @@ export class KaredenYuvarlaga extends BasePart {
       p1.clone().add(xR.clone().negate()),
       p1.clone().add(xR),
       b,
-      `Ø = ${this.params.Phi.toFixed(1)} cm`,
+      `Ø = ${BasePart.formatDimension(this.params.Phi)} cm`,
       this.params.colorPhi,
       'Phi'
     );
@@ -468,7 +468,7 @@ export class KaredenYuvarlaga extends BasePart {
       new THREE.Vector3(xr, yr, -L / 2),
       new THREE.Vector3(xr, yr, L / 2),
       n.clone().negate(),
-      `L = ${this.params.L.toFixed(1)} cm`,
+      `L = ${BasePart.formatDimension(this.params.L)} cm`,
       this.params.colorL,
       'L'
     );

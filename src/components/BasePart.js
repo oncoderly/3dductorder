@@ -336,4 +336,9 @@ export class BasePart {
   static V(x = 0, y = 0, z = 0) {
     return new THREE.Vector3(x, y, z);
   }
+
+  // Ölçü değerini formatla (120.0 → 120, 25.5 → 25.5)
+  static formatDimension(value) {
+    return Number.isInteger(value) ? value.toString() : value.toFixed(1);
+  }
 }

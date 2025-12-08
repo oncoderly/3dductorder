@@ -513,7 +513,7 @@ export class Reduksiyon extends BasePart {
       p0.clone().add(x0L).add(y0T),
       p0.clone().add(x0R).add(y0T),
       b,
-      `W2 = ${this.params.W2.toFixed(1)} cm`,
+      `W2 = ${BasePart.formatDimension(this.params.W2)} cm`,
       this.params.colorW2,
       'W2'
     );
@@ -522,7 +522,7 @@ export class Reduksiyon extends BasePart {
       p0.clone().add(x0R).add(y0B),
       p0.clone().add(x0R).add(y0T),
       n,
-      `H2 = ${this.params.H2.toFixed(1)} cm`,
+      `H2 = ${BasePart.formatDimension(this.params.H2)} cm`,
       this.params.colorH2,
       'H2'
     );
@@ -537,7 +537,7 @@ export class Reduksiyon extends BasePart {
       p1.clone().add(x1L).add(y1T),
       p1.clone().add(x1R).add(y1T),
       b,
-      `W1 = ${this.params.W1.toFixed(1)} cm`,
+      `W1 = ${BasePart.formatDimension(this.params.W1)} cm`,
       this.params.colorW1,
       'W1'
     );
@@ -546,7 +546,7 @@ export class Reduksiyon extends BasePart {
       p1.clone().add(x1R).add(y1B),
       p1.clone().add(x1R).add(y1T),
       n,
-      `H1 = ${this.params.H1.toFixed(1)} cm`,
+      `H1 = ${BasePart.formatDimension(this.params.H1)} cm`,
       this.params.colorH1,
       'H1'
     );
@@ -563,7 +563,7 @@ export class Reduksiyon extends BasePart {
       new THREE.Vector3(xr, yr, -L / 2),
       new THREE.Vector3(xr, yr, L / 2),
       n.clone().negate(),
-      `L = ${this.params.L.toFixed(1)} cm`,
+      `L = ${BasePart.formatDimension(this.params.L)} cm`,
       this.params.colorL,
       'L'
     );

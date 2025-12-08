@@ -230,7 +230,7 @@ export class EsParcasi extends BasePart {
       new THREE.Vector3(-ES / 2 - W1 / 2, -H1 / 2, -L / 2),
       new THREE.Vector3(-ES / 2 + W1 / 2, -H1 / 2, -L / 2),
       new THREE.Vector3(0, -1, 0),
-      `W1 = ${this.params.W1.toFixed(1)} cm`,
+      `W1 = ${BasePart.formatDimension(this.params.W1)} cm`,
       this.params.colorW1,
       'W1'
     );
@@ -240,7 +240,7 @@ export class EsParcasi extends BasePart {
       new THREE.Vector3(-ES / 2 - W1 / 2, -H1 / 2, -L / 2),
       new THREE.Vector3(-ES / 2 - W1 / 2, H1 / 2, -L / 2),
       new THREE.Vector3(-1, 0, 0),
-      `H1 = ${this.params.H1.toFixed(1)} cm`,
+      `H1 = ${BasePart.formatDimension(this.params.H1)} cm`,
       this.params.colorH1,
       'H1'
     );
@@ -250,7 +250,7 @@ export class EsParcasi extends BasePart {
       new THREE.Vector3(ES / 2 - W2 / 2, H2 / 2, L / 2),
       new THREE.Vector3(ES / 2 + W2 / 2, H2 / 2, L / 2),
       new THREE.Vector3(0, 1, 0),
-      `W2 = ${this.params.W2.toFixed(1)} cm`,
+      `W2 = ${BasePart.formatDimension(this.params.W2)} cm`,
       this.params.colorW2,
       'W2'
     );
@@ -260,7 +260,7 @@ export class EsParcasi extends BasePart {
       new THREE.Vector3(ES / 2 - W2 / 2, -H2 / 2, L / 2),
       new THREE.Vector3(ES / 2 - W2 / 2, H2 / 2, L / 2),
       new THREE.Vector3(-1, 0, 0),
-      `H2 = ${this.params.H2.toFixed(1)} cm`,
+      `H2 = ${BasePart.formatDimension(this.params.H2)} cm`,
       this.params.colorH2,
       'H2'
     );
@@ -270,7 +270,7 @@ export class EsParcasi extends BasePart {
       new THREE.Vector3(ES / 2, yTop, -L / 2),
       new THREE.Vector3(ES / 2, yTop, L / 2),
       new THREE.Vector3(0, 1, 0),
-      `L = ${this.params.L.toFixed(1)} cm`,
+      `L = ${BasePart.formatDimension(this.params.L)} cm`,
       this.params.colorL,
       'L'
     );
@@ -280,7 +280,7 @@ export class EsParcasi extends BasePart {
       new THREE.Vector3(-ES / 2, H1 / 2, -L / 2),
       new THREE.Vector3(ES / 2, H1 / 2, -L / 2),
       new THREE.Vector3(0, 1, 0),
-      `ES = ${this.params.ES.toFixed(1)} cm`,
+      `ES = ${BasePart.formatDimension(this.params.ES)} cm`,
       this.params.colorES,
       'ES'
     );

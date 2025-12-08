@@ -248,7 +248,11 @@ class App {
 
     const dims = this.currentPart.getDimensions();
     const dimsText = Object.entries(dims)
-      .map(([key, value]) => `${key}: ${value.toFixed(1)} cm`)
+      .map(([key, value]) => {
+        // Tam sayıysa ondalık gösterme, değilse 1 ondalık
+        const formattedValue = Number.isInteger(value) ? value : value.toFixed(1);
+        return `${key}: ${formattedValue} cm`;
+      })
       .join(' • ');
 
     hudInfo.textContent = dimsText;
