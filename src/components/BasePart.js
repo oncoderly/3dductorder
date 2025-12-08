@@ -50,6 +50,42 @@ export class BasePart {
     this.params = { ...this.defaultParams };
   }
 
+  // Ortak parameter definitions - Tüm parçalar için
+  getCommonParameterDefinitions() {
+    return {
+      view: [
+        { key: 'showEdges', label: 'Kenar Çizgileri', type: 'checkbox' },
+        { key: 'showDims', label: 'Ölçülendirme', type: 'checkbox' },
+        { key: 'showFlange', label: 'Flanşları Göster', type: 'checkbox' },
+        { key: 'keepViewOnEdit', label: 'Görüşü Koru', type: 'checkbox' }
+      ],
+      flange: [
+        { key: 'flangeLip', label: 'Flanş Payı', min: 0.5, max: 8, step: 0.1, unit: 'cm', default: 3.0 },
+        { key: 'flangeThick', label: 'Flanş Kalınlığı', min: 0.2, max: 2, step: 0.05, unit: 'cm', default: 0.6 }
+      ],
+      material: [
+        { key: 'metalRough', label: 'Pürüzlülük', min: 0, max: 1, step: 0.01, default: 0.35 },
+        { key: 'metalness', label: 'Metallik', min: 0, max: 1, step: 0.01, default: 0.85 }
+      ],
+      dimension: [
+        { key: 'dimAlwaysOnTop', label: 'Ölçüler Üstte', type: 'checkbox' },
+        { key: 'dimFixedOffset', label: 'Sabit Ofset', type: 'checkbox' },
+        { key: 'dimOffsetCm', label: 'Ölçü Ofseti', min: 0, max: 10, step: 0.1, unit: 'cm', default: 1.5 },
+        { key: 'arrowHeadCm', label: 'Ok Başı', min: 1, max: 10, step: 0.1, unit: 'cm', default: 4.0 },
+        { key: 'arrowRadiusCm', label: 'Ok Yarıçapı', min: 0.5, max: 5, step: 0.1, unit: 'cm', default: 1.2 },
+        { key: 'extLenCm', label: 'Uzatma', min: 5, max: 50, step: 1, unit: 'cm', default: 15 },
+        { key: 'extGapCm', label: 'Boşluk', min: 0, max: 10, step: 0.1, unit: 'cm', default: 1 },
+        { key: 'dimPlaneOffsetCm', label: 'Düzlem Ofseti', min: 5, max: 100, step: 1, unit: 'cm', default: 20 },
+        { key: 'labelOffsetCm', label: 'Etiket Ofseti', min: 0, max: 5, step: 0.1, unit: 'cm', default: 0.5 }
+      ],
+      area: [
+        { key: 'areaIncludeFlange', label: 'Flanşı Dahil Et', type: 'checkbox' },
+        { key: 'wastePercent', label: 'Atık Oranı (%)', min: 0, max: 100, step: 1, default: 25 },
+        { key: 'kFactor', label: 'K Faktörü', min: 0, max: 2, step: 0.01, default: 1 }
+      ]
+    };
+  }
+
   // Abstract methods - Her parça bunları implement etmeli
   buildGeometry() {
     throw new Error('buildGeometry() must be implemented');

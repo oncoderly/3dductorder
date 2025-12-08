@@ -46,6 +46,8 @@ export class KaredenYuvarlaga extends BasePart {
   }
 
   getParameterDefinitions() {
+    const common = this.getCommonParameterDefinitions();
+
     return {
       groups: [
         {
@@ -97,9 +99,9 @@ export class KaredenYuvarlaga extends BasePart {
         {
           name: 'Görünüm',
           params: [
-            { key: 'showEdges', label: 'Kenar Çizgileri', type: 'checkbox' },
-            { key: 'showDims', label: 'Ölçülendirme', type: 'checkbox' },
-            { key: 'showFlange', label: 'Flanşları Göster', type: 'checkbox' },
+            // Ortak view parametreleri
+            ...common.view,
+            // KaredenYuvarlaga'ya özel
             { key: 'showSideLabels', label: 'Yüz Etiketleri', type: 'checkbox' }
           ]
         },
@@ -111,6 +113,22 @@ export class KaredenYuvarlaga extends BasePart {
             { key: 'colorPhi', label: 'Ø Rengi', type: 'color' },
             { key: 'colorL', label: 'L Rengi', type: 'color' }
           ]
+        },
+        {
+          name: '🔧 Flanş Ayarları',
+          params: common.flange
+        },
+        {
+          name: '✨ Malzeme Özellikleri',
+          params: common.material
+        },
+        {
+          name: '📐 Ölçülendirme Ayarları',
+          params: common.dimension
+        },
+        {
+          name: '📊 Alan Hesabı',
+          params: common.area
         }
       ]
     };

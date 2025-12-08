@@ -31,6 +31,8 @@ export class ReduksiyonDirsek extends BasePart {
   }
 
   getParameterDefinitions() {
+    const common = this.getCommonParameterDefinitions();
+
     return {
       dimensions: [
         { key: 'W1', label: 'Son Genişlik (W1)', min: 10, max: 200, step: 0.1, unit: 'cm', default: 40 },
@@ -42,11 +44,6 @@ export class ReduksiyonDirsek extends BasePart {
         { key: 'A', label: 'Açı', min: 10, max: 180, step: 1, unit: '°', default: 90 },
         { key: 'steps', label: 'Segment Sayısı', min: 16, max: 400, step: 1, unit: '', default: 100 }
       ],
-      view: [
-        { key: 'showEdges', label: 'Kenar Çizgileri', type: 'checkbox' },
-        { key: 'showDims', label: 'Ölçülendirme', type: 'checkbox' },
-        { key: 'showFlange', label: 'Flanşları Göster', type: 'checkbox' }
-      ],
       colors: [
         { key: 'colorW1', label: 'W1 Rengi', default: '#007bff' },
         { key: 'colorH1', label: 'H1 Rengi', default: '#ffd400' },
@@ -54,7 +51,9 @@ export class ReduksiyonDirsek extends BasePart {
         { key: 'colorH2', label: 'H2 Rengi', default: '#ff8c00' },
         { key: 'colorR', label: 'R Rengi', default: '#ff1744' },
         { key: 'colorA', label: 'Açı Rengi', default: '#7e57c2' }
-      ]
+      ],
+      // Ortak parametreler (BasePart'tan)
+      ...common
     };
   }
 

@@ -48,6 +48,8 @@ export class Reduksiyon extends BasePart {
   }
 
   getParameterDefinitions() {
+    const common = this.getCommonParameterDefinitions();
+
     return {
       groups: [
         {
@@ -100,9 +102,9 @@ export class Reduksiyon extends BasePart {
         {
           name: 'Görünüm',
           params: [
-            { key: 'showEdges', label: 'Kenar Çizgileri', type: 'checkbox' },
-            { key: 'showDims', label: 'Ölçülendirme', type: 'checkbox' },
-            { key: 'showFlange', label: 'Flanşları Göster', type: 'checkbox' },
+            // Ortak view parametreleri (showEdges, showDims, showFlange, keepViewOnEdit)
+            ...common.view,
+            // Reduksiyona özel
             { key: 'showSideLabels', label: 'Yüz Etiketleri', type: 'checkbox' }
           ]
         },
@@ -115,6 +117,22 @@ export class Reduksiyon extends BasePart {
             { key: 'colorH2', label: 'H2 Rengi', type: 'color' },
             { key: 'colorL', label: 'L Rengi', type: 'color' }
           ]
+        },
+        {
+          name: '🔧 Flanş Ayarları',
+          params: common.flange
+        },
+        {
+          name: '✨ Malzeme Özellikleri',
+          params: common.material
+        },
+        {
+          name: '📐 Ölçülendirme Ayarları',
+          params: common.dimension
+        },
+        {
+          name: '📊 Alan Hesabı',
+          params: common.area
         }
       ]
     };

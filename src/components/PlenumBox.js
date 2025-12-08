@@ -64,6 +64,8 @@ export class PlenumBox extends BasePart {
   }
 
   getParameterDefinitions() {
+    const common = this.getCommonParameterDefinitions();
+
     return {
       dimensions: [
         { key: 'W1', label: 'Genişlik (W)', min: 10, max: 400, step: 0.1, unit: 'cm', default: 100 },
@@ -81,18 +83,21 @@ export class PlenumBox extends BasePart {
         { key: 'back', label: 'Arka Yüz' },
         { key: 'top', label: 'Üst Yüz' }
       ],
-      view: [
-        { key: 'showEdges', label: 'Kenar Çizgileri', type: 'checkbox' },
-        { key: 'showDims', label: 'Ölçülendirme', type: 'checkbox' },
-        { key: 'showFlange', label: 'Flanşları Göster', type: 'checkbox' },
-        { key: 'showSideLabels', label: 'Yüz Etiketleri', type: 'checkbox' }
-      ],
       colors: [
         { key: 'colorW1', label: 'W Rengi', default: '#3ea2ff' },
         { key: 'colorH1', label: 'H Rengi', default: '#ffd400' },
         { key: 'colorL', label: 'L Rengi', default: '#00bcd4' },
         { key: 'colorPhi', label: 'Ø Rengi', default: '#00c853' }
-      ]
+      ],
+      // Ortak parametreler (BasePart'tan) - view içinde showSideLabels ekleniyor
+      view: [
+        ...common.view,
+        { key: 'showSideLabels', label: 'Yüz Etiketleri', type: 'checkbox' }
+      ],
+      flange: common.flange,
+      material: common.material,
+      dimension: common.dimension,
+      area: common.area
     };
   }
 
