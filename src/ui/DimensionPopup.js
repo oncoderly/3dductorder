@@ -89,10 +89,20 @@ export class DimensionPopup {
   attachBackdropListener() {
     // Document'e click listener - popup dışına tıklayınca kapat
     this.documentClickHandler = (e) => {
+      console.log('🔔 Backdrop click:', {
+        isVisible: this.isVisible,
+        target: e.target.className,
+        isDimensionLabel: e.target.classList.contains('dimension-label'),
+        containsTarget: this.popup.contains(e.target)
+      });
+
       if (this.isVisible && !this.popup.contains(e.target)) {
         // Popup açılışını tetikleyen element değilse kapat
         if (!e.target.classList.contains('dimension-label')) {
+          console.log('❌ Hiding popup via backdrop');
           this.hide();
+        } else {
+          console.log('⏭️ Dimension label clicked, not hiding');
         }
       }
     };
@@ -100,6 +110,7 @@ export class DimensionPopup {
     // Mobil için touchend, desktop için click
     // Timeout ile ekle (popup açıldıktan sonra aktif olması için)
     this.attachListenerTimeout = setTimeout(() => {
+      console.log('✅ Backdrop listeners attached');
       document.addEventListener('click', this.documentClickHandler, { passive: true });
       document.addEventListener('touchend', this.documentClickHandler, { passive: true });
     }, 150);
@@ -149,11 +160,13 @@ export class DimensionPopup {
   }
 
   hide() {
+    console.log('🚫 DimensionPopup.hide() called');
     this.isVisible = false;
     this.popup.classList.remove('visible');
 
     setTimeout(() => {
       this.popup.style.display = 'none';
+      console.log('🚫 Popup display set to none');
     }, 200);
   }
 
@@ -163,11 +176,18 @@ export class DimensionPopup {
       this.popup.style.left = '50%';
       this.popup.style.top = '50%';
       this.popup.style.transform = 'translate(-50%, -50%)';
+      console.log('📍 Popup centered (no event)');
       return;
     }
 
     const rect = this.container.getBoundingClientRect();
     const popupRect = this.popup.getBoundingClientRect();
+
+    console.log('📍 Position calculation:', {
+      container: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+      popup: { width: popupRect.width, height: popupRect.height },
+      click: { x: clickEvent.clientX, y: clickEvent.clientY }
+    });
 
     // Tıklanan pozisyon (viewport koordinatları)
     let x = clickEvent.clientX - rect.left;
@@ -185,6 +205,18 @@ export class DimensionPopup {
     this.popup.style.left = `${x}px`;
     this.popup.style.top = `${y}px`;
     this.popup.style.transform = 'none';
+
+    console.log('📍 Popup positioned at:', { x, y });
+
+    // Computed style'ı da kontrol edelim
+    const computed = window.getComputedStyle(this.popup);
+    console.log('📍 Computed styles:', {
+      display: computed.display,
+      opacity: computed.opacity,
+      transform: computed.transform,
+      zIndex: computed.zIndex,
+      position: computed.position
+    });
   }
 
   adjustValue(delta) {
