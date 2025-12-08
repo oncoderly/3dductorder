@@ -11,6 +11,8 @@ import { ParameterPanel } from './ui/ParameterPanel.js';
 import { ViewControls } from './ui/ViewControls.js';
 import { DimensionPopup } from './ui/DimensionPopup.js';
 import { getAllParts } from './config/parts-config.js';
+import { ENV } from './config/environment.js';
+import { ErrorHandler, setupGlobalErrorHandler } from './utils/ErrorHandler.js';
 
 class App {
   constructor() {
@@ -20,17 +22,22 @@ class App {
     this.paramPanel = null;
     this.viewControls = null;
     this.dimensionPopup = null;
+    this.errorHandler = new ErrorHandler();
 
     this.init();
   }
 
   async init() {
-    // Canvas'ı bul
-    const canvas = document.getElementById('canvas-3d');
-    if (!canvas) {
-      console.error('Canvas bulunamadı!');
-      return;
-    }
+    try {
+      // Canvas'ı bul
+      const canvas = document.getElementById('canvas-3d');
+      if (!canvas) {
+        this.errorHandler.critical(
+          '3D Görüntüleyici başlatılamadı',
+          'Canvas elementi bulunamadı. Sayfa yapısında bir sorun var.'
+        );
+        return;
+      }
 
     // Scene ve Materials oluştur
     this.scene = new Scene3D(canvas);
@@ -49,8 +56,20 @@ class App {
     this.setupHUD();
     this.setupMobileToggle();
 
-    // İlk parçayı yükle
-    this.loadPart('duz-kanal');
+      // İlk parçayı yükle
+      this.loadPart('duz-kanal');
+
+      // Başarılı başlatma mesajı (sadece dev mode'da)
+      if (ENV.isDevelopment()) {
+        this.errorHandler.info('3D Görüntüleyici başlatıldı', 'Geliştirme modu aktif');
+      }
+    } catch (error) {
+      this.errorHandler.critical(
+        'Uygulama başlatılamadı',
+        `Hata: ${error.message}`
+      );
+      console.error('Init error:', error);
+    }
   }
 
   setupMobileToggle() {
@@ -148,51 +167,62 @@ class App {
   }
 
   async loadPart(partKey) {
-    // Önceki parçayı temizle
-    if (this.currentPart) {
-      this.scene.clearGroup(this.scene.geometryGroup);
-      this.scene.clearGroup(this.scene.flangeGroup);
-      this.scene.clearGroup(this.scene.dimensionGroup);
-      this.scene.clearGroup(this.scene.labelGroup);
-      this.scene.clearLabels();
-    }
+    try {
+      // Önceki parçayı temizle
+      if (this.currentPart) {
+        this.scene.clearGroup(this.scene.geometryGroup);
+        this.scene.clearGroup(this.scene.flangeGroup);
+        this.scene.clearGroup(this.scene.dimensionGroup);
+        this.scene.clearGroup(this.scene.labelGroup);
+        this.scene.clearLabels();
+      }
 
-    // Yeni parçayı oluştur
-    switch (partKey) {
-      case 'duz-kanal':
-        this.currentPart = new DuzKanal(this.scene, this.materials);
-        break;
-      case 'reduksiyon-dirsek':
-        this.currentPart = new ReduksiyonDirsek(this.scene, this.materials);
-        break;
-      case 'es-parcasi':
-        this.currentPart = new EsParcasi(this.scene, this.materials);
-        break;
-      case 'plenum-box':
-        this.currentPart = new PlenumBox(this.scene, this.materials);
-        break;
-      case 'kareden-yuvarlaga':
-        this.currentPart = new KaredenYuvarlaga(this.scene, this.materials);
-        break;
-      case 'reduksiyon':
-        this.currentPart = new Reduksiyon(this.scene, this.materials);
-        break;
-      default:
-        console.error('Bilinmeyen parça:', partKey);
-        return;
-    }
+      // Yeni parçayı oluştur
+      switch (partKey) {
+        case 'duz-kanal':
+          this.currentPart = new DuzKanal(this.scene, this.materials);
+          break;
+        case 'reduksiyon-dirsek':
+          this.currentPart = new ReduksiyonDirsek(this.scene, this.materials);
+          break;
+        case 'es-parcasi':
+          this.currentPart = new EsParcasi(this.scene, this.materials);
+          break;
+        case 'plenum-box':
+          this.currentPart = new PlenumBox(this.scene, this.materials);
+          break;
+        case 'kareden-yuvarlaga':
+          this.currentPart = new KaredenYuvarlaga(this.scene, this.materials);
+          break;
+        case 'reduksiyon':
+          this.currentPart = new Reduksiyon(this.scene, this.materials);
+          break;
+        default:
+          this.errorHandler.error(
+            'Parça yüklenemedi',
+            `Bilinmeyen parça tipi: ${partKey}`
+          );
+          return;
+      }
 
     // Scene'e current part referansını ekle (popup için)
     this.scene.currentPart = this.currentPart;
 
-    // Parçayı oluştur
-    this.currentPart.rebuild();
+      // Parçayı oluştur
+      this.currentPart.rebuild();
 
-    // Parametre panelini oluştur
-    this.setupParameterPanel();
+      // Parametre panelini oluştur
+      this.setupParameterPanel();
 
-    // HUD'ı güncelle
-    this.updateHUD();
+      // HUD'ı güncelle
+      this.updateHUD();
+    } catch (error) {
+      this.errorHandler.error(
+        'Parça yüklenirken hata oluştu',
+        `${partKey}: ${error.message}`
+      );
+      console.error('Load part error:', error);
+    }
   }
 
   setupParameterPanel() {
@@ -244,7 +274,51 @@ class App {
 
 // Uygulama başlat
 window.addEventListener('DOMContentLoaded', () => {
-  window.app = new App();
+  // Debug console'u yükle (sadece dev mode'da)
+  ENV.loadDebugConsole();
+
+  // Uygulamayı başlat
+  try {
+    window.app = new App();
+
+    // Global error handler'ı setup et
+    if (window.app.errorHandler) {
+      setupGlobalErrorHandler(window.app.errorHandler);
+    }
+  } catch (error) {
+    // Kritik başlatma hatası - fallback error display
+    const fallbackError = document.createElement('div');
+    fallbackError.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+      padding: 32px;
+      border-radius: 16px;
+      max-width: 500px;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      z-index: 99999;
+    `;
+    fallbackError.innerHTML = `
+      <h2 style="margin: 0 0 16px 0; font-size: 24px;">⚠️ Uygulama Başlatılamadı</h2>
+      <p style="margin: 0 0 16px 0; opacity: 0.9;">${error.message}</p>
+      <button onclick="window.location.reload()" style="
+        background: white;
+        color: #ef4444;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 16px;
+      ">Sayfayı Yenile</button>
+    `;
+    document.body.appendChild(fallbackError);
+    console.error('Critical app initialization error:', error);
+  }
 });
 
 // Parent window'a state gönder (sipariş sistemi için)

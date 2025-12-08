@@ -403,17 +403,6 @@ export class Scene3D {
     return label;
   }
 
-  // Helper Visibility
-  setGridVisible(visible) {
-    this.grid.visible = visible;
-  }
-
-  setAxesVisible(visible) {
-    this.axes.visible = visible;
-    if (this.axisLabels) {
-      this.axisLabels.visible = visible;
-    }
-  }
 
   // Utility
   dispose() {
