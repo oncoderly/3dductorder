@@ -323,8 +323,18 @@ export class ReduksiyonDirsek extends BasePart {
     cone.renderOrder = this.params.dimAlwaysOnTop ? 999 : 0;
     this.scene.dimensionGroup.add(cone);
 
+    // R_in ve A parametreleri için paramData bul
+const definitions = this.getParameterDefinitions();
+const allParams = [
+  ...(definitions.dimensions || []),
+  ...(definitions.material || []),
+  ...(definitions.view || [])
+];
+const paramDataR = allParams.find(p => p.key === 'R_in');
+const paramDataA = allParams.find(p => p.key === 'A');
+
     this.scene.addLabel(`R(iç) = ${this.params.R_in.toFixed(1)} cm`,
-      startR.clone().add(arcPoint).multiplyScalar(0.5), this.params.colorR);
+  startR.clone().add(arcPoint).multiplyScalar(0.5), this.params.colorR, paramDataR);
 
     // Açı yayı (merkezde)
     const arcPts = [];
@@ -346,7 +356,7 @@ export class ReduksiyonDirsek extends BasePart {
     this.scene.dimensionGroup.add(arcLine);
 
     this.scene.addLabel(`A = ${this.params.A}°`,
-      new THREE.Vector3(-Rc * 0.6 - centerX, 0, Rc * 0.6 - centerZ), this.params.colorA);
+  new THREE.Vector3(-Rc * 0.6 - centerX, 0, Rc * 0.6 - centerZ), this.params.colorA, paramDataA);
   }
 
   calculateArea() {

@@ -20,7 +20,8 @@
       "Bash(git branch:*)",
       "Bash(npx http-server -p 3000)",
       "Bash(done)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(timeout 3 cmd:*)"
     ],
     "deny": [],
     "ask": []

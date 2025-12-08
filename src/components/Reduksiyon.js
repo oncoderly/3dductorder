@@ -413,11 +413,25 @@ export class Reduksiyon extends BasePart {
     let paramData = null;
     if (paramKey) {
       const definitions = this.getParameterDefinitions();
-      const allParams = [
-        ...(definitions.dimensions || []),
-        ...(definitions.material || []),
-        ...(definitions.view || [])
-      ];
+      let allParams = [];
+
+      // Eski yapı (dimensions, material, view)
+      if (definitions.dimensions || definitions.material || definitions.view) {
+        allParams = [
+          ...(definitions.dimensions || []),
+          ...(definitions.material || []),
+          ...(definitions.view || [])
+        ];
+      }
+      // Yeni yapı (groups)
+      else if (definitions.groups) {
+        definitions.groups.forEach(group => {
+          if (group.params) {
+            allParams.push(...group.params);
+          }
+        });
+      }
+
       const paramDef = allParams.find(p => p.key === paramKey);
       if (paramDef) {
         paramData = paramDef;
