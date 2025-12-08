@@ -798,15 +798,11 @@ html, body {
   transform: scale(0.95);
 }
 
-/* İzometrik butonu ortada büyük */
+/* İzometrik (çapraz) butonları - 4 köşe */
 .view-cube-btn-iso {
-  grid-column: 2;
-  grid-row: 2;
-  width: 44px;
-  height: 44px;
   background: linear-gradient(135deg, rgba(0, 200, 83, 0.3), rgba(0, 150, 63, 0.3));
   border-color: rgba(0, 200, 83, 0.5);
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 700;
 }
 
@@ -816,13 +812,16 @@ html, body {
   box-shadow: 0 0 12px rgba(0, 200, 83, 0.6);
 }
 
-/* Grid pozisyonları */
+/* Grid pozisyonları - Yeni 3x3 layout */
+.view-cube-btn[data-view="isoTopLeftFront"] { grid-column: 1; grid-row: 1; }
 .view-cube-btn[data-view="top"] { grid-column: 2; grid-row: 1; }
-.view-cube-btn[data-view="front"] { grid-column: 2; grid-row: 3; }
-.view-cube-btn[data-view="right"] { grid-column: 3; grid-row: 2; }
+.view-cube-btn[data-view="isoTopRightFront"] { grid-column: 3; grid-row: 1; }
 .view-cube-btn[data-view="left"] { grid-column: 1; grid-row: 2; }
-.view-cube-btn[data-view="back"] { grid-column: 2; grid-row: 2; display: none; } /* Arka gizli, merkezde iso var */
-.view-cube-btn[data-view="bottom"] { grid-column: 1; grid-row: 3; }
+.view-cube-btn[data-view="front"] { grid-column: 2; grid-row: 2; }
+.view-cube-btn[data-view="right"] { grid-column: 3; grid-row: 2; }
+.view-cube-btn[data-view="isoBottomLeftBack"] { grid-column: 1; grid-row: 3; }
+.view-cube-btn[data-view="bottom"] { grid-column: 2; grid-row: 3; }
+.view-cube-btn[data-view="isoBottomRightBack"] { grid-column: 3; grid-row: 3; }
 
 /* Mobil optimizasyon */
 @media (max-width: 768px) {
@@ -841,7 +840,7 @@ html, body {
   .view-cube-btn-iso {
     width: 38px;
     height: 38px;
-    font-size: 11px;
+    font-size: 14px;
   }
 }
 
@@ -861,7 +860,7 @@ html, body {
   .view-cube-btn-iso {
     width: 32px;
     height: 32px;
-    font-size: 10px;
+    font-size: 13px;
   }
 }
 

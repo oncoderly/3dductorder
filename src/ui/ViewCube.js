@@ -15,7 +15,11 @@ export class ViewCube {
       right: { label: 'Sağ', position: new THREE.Vector3(3, 0, 0) },
       top: { label: 'Üst', position: new THREE.Vector3(0, 3, 0) },
       bottom: { label: 'Alt', position: new THREE.Vector3(0, -3, 0) },
-      iso: { label: 'İzo', position: new THREE.Vector3(2, 2, 2) }
+      // 4 çapraz köşe görünümü
+      isoTopRightFront: { label: '↗', position: new THREE.Vector3(2, 2, 2) },
+      isoTopLeftFront: { label: '↖', position: new THREE.Vector3(-2, 2, 2) },
+      isoBottomLeftBack: { label: '↙', position: new THREE.Vector3(-2, -2, -2) },
+      isoBottomRightBack: { label: '↘', position: new THREE.Vector3(2, -2, -2) }
     };
 
     this.init();
@@ -27,13 +31,15 @@ export class ViewCube {
     this.container.className = 'view-cube';
     this.container.innerHTML = `
       <div class="view-cube-grid">
+        <button class="view-cube-btn view-cube-btn-iso" data-view="isoTopLeftFront" title="Sol Üst Ön Çapraz">↖</button>
         <button class="view-cube-btn" data-view="top" title="Üstten Görünüm">Üst</button>
+        <button class="view-cube-btn view-cube-btn-iso" data-view="isoTopRightFront" title="Sağ Üst Ön Çapraz">↗</button>
+        <button class="view-cube-btn" data-view="left" title="Soldan Görünüm">Sol</button>
         <button class="view-cube-btn" data-view="front" title="Önden Görünüm">Ön</button>
         <button class="view-cube-btn" data-view="right" title="Sağdan Görünüm">Sağ</button>
-        <button class="view-cube-btn" data-view="left" title="Soldan Görünüm">Sol</button>
-        <button class="view-cube-btn" data-view="back" title="Arkadan Görünüm">Arka</button>
+        <button class="view-cube-btn view-cube-btn-iso" data-view="isoBottomLeftBack" title="Sol Alt Arka Çapraz">↙</button>
         <button class="view-cube-btn" data-view="bottom" title="Alttan Görünüm">Alt</button>
-        <button class="view-cube-btn view-cube-btn-iso" data-view="iso" title="İzometrik Görünüm">İzo</button>
+        <button class="view-cube-btn view-cube-btn-iso" data-view="isoBottomRightBack" title="Sağ Alt Arka Çapraz">↘</button>
       </div>
     `;
 
