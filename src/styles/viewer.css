@@ -748,6 +748,124 @@ html, body {
 }
 
 /* ========================================
+   VIEW CUBE - 3D Navigation
+   ======================================== */
+.view-cube {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  background: linear-gradient(135deg, rgba(28, 32, 48, 0.95), rgba(18, 22, 38, 0.95));
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 40px rgba(99, 102, 241, 0.2);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.view-cube-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.view-cube-btn {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(79, 70, 229, 0.2));
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  border-radius: 6px;
+  color: #e6edf3;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.view-cube-btn:hover {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.5), rgba(79, 70, 229, 0.5));
+  border-color: #6366f1;
+  transform: scale(1.05);
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.6);
+}
+
+.view-cube-btn:active {
+  transform: scale(0.95);
+}
+
+/* İzometrik butonu ortada büyük */
+.view-cube-btn-iso {
+  grid-column: 2;
+  grid-row: 2;
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, rgba(0, 200, 83, 0.3), rgba(0, 150, 63, 0.3));
+  border-color: rgba(0, 200, 83, 0.5);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.view-cube-btn-iso:hover {
+  background: linear-gradient(135deg, rgba(0, 200, 83, 0.6), rgba(0, 150, 63, 0.6));
+  border-color: #00c853;
+  box-shadow: 0 0 12px rgba(0, 200, 83, 0.6);
+}
+
+/* Grid pozisyonları */
+.view-cube-btn[data-view="top"] { grid-column: 2; grid-row: 1; }
+.view-cube-btn[data-view="front"] { grid-column: 2; grid-row: 3; }
+.view-cube-btn[data-view="right"] { grid-column: 3; grid-row: 2; }
+.view-cube-btn[data-view="left"] { grid-column: 1; grid-row: 2; }
+.view-cube-btn[data-view="back"] { grid-column: 2; grid-row: 2; display: none; } /* Arka gizli, merkezde iso var */
+.view-cube-btn[data-view="bottom"] { grid-column: 1; grid-row: 3; }
+
+/* Mobil optimizasyon */
+@media (max-width: 768px) {
+  .view-cube {
+    bottom: 15px;
+    right: 15px;
+    padding: 6px;
+  }
+
+  .view-cube-btn {
+    width: 38px;
+    height: 38px;
+    font-size: 10px;
+  }
+
+  .view-cube-btn-iso {
+    width: 38px;
+    height: 38px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .view-cube {
+    bottom: 10px;
+    right: 10px;
+    padding: 4px;
+  }
+
+  .view-cube-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 9px;
+  }
+
+  .view-cube-btn-iso {
+    width: 32px;
+    height: 32px;
+    font-size: 10px;
+  }
+}
+
+/* ========================================
    RESPONSIVE - MOBILE LAYOUT
    ======================================== */
 

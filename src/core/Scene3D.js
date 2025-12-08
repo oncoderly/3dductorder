@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { ViewCube } from '../ui/ViewCube.js';
 
 export class Scene3D {
   constructor(canvas) {
@@ -26,6 +27,7 @@ export class Scene3D {
     this.setupLabelRenderer();
     this.setupGroups();
     this.setupHelpers();
+    this.setupViewCube();
     this.setupViewState();
     this.setupResize();
     this.startAnimation();
@@ -33,6 +35,10 @@ export class Scene3D {
     // Başlangıç görünürlük durumlarını zorla uygula
     this.setGridVisible(this.sceneParams.showGrid);
     this.setAxesVisible(this.sceneParams.showAxes);
+  }
+
+  setupViewCube() {
+    this.viewCube = new ViewCube(this, this.camera, this.controls);
   }
 
   // Sahne parametrelerini döndür (GUI için)
@@ -414,6 +420,9 @@ export class Scene3D {
 
   // Utility
   dispose() {
+    if (this.viewCube) {
+      this.viewCube.dispose();
+    }
     this.controls.dispose();
     this.renderer.dispose();
     if (this.labelRenderer.domElement.parentElement) {
