@@ -2,8 +2,8 @@
 
 /* Popup Container */
 .dimension-popup {
-  position: fixed;
-  z-index: 99999;
+  position: fixed !important;
+  z-index: 99999 !important;
   background: linear-gradient(135deg, #2c2c3e 0%, #1a1a2e 100%);
   border-radius: 16px;
   padding: 16px;
@@ -11,22 +11,16 @@
   min-width: 320px;
   max-width: 90vw;
   opacity: 0;
-  transform: scale(0.9);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.2s ease;
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
   -webkit-user-select: none;
   user-select: none;
-  will-change: opacity, transform;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
+  will-change: opacity;
 }
 
 .dimension-popup.visible {
-  opacity: 1;
-  transform: scale(1);
-  -webkit-transform: scale(1) translateZ(0);
-  transform: scale(1) translateZ(0);
+  opacity: 1 !important;
 }
 
 /* Header - Parametre Adı */

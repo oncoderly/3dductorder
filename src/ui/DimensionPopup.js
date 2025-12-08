@@ -175,7 +175,10 @@ export class DimensionPopup {
       // Event yoksa ekranın ortasına yerleştir
       this.popup.style.left = '50%';
       this.popup.style.top = '50%';
-      this.popup.style.transform = 'translate(-50%, -50%)';
+      // Merkezleme için margin-left ve margin-top kullan (transform yerine)
+      const popupRect = this.popup.getBoundingClientRect();
+      this.popup.style.marginLeft = `${-popupRect.width / 2}px`;
+      this.popup.style.marginTop = `${-popupRect.height / 2}px`;
       console.log('📍 Popup centered (no event)');
       return;
     }
@@ -204,7 +207,8 @@ export class DimensionPopup {
 
     this.popup.style.left = `${x}px`;
     this.popup.style.top = `${y}px`;
-    this.popup.style.transform = 'none';
+    // transform'u 'none' yapma - CSS'teki scale ile çakışıyor
+    // this.popup.style.transform = 'none';
 
     console.log('📍 Popup positioned at:', { x, y });
 
