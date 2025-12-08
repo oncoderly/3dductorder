@@ -18,6 +18,7 @@ export class DimensionPopup {
     this.popup = document.createElement('div');
     this.popup.className = 'dimension-popup';
     this.popup.style.display = 'none';
+    this.popup.style.touchAction = 'none'; // Mobil scroll'u engelle
 
     // Header - Parametre adı
     this.header = document.createElement('div');
@@ -89,15 +90,19 @@ export class DimensionPopup {
     // Document'e click listener - popup dışına tıklayınca kapat
     this.documentClickHandler = (e) => {
       if (this.isVisible && !this.popup.contains(e.target)) {
-        this.hide();
+        // Popup açılışını tetikleyen element değilse kapat
+        if (!e.target.classList.contains('dimension-label')) {
+          this.hide();
+        }
       }
     };
 
+    // Mobil için touchend, desktop için click
     // Timeout ile ekle (popup açıldıktan sonra aktif olması için)
-    setTimeout(() => {
-      document.addEventListener('click', this.documentClickHandler);
-      document.addEventListener('touchstart', this.documentClickHandler);
-    }, 100);
+    this.attachListenerTimeout = setTimeout(() => {
+      document.addEventListener('click', this.documentClickHandler, { passive: true });
+      document.addEventListener('touchend', this.documentClickHandler, { passive: true });
+    }, 150);
   }
 
   show(paramData, part, clickEvent) {
@@ -202,10 +207,15 @@ export class DimensionPopup {
   }
 
   destroy() {
+    // Timeout'ları temizle
+    if (this.attachListenerTimeout) {
+      clearTimeout(this.attachListenerTimeout);
+    }
+
     // Event listener'ları temizle
     if (this.documentClickHandler) {
       document.removeEventListener('click', this.documentClickHandler);
-      document.removeEventListener('touchstart', this.documentClickHandler);
+      document.removeEventListener('touchend', this.documentClickHandler);
     }
 
     if (this.popup) this.popup.remove();

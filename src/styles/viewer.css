@@ -724,6 +724,10 @@ html, body {
   pointer-events: auto;
   cursor: pointer;
   transition: all 0.2s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .label.dimension-label:hover {
@@ -732,6 +736,18 @@ html, body {
   transform: scale(1.1);
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.5);
   z-index: 1000;
+}
+
+/* Mobil için daha büyük touch area */
+@media (max-width: 768px) {
+  .label.dimension-label {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+  }
 }
 
 /* Eksen Etiketleri (X, Y, Z) */

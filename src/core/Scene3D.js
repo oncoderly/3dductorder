@@ -320,26 +320,49 @@ export class Scene3D {
       div.style.touchAction = 'manipulation';
       div.classList.add('dimension-label');
 
-      // Click event (desktop ve mobil)
-      div.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.dimensionPopup.show(paramData, this.currentPart, e);
+      // Mobil ve desktop için birleşik event handler
+      let touchStartTime = 0;
+      let touchMoved = false;
+
+      // Touch start - başlangıç zamanını kaydet
+      div.addEventListener('touchstart', (e) => {
+        touchStartTime = Date.now();
+        touchMoved = false;
+      }, { passive: true });
+
+      // Touch move - hareket algıla
+      div.addEventListener('touchmove', (e) => {
+        touchMoved = true;
+      }, { passive: true });
+
+      // Touch end - sadece tap ise popup göster
+      div.addEventListener('touchend', (e) => {
+        const touchDuration = Date.now() - touchStartTime;
+
+        // Kısa dokunma (tap) ve hareket yoksa popup göster
+        if (!touchMoved && touchDuration < 500) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          // Touch pozisyonunu clientX/Y'ye çevir
+          const touch = e.changedTouches[0];
+          const fakeEvent = {
+            clientX: touch.clientX,
+            clientY: touch.clientY
+          };
+
+          this.dimensionPopup.show(paramData, this.currentPart, fakeEvent);
+        }
       });
 
-      // Touch event (mobil için özel)
-      div.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        // Touch pozisyonunu clientX/Y'ye çevir
-        const touch = e.changedTouches[0];
-        const fakeEvent = {
-          clientX: touch.clientX,
-          clientY: touch.clientY
-        };
-
-        this.dimensionPopup.show(paramData, this.currentPart, fakeEvent);
+      // Desktop için click event
+      div.addEventListener('click', (e) => {
+        // Mobil cihazlarda touchend zaten çalıştı, double trigger'ı önle
+        if (e.pointerType !== 'touch') {
+          e.preventDefault();
+          e.stopPropagation();
+          this.dimensionPopup.show(paramData, this.currentPart, e);
+        }
       });
     }
 
