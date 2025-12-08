@@ -323,47 +323,63 @@ export class Scene3D {
       // Mobil ve desktop için birleşik event handler
       let touchStartTime = 0;
       let touchMoved = false;
+      let touchStartPos = { x: 0, y: 0 };
+      let isProcessing = false;
 
       // Touch start - başlangıç zamanını kaydet
       div.addEventListener('touchstart', (e) => {
         touchStartTime = Date.now();
         touchMoved = false;
+        isProcessing = false;
+        if (e.touches[0]) {
+          touchStartPos = {
+            x: e.touches[0].clientX,
+            y: e.touches[0].clientY
+          };
+        }
+        console.log('🟢 touchstart on label:', text);
       }, { passive: true });
 
       // Touch move - hareket algıla
       div.addEventListener('touchmove', (e) => {
-        touchMoved = true;
+        if (e.touches[0]) {
+          const deltaX = Math.abs(e.touches[0].clientX - touchStartPos.x);
+          const deltaY = Math.abs(e.touches[0].clientY - touchStartPos.y);
+          if (deltaX > 10 || deltaY > 10) {
+            touchMoved = true;
+            console.log('🔵 touchmove detected - moved:', deltaX, deltaY);
+          }
+        }
       }, { passive: true });
 
-      // Touch end - sadece tap ise popup göster
+      // Touch end - PASSIVE bırakıyoruz, click event'e güveniyoruz
       div.addEventListener('touchend', (e) => {
         const touchDuration = Date.now() - touchStartTime;
+        console.log('🟡 touchend on label:', text, 'duration:', touchDuration, 'moved:', touchMoved);
 
-        // Kısa dokunma (tap) ve hareket yoksa popup göster
+        // Sadece bilgi için - asıl işlem click'te
         if (!touchMoved && touchDuration < 500) {
-          e.preventDefault();
-          e.stopPropagation();
-
-          // Touch pozisyonunu clientX/Y'ye çevir
-          const touch = e.changedTouches[0];
-          const fakeEvent = {
-            clientX: touch.clientX,
-            clientY: touch.clientY
-          };
-
-          this.dimensionPopup.show(paramData, this.currentPart, fakeEvent);
+          isProcessing = true;
+          console.log('✅ Valid tap detected, waiting for click event...');
         }
-      });
+      }, { passive: true });
 
-      // Desktop için click event
+      // Click event - Hem mobil hem desktop için
       div.addEventListener('click', (e) => {
-        // Mobil cihazlarda touchend zaten çalıştı, double trigger'ı önle
-        if (e.pointerType !== 'touch') {
-          e.preventDefault();
-          e.stopPropagation();
-          this.dimensionPopup.show(paramData, this.currentPart, e);
-        }
-      });
+        console.log('🔴 click event triggered on label:', text, 'pointerType:', e.pointerType);
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Touch pozisyonunu al
+        const eventData = {
+          clientX: e.clientX || touchStartPos.x,
+          clientY: e.clientY || touchStartPos.y
+        };
+
+        console.log('📍 Opening popup at:', eventData);
+        this.dimensionPopup.show(paramData, this.currentPart, eventData);
+      }, false);
     }
 
     const label = new CSS2DObject(div);

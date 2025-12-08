@@ -106,6 +106,13 @@ export class DimensionPopup {
   }
 
   show(paramData, part, clickEvent) {
+    console.log('🎯 DimensionPopup.show() called:', {
+      param: paramData.label,
+      part: part.constructor.name,
+      event: clickEvent,
+      isVisible: this.isVisible
+    });
+
     this.currentParam = paramData;
     this.currentPart = part;
     this.isVisible = true;
@@ -128,13 +135,16 @@ export class DimensionPopup {
 
     // Görünür yap
     this.popup.style.display = 'block';
+    console.log('✅ Popup display set to block');
 
     // Pozisyonu ayarla (tıklanan yere yakın)
     this.positionPopup(clickEvent);
+    console.log('✅ Popup positioned');
 
     // Animasyon için class ekle
     setTimeout(() => {
       this.popup.classList.add('visible');
+      console.log('✅ Popup visible class added');
     }, 10);
   }
 
