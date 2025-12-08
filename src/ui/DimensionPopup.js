@@ -20,6 +20,10 @@ export class DimensionPopup {
     this.popup.style.display = 'none';
     this.popup.style.touchAction = 'none'; // Mobil scroll'u engelle
 
+    // Android için inline style'larla pozisyon ve z-index'i zorla
+    this.popup.style.position = 'fixed';
+    this.popup.style.zIndex = '999999';
+
     // Header - Parametre adı
     this.header = document.createElement('div');
     this.header.className = 'dimension-popup-header';
