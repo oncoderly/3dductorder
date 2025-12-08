@@ -207,8 +207,9 @@ export class Scene3D {
       // CSS2D labels need explicit DOM visibility control
       this.axisLabels.children.forEach((label, index) => {
         if (label.element) {
-          console.log(`  Label ${index} (${label.element.textContent}): setting display to`, visible ? 'visible' : 'none');
-          label.element.style.display = visible ? '' : 'none';
+          const displayValue = visible ? 'block' : 'none';
+          console.log(`  Label ${index} (${label.element.textContent}): setting display to`, displayValue);
+          label.element.style.display = displayValue;
         }
       });
     }
