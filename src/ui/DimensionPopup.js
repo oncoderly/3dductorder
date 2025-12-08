@@ -24,25 +24,61 @@ export class DimensionPopup {
     this.popup.style.position = 'fixed';
     this.popup.style.zIndex = '999999';
 
+    // CSS yüklenmemişse inline style ile tüm stilleri uygula
+    this.popup.style.background = 'linear-gradient(135deg, #2c2c3e 0%, #1a1a2e 100%)';
+    this.popup.style.borderRadius = '16px';
+    this.popup.style.padding = '16px';
+    this.popup.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.6)';
+    this.popup.style.minWidth = '320px';
+    this.popup.style.maxWidth = '90vw';
+
     // Header - Parametre adı
     this.header = document.createElement('div');
     this.header.className = 'dimension-popup-header';
+    this.header.style.color = '#ffffff';
+    this.header.style.fontSize = '14px';
+    this.header.style.fontWeight = '600';
+    this.header.style.marginBottom = '12px';
+    this.header.style.textAlign = 'center';
+    this.header.style.textTransform = 'uppercase';
+    this.header.style.letterSpacing = '0.5px';
     this.popup.appendChild(this.header);
 
     // Controls container
     const controls = document.createElement('div');
     controls.className = 'dimension-popup-controls';
+    controls.style.display = 'flex';
+    controls.style.alignItems = 'center';
+    controls.style.gap = '8px';
 
     // Sol ikon (mavi daire)
     const icon = document.createElement('div');
     icon.className = 'dimension-popup-icon';
     icon.innerHTML = '📏';
+    icon.style.width = '36px';
+    icon.style.height = '36px';
+    icon.style.background = 'linear-gradient(135deg, #4a90e2 0%, #357abd 100%)';
+    icon.style.borderRadius = '50%';
+    icon.style.display = 'flex';
+    icon.style.alignItems = 'center';
+    icon.style.justifyContent = 'center';
+    icon.style.fontSize = '18px';
+    icon.style.flexShrink = '0';
     controls.appendChild(icon);
 
     // -5 Butonu (kırmızı)
     this.minusBtn = document.createElement('button');
     this.minusBtn.className = 'dimension-popup-btn minus';
     this.minusBtn.textContent = '-5';
+    this.minusBtn.style.width = '48px';
+    this.minusBtn.style.height = '48px';
+    this.minusBtn.style.border = 'none';
+    this.minusBtn.style.borderRadius = '8px';
+    this.minusBtn.style.fontSize = '16px';
+    this.minusBtn.style.fontWeight = '700';
+    this.minusBtn.style.background = 'linear-gradient(135deg, #ff4757 0%, #e84118 100%)';
+    this.minusBtn.style.color = 'white';
+    this.minusBtn.style.cursor = 'pointer';
     this.minusBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       this.adjustValue(-5);
@@ -56,6 +92,11 @@ export class DimensionPopup {
     this.slider.min = '0';
     this.slider.max = '300';
     this.slider.step = '0.1';
+    this.slider.style.flex = '1';
+    this.slider.style.height = '8px';
+    this.slider.style.background = 'linear-gradient(90deg, #3a3a4e 0%, #4a4a5e 100%)';
+    this.slider.style.borderRadius = '4px';
+    this.slider.style.minWidth = '100px';
     this.slider.addEventListener('input', (e) => {
       e.stopPropagation();
       this.updateValue(parseFloat(e.target.value));
@@ -66,12 +107,31 @@ export class DimensionPopup {
     this.valueDisplay = document.createElement('div');
     this.valueDisplay.className = 'dimension-popup-value';
     this.valueDisplay.textContent = '50';
+    this.valueDisplay.style.minWidth = '50px';
+    this.valueDisplay.style.height = '48px';
+    this.valueDisplay.style.background = '#ffffff';
+    this.valueDisplay.style.color = '#1a1a2e';
+    this.valueDisplay.style.borderRadius = '8px';
+    this.valueDisplay.style.display = 'flex';
+    this.valueDisplay.style.alignItems = 'center';
+    this.valueDisplay.style.justifyContent = 'center';
+    this.valueDisplay.style.fontSize = '18px';
+    this.valueDisplay.style.fontWeight = '700';
     controls.appendChild(this.valueDisplay);
 
     // +5 Butonu (yeşil)
     this.plusBtn = document.createElement('button');
     this.plusBtn.className = 'dimension-popup-btn plus';
     this.plusBtn.textContent = '+5';
+    this.plusBtn.style.width = '48px';
+    this.plusBtn.style.height = '48px';
+    this.plusBtn.style.border = 'none';
+    this.plusBtn.style.borderRadius = '8px';
+    this.plusBtn.style.fontSize = '16px';
+    this.plusBtn.style.fontWeight = '700';
+    this.plusBtn.style.background = 'linear-gradient(135deg, #00d2ff 0%, #00c853 100%)';
+    this.plusBtn.style.color = 'white';
+    this.plusBtn.style.cursor = 'pointer';
     this.plusBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       this.adjustValue(+5);
@@ -82,6 +142,9 @@ export class DimensionPopup {
     const unit = document.createElement('div');
     unit.className = 'dimension-popup-unit';
     unit.textContent = 'cm';
+    unit.style.color = '#ffffff';
+    unit.style.fontSize = '14px';
+    unit.style.fontWeight = '600';
     controls.appendChild(unit);
 
     this.popup.appendChild(controls);
