@@ -51,21 +51,6 @@ export class DimensionPopup {
     controls.style.alignItems = 'center';
     controls.style.gap = '8px';
 
-    // Sol ikon (mavi daire)
-    const icon = document.createElement('div');
-    icon.className = 'dimension-popup-icon';
-    icon.innerHTML = '📏';
-    icon.style.width = '36px';
-    icon.style.height = '36px';
-    icon.style.background = 'linear-gradient(135deg, #4a90e2 0%, #357abd 100%)';
-    icon.style.borderRadius = '50%';
-    icon.style.display = 'flex';
-    icon.style.alignItems = 'center';
-    icon.style.justifyContent = 'center';
-    icon.style.fontSize = '18px';
-    icon.style.flexShrink = '0';
-    controls.appendChild(icon);
-
     // -5 Butonu (kırmızı)
     this.minusBtn = document.createElement('button');
     this.minusBtn.className = 'dimension-popup-btn minus';
