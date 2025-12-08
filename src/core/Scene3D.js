@@ -197,19 +197,26 @@ export class Scene3D {
 
   // Eksen görünürlüğünü ayarla
   setAxesVisible(visible) {
-    console.log('🔧 setAxesVisible called:', visible, 'axis labels count:', this.axisLabels?.children.length);
+    console.log('🔧 setAxesVisible called:', visible);
 
     if (this.axes) {
       this.axes.visible = visible;
     }
+
     if (this.axisLabels) {
+      // CSS2D labels için hem visible property hem de DOM display kontrolü gerekli
       this.axisLabels.visible = visible;
-      // CSS2D labels need explicit DOM visibility control
-      this.axisLabels.children.forEach((label, index) => {
+
+      // Her label için ayrı ayrı visible ve DOM kontrolü
+      this.axisLabels.children.forEach((label) => {
         if (label.element) {
-          const displayValue = visible ? 'block' : 'none';
-          console.log(`  Label ${index} (${label.element.textContent}): setting display to`, displayValue);
-          label.element.style.display = displayValue;
+          // İki yöntem de kullanılmalı:
+          // 1. Three.js visible property
+          label.visible = visible;
+          // 2. DOM display style
+          label.element.style.display = visible ? 'block' : 'none';
+
+          console.log(`  Axis label "${label.element.textContent}": visible=${label.visible}, display=${label.element.style.display}`);
         }
       });
     }
