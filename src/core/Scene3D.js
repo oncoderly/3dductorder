@@ -76,7 +76,8 @@ export class Scene3D {
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
       antialias: true,
-      alpha: false  // Opak arka plan için
+      alpha: false,  // Opak arka plan için
+      preserveDrawingBuffer: true  // Screenshot için gerekli
     });
     this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
     this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
