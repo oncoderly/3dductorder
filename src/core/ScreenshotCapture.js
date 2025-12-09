@@ -68,8 +68,16 @@ export class ScreenshotCapture {
       // Render et
       this.renderer.render(this.scene, this.camera);
 
-      // Screenshot al (JPEG 0.8 quality - localStorage için optimize)
-      const dataURL = this.renderer.domElement.toDataURL('image/jpeg', 0.8);
+      // CSS2D label'ları da render et
+      if (this.scene3D.labelRenderer) {
+        this.scene3D.labelRenderer.render(this.scene, this.camera);
+      }
+
+      // Kısa bekleme (label'ların render edilmesini bekle)
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Screenshot al - WebGL canvas + HTML label'ları birleştir
+      const dataURL = await this.captureWithLabels();
 
       // Orijinal duruma geri dön
       this.camera.position.copy(originalPosition);
@@ -124,6 +132,74 @@ export class ScreenshotCapture {
     }
 
     return screenshots;
+  }
+
+  /**
+   * WebGL canvas ve HTML label'ları birleştirerek screenshot al
+   * @returns {Promise<string>} - Base64 JPEG string with labels
+   */
+  async captureWithLabels() {
+    return new Promise((resolve) => {
+      // Yeni bir canvas oluştur (birleştirme için)
+      const compositeCanvas = document.createElement('canvas');
+      const ctx = compositeCanvas.getContext('2d');
+
+      // Canvas boyutları WebGL canvas ile aynı olsun
+      const width = this.renderer.domElement.width;
+      const height = this.renderer.domElement.height;
+      compositeCanvas.width = width;
+      compositeCanvas.height = height;
+
+      // 1) WebGL canvas'ını çiz (3D model + ölçü çizgileri)
+      ctx.drawImage(this.renderer.domElement, 0, 0, width, height);
+
+      // 2) HTML label'ları çiz (CSS2DRenderer'dan)
+      if (this.scene3D.labelRenderer) {
+        const labelElements = this.scene3D.labelRenderer.domElement.querySelectorAll('.dimension-label');
+
+        labelElements.forEach(labelEl => {
+          if (labelEl.style.display === 'none') return; // Gizli label'ları atla
+
+          // Label'ın ekrandaki pozisyonu ve boyutunu al
+          const rect = labelEl.getBoundingClientRect();
+          const canvasRect = this.renderer.domElement.getBoundingClientRect();
+
+          // Canvas koordinatlarına çevir
+          const x = (rect.left - canvasRect.left) * (width / canvasRect.width);
+          const y = (rect.top - canvasRect.top) * (height / canvasRect.height);
+
+          // Label içeriği
+          const text = labelEl.textContent;
+
+          // Label stilini al
+          const computedStyle = window.getComputedStyle(labelEl);
+          const fontSize = parseFloat(computedStyle.fontSize) * (width / canvasRect.width);
+          const fontFamily = computedStyle.fontFamily;
+          const color = computedStyle.color;
+          const backgroundColor = computedStyle.backgroundColor;
+
+          // Arka plan çiz (varsa)
+          if (backgroundColor && backgroundColor !== 'rgba(0, 0, 0, 0)') {
+            ctx.fillStyle = backgroundColor;
+            const padding = 4;
+            ctx.font = `${fontSize}px ${fontFamily}`;
+            const textWidth = ctx.measureText(text).width;
+            ctx.fillRect(x - padding, y - fontSize - padding, textWidth + padding * 2, fontSize + padding * 2);
+          }
+
+          // Metni çiz
+          ctx.fillStyle = color;
+          ctx.font = `${fontSize}px ${fontFamily}`;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+          ctx.fillText(text, x, y);
+        });
+      }
+
+      // JPEG olarak export et
+      const dataURL = compositeCanvas.toDataURL('image/jpeg', 0.8);
+      resolve(dataURL);
+    });
   }
 
   /**
