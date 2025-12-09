@@ -1,35 +1,3 @@
 {
-  "rewrites": [
-    { "source": "/", "destination": "/viewer.html" },
-    { "source": "/(.*)", "destination": "/$1" }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "text/html; charset=utf-8"
-        }
-      ]
-    },
-    {
-      "source": "/src/styles/(.*).css",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "text/css; charset=utf-8"
-        }
-      ]
-    },
-    {
-      "source": "/(.*).js",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "text/javascript; charset=utf-8"
-        }
-      ]
-    }
-  ]
+  "framework": null
 }
