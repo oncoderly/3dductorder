@@ -2,7 +2,7 @@
   "name": "DuctCalc - 3D Kanal Görüntüleyici",
   "short_name": "DuctCalc",
   "description": "3D Kanal sipariş ve alan hesaplama uygulaması",
-  "start_url": "/viewer.html",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#0b0e12",
   "theme_color": "#0b0e12",
