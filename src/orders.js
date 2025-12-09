@@ -18,12 +18,17 @@ class OrdersPage {
     const emptyState = document.getElementById('empty-state');
     const ordersContent = document.getElementById('orders-content');
 
+    console.log('📦 Orders Page - Cart:', cart);
+    console.log('📦 Cart length:', cart.length);
+
     if (cart.length === 0) {
       // Sepet boş
+      console.log('⚠️ Sepet boş görünüyor');
       emptyState.style.display = 'block';
       ordersContent.style.display = 'none';
     } else {
       // Sepet dolu
+      console.log('✅ Sepet dolu, rendering...', cart.length, 'items');
       emptyState.style.display = 'none';
       ordersContent.style.display = 'grid';
       this.renderOrders(cart);
