@@ -273,8 +273,11 @@ export class OrderManager {
       pdf.text(`Toplam: ${totalArea} m²`, margin + 100, yPos);
 
       // 4 screenshot'ı yerleştir (2x2 grid)
-      yPos += 15;
-      const imgWidth = (contentWidth - 10) / 2;
+      yPos += 10;
+      const horizontalGap = 2; // Yatay boşluk (minimuma indirildi)
+      const verticalGap = 5; // Dikey boşluk (minimuma indirildi)
+      const labelHeight = 4; // Label yüksekliği
+      const imgWidth = (contentWidth - horizontalGap) / 2;
       const imgHeight = imgWidth * 0.75; // 4:3 aspect ratio
 
       const screenshots = [
@@ -287,31 +290,51 @@ export class OrderManager {
       for (let j = 0; j < screenshots.length; j++) {
         const row = Math.floor(j / 2);
         const col = j % 2;
-        const x = margin + (col * (imgWidth + 10));
-        const y = yPos + (row * (imgHeight + 15));
+        const x = margin + (col * (imgWidth + horizontalGap));
+        const y = yPos + (row * (imgHeight + verticalGap + labelHeight));
 
         // Screenshot label
-        pdf.setFontSize(9);
-        pdf.setTextColor(50, 50, 50);
+        pdf.setFontSize(8);
+        pdf.setTextColor(80, 80, 80);
         pdf.text(screenshots[j].label, x, y);
 
-        // Screenshot image
+        // Ayırıcı çizgi (label ile görsel arası)
+        pdf.setDrawColor(200, 200, 200);
+        pdf.setLineWidth(0.1);
+        pdf.line(x, y + 1, x + imgWidth, y + 1);
+
+        // Screenshot image (yüksek kalite, compression yok)
         try {
           pdf.addImage(
             screenshots[j].data,
             'PNG',
             x,
-            y + 3,
+            y + 2,
             imgWidth,
             imgHeight,
             undefined,
-            'FAST' // Compression
+            'SLOW' // Yüksek kalite - compression yok
           );
         } catch (error) {
           console.warn(`Screenshot ${j} eklenemedi:`, error);
           // Hata durumunda placeholder
           pdf.setDrawColor(200, 200, 200);
-          pdf.rect(x, y + 3, imgWidth, imgHeight);
+          pdf.rect(x, y + 2, imgWidth, imgHeight);
+        }
+
+        // Görsel çerçevesi (opsiyonel - görünümler arası ayırıcı)
+        if (row === 0 && col === 1) {
+          // Sağ üst ile sol üst arası dikey çizgi
+          pdf.setDrawColor(220, 220, 220);
+          pdf.setLineWidth(0.1);
+          pdf.line(x - horizontalGap/2, y, x - horizontalGap/2, y + imgHeight + 2);
+        }
+        if (row === 1) {
+          // Alt satır ile üst satır arası yatay çizgi
+          pdf.setDrawColor(220, 220, 220);
+          pdf.setLineWidth(0.1);
+          const lineY = y - verticalGap/2;
+          pdf.line(margin, lineY, margin + contentWidth, lineY);
         }
       }
     }
