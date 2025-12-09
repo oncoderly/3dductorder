@@ -150,6 +150,13 @@ export class ScreenshotCapture {
       compositeCanvas.width = width;
       compositeCanvas.height = height;
 
+      // Arka plan rengini çiz (scene background color)
+      const bgColor = this.scene.background;
+      if (bgColor) {
+        ctx.fillStyle = `rgb(${Math.floor(bgColor.r * 255)}, ${Math.floor(bgColor.g * 255)}, ${Math.floor(bgColor.b * 255)})`;
+        ctx.fillRect(0, 0, width, height);
+      }
+
       // 1) WebGL canvas'ını çiz (3D model + ölçü çizgileri)
       ctx.drawImage(this.renderer.domElement, 0, 0, width, height);
 
