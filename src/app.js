@@ -223,6 +223,11 @@ class App {
       // Parametre panelini oluştur
       this.setupParameterPanel();
 
+      // Alan hesabını güncelle (parametre paneli oluşturulduktan sonra)
+      if (this.currentPart && this.currentPart.updateAreaDisplay) {
+        this.currentPart.updateAreaDisplay();
+      }
+
       // HUD'ı güncelle
       this.updateHUD();
     } catch (error) {
