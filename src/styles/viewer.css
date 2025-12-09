@@ -1042,11 +1042,12 @@ html, body {
 /* Responsive - Tablet */
 @media (max-width: 768px) {
   .order-fab {
-    bottom: 160px;
+    bottom: 30px; /* Alt boşluk */
     right: 10px;
     width: 70px;
     height: 56px;
     border-radius: 28px;
+    z-index: 1001; /* Navigasyon ve panel üzerinde */
   }
 
   .order-fab-icon {
@@ -1070,11 +1071,12 @@ html, body {
 /* Responsive - Mobile */
 @media (max-width: 480px) {
   .order-fab {
-    bottom: 140px;
+    bottom: 20px; /* Alt boşluk - navigasyonun üstünde */
     right: 8px;
     width: 56px;
     height: 56px;
     border-radius: 28px;
+    z-index: 1001; /* Navigasyon ve panel üzerinde */
   }
 
   .order-fab-icon {
