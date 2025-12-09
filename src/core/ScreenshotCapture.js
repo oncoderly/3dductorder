@@ -178,34 +178,47 @@ export class ScreenshotCapture {
           const rect = labelEl.getBoundingClientRect();
           const canvasRect = this.renderer.domElement.getBoundingClientRect();
 
-          // Canvas koordinatlarına çevir
-          const x = (rect.left - canvasRect.left) * (width / canvasRect.width);
-          const y = (rect.top - canvasRect.top) * (height / canvasRect.height);
+          // Canvas koordinatlarına çevir (scale factor hesapla)
+          const scaleX = width / canvasRect.width;
+          const scaleY = height / canvasRect.height;
+
+          const x = (rect.left - canvasRect.left) * scaleX;
+          const y = (rect.top - canvasRect.top) * scaleY;
 
           // Label içeriği
           const text = labelEl.textContent;
+          if (!text || text.trim() === '') return; // Boş label'ları atla
 
           // Label stilini al
           const computedStyle = window.getComputedStyle(labelEl);
-          const fontSize = parseFloat(computedStyle.fontSize) * (width / canvasRect.width);
-          const fontFamily = computedStyle.fontFamily;
-          const color = computedStyle.color;
+          const fontSize = parseFloat(computedStyle.fontSize) * scaleX;
+          const fontFamily = computedStyle.fontFamily || 'Arial';
+          const color = computedStyle.color || '#ffffff';
           const backgroundColor = computedStyle.backgroundColor;
+
+          // Font ayarla
+          ctx.font = `600 ${fontSize}px ${fontFamily}`;
+          ctx.textAlign = 'center'; // CSS2DRenderer label'lar center aligned
+          ctx.textBaseline = 'middle';
+
+          const textMetrics = ctx.measureText(text);
+          const textWidth = textMetrics.width;
+          const textHeight = fontSize;
 
           // Arka plan çiz (varsa)
           if (backgroundColor && backgroundColor !== 'rgba(0, 0, 0, 0)') {
             ctx.fillStyle = backgroundColor;
-            const padding = 4;
-            ctx.font = `${fontSize}px ${fontFamily}`;
-            const textWidth = ctx.measureText(text).width;
-            ctx.fillRect(x - padding, y - fontSize - padding, textWidth + padding * 2, fontSize + padding * 2);
+            const padding = 6;
+            ctx.fillRect(
+              x - textWidth / 2 - padding,
+              y - textHeight / 2 - padding,
+              textWidth + padding * 2,
+              textHeight + padding * 2
+            );
           }
 
           // Metni çiz
           ctx.fillStyle = color;
-          ctx.font = `${fontSize}px ${fontFamily}`;
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'top';
           ctx.fillText(text, x, y);
         });
       }
