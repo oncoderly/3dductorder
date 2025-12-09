@@ -328,8 +328,8 @@ class App {
     try {
       this.orderButton.showLoading();
 
-      // 4 görüntüyü çek (temiz görünüm - grid/axes/dimensions gizli)
-      const screenshots = await this.screenshotCapture.captureAllViews(true);
+      // 4 görüntüyü çek (3D model + ölçü çizgileri + ölçü etiketleri)
+      const screenshots = await this.screenshotCapture.captureAllViews(false);
 
       // Parça bilgilerini al
       const partKey = this.getCurrentPartKey();
