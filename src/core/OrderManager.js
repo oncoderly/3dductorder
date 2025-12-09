@@ -191,6 +191,163 @@ export class OrderManager {
   }
 
   /**
+   * PDF'yi dosya olarak indir (jsPDF kullanarak)
+   * @param {string} filename - Dosya adı (default: siparis-YYYYMMDD.pdf)
+   * @param {Function} onProgress - İlerleme callback (current, total)
+   */
+  async downloadPDF(filename = null, onProgress = null) {
+    const cart = this.getCart();
+    if (cart.length === 0) {
+      throw new Error('Sepet boş! PDF oluşturulamaz.');
+    }
+
+    const orderDate = new Date().toISOString().split('T')[0];
+    const defaultFilename = `siparis-${orderDate}.pdf`;
+
+    // jsPDF'i dinamik olarak yükle
+    const { jsPDF } = await this.loadJsPDF();
+
+    // A4 portrait (210 x 297 mm)
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const margin = 15;
+    const contentWidth = pageWidth - (margin * 2);
+
+    // Her parça için bir sayfa oluştur
+    for (let i = 0; i < cart.length; i++) {
+      const item = cart[i];
+
+      // İlerleme callback
+      if (onProgress) {
+        onProgress(i + 1, cart.length);
+      }
+
+      // Yeni sayfa ekle (ilk sayfa hariç)
+      if (i > 0) {
+        pdf.addPage();
+      }
+
+      // Sayfa numarası
+      const pageNum = i + 1;
+      pdf.setFontSize(10);
+      pdf.setTextColor(128, 128, 128);
+      pdf.text(`Sayfa ${pageNum} / ${cart.length}`, pageWidth - margin, pageHeight - 5, { align: 'right' });
+
+      // Başlık
+      pdf.setFontSize(16);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(`Parça ${pageNum}: ${item.partName}`, margin, margin + 10);
+
+      // Tarih
+      const date = new Date(item.timestamp);
+      const dateStr = date.toLocaleString('tr-TR');
+      pdf.setFontSize(9);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(dateStr, margin, margin + 16);
+
+      // Boyutlar
+      let yPos = margin + 28;
+      pdf.setFontSize(11);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text('Boyutlar:', margin, yPos);
+
+      yPos += 6;
+      pdf.setFontSize(10);
+      const dimensions = Object.entries(item.dimensions)
+        .map(([key, value]) => `${key}: ${Number.isInteger(value) ? value : value.toFixed(1)} cm`)
+        .join(' | ');
+      pdf.text(dimensions, margin, yPos);
+
+      // Alan bilgisi
+      yPos += 10;
+      pdf.setFontSize(11);
+      pdf.text(`Alan: ${parseFloat(item.area).toFixed(2)} m²`, margin, yPos);
+      pdf.text(`Adet: ${item.quantity}`, margin + 60, yPos);
+      const totalArea = (parseFloat(item.area) * item.quantity).toFixed(2);
+      pdf.text(`Toplam: ${totalArea} m²`, margin + 100, yPos);
+
+      // 4 screenshot'ı yerleştir (2x2 grid)
+      yPos += 15;
+      const imgWidth = (contentWidth - 10) / 2;
+      const imgHeight = imgWidth * 0.75; // 4:3 aspect ratio
+
+      const screenshots = [
+        { label: 'Ön Görünüm', data: item.screenshots.front },
+        { label: 'Sağ Görünüm', data: item.screenshots.right },
+        { label: 'Üst Görünüm', data: item.screenshots.top },
+        { label: 'İzometrik', data: item.screenshots.iso }
+      ];
+
+      for (let j = 0; j < screenshots.length; j++) {
+        const row = Math.floor(j / 2);
+        const col = j % 2;
+        const x = margin + (col * (imgWidth + 10));
+        const y = yPos + (row * (imgHeight + 15));
+
+        // Screenshot label
+        pdf.setFontSize(9);
+        pdf.setTextColor(50, 50, 50);
+        pdf.text(screenshots[j].label, x, y);
+
+        // Screenshot image
+        try {
+          pdf.addImage(
+            screenshots[j].data,
+            'PNG',
+            x,
+            y + 3,
+            imgWidth,
+            imgHeight,
+            undefined,
+            'FAST' // Compression
+          );
+        } catch (error) {
+          console.warn(`Screenshot ${j} eklenemedi:`, error);
+          // Hata durumunda placeholder
+          pdf.setDrawColor(200, 200, 200);
+          pdf.rect(x, y + 3, imgWidth, imgHeight);
+        }
+      }
+    }
+
+    // PDF'i indir
+    pdf.save(filename || defaultFilename);
+  }
+
+  /**
+   * jsPDF kütüphanesini dinamik olarak yükle
+   * @returns {Promise} - jsPDF modülü
+   */
+  async loadJsPDF() {
+    // Eğer zaten yüklenmişse direkt döndür
+    if (window.jspdf && window.jspdf.jsPDF) {
+      return window.jspdf;
+    }
+
+    // CDN'den yükle
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      script.async = true;
+      script.onload = () => {
+        if (window.jspdf && window.jspdf.jsPDF) {
+          resolve(window.jspdf);
+        } else {
+          reject(new Error('jsPDF yüklenemedi'));
+        }
+      };
+      script.onerror = () => reject(new Error('jsPDF script yüklenemedi'));
+      document.head.appendChild(script);
+    });
+  }
+
+  /**
    * LocalStorage kullanım istatistikleri
    * @returns {Object} - { used, available, percentage }
    */

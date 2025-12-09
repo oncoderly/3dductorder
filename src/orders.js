@@ -188,6 +188,14 @@ class OrdersPage {
       });
     }
 
+    // Export PDF
+    const exportPdfBtn = document.getElementById('export-pdf-btn');
+    if (exportPdfBtn) {
+      exportPdfBtn.addEventListener('click', () => {
+        this.handleExportPDF();
+      });
+    }
+
     // Screenshot zoom (optional)
     document.addEventListener('click', (e) => {
       if (e.target.matches('.screenshot-item img')) {
@@ -231,6 +239,42 @@ class OrdersPage {
       }, 2000);
     } catch (error) {
       alert('Excel export hatası: ' + error.message);
+    }
+  }
+
+  async handleExportPDF() {
+    const exportBtn = document.getElementById('export-pdf-btn');
+    const originalText = exportBtn.textContent;
+
+    try {
+      // Loading durumu
+      exportBtn.textContent = '⏳ PDF Hazırlanıyor...';
+      exportBtn.disabled = true;
+      exportBtn.style.opacity = '0.6';
+
+      // PDF oluştur (progress callback ile)
+      await this.orderManager.downloadPDF(null, (current, total) => {
+        exportBtn.textContent = `⏳ ${current}/${total} işleniyor...`;
+      });
+
+      // Success feedback
+      exportBtn.textContent = '✓ İndirildi!';
+      exportBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+      exportBtn.style.opacity = '1';
+      exportBtn.disabled = false;
+
+      setTimeout(() => {
+        exportBtn.textContent = originalText;
+        exportBtn.style.background = '';
+      }, 2000);
+    } catch (error) {
+      console.error('PDF export error:', error);
+      alert('PDF export hatası: ' + error.message);
+
+      // Reset button
+      exportBtn.textContent = originalText;
+      exportBtn.style.opacity = '1';
+      exportBtn.disabled = false;
     }
   }
 
