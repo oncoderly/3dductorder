@@ -211,12 +211,13 @@ export class OrderManager {
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
-      format: 'a4'
+      format: 'a4',
+      compress: true
     });
 
     const pageWidth = 210;
     const pageHeight = 297;
-    const margin = 15;
+    const margin = 20; // Daha geniş margin
     const contentWidth = pageWidth - (margin * 2);
 
     // Her parça için bir sayfa oluştur
@@ -233,50 +234,95 @@ export class OrderManager {
         pdf.addPage();
       }
 
-      // Sayfa numarası
+      // Üst başlık çubuğu (renkli)
+      pdf.setFillColor(16, 185, 129); // Yeşil gradient başlangıç rengi
+      pdf.rect(0, 0, pageWidth, 12, 'F');
+
+      // Sayfa numarası (beyaz, üst çubukta)
       const pageNum = i + 1;
-      pdf.setFontSize(10);
-      pdf.setTextColor(128, 128, 128);
-      pdf.text(`Sayfa ${pageNum} / ${cart.length}`, pageWidth - margin, pageHeight - 5, { align: 'right' });
+      pdf.setFontSize(9);
+      pdf.setTextColor(255, 255, 255);
+      pdf.text(`Sayfa ${pageNum} / ${cart.length}`, pageWidth - margin, 8, { align: 'right' });
 
-      // Başlık
-      pdf.setFontSize(16);
+      // Logo/Başlık (beyaz, üst çubukta)
+      pdf.setFontSize(11);
+      pdf.setFont(undefined, 'bold');
+      pdf.text('3D Kanal Sipariş Sistemi', margin, 8);
+
+      // Parça başlığı (büyük, bold)
+      let yPos = margin + 5;
+      pdf.setFontSize(18);
       pdf.setTextColor(0, 0, 0);
-      pdf.text(`Parça ${pageNum}: ${item.partName}`, margin, margin + 10);
+      pdf.setFont(undefined, 'bold');
+      pdf.text(`${item.partName}`, margin, yPos);
 
-      // Tarih
+      // Tarih (sağ üstte)
       const date = new Date(item.timestamp);
-      const dateStr = date.toLocaleString('tr-TR');
+      const dateStr = date.toLocaleDateString('tr-TR', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
       pdf.setFontSize(9);
       pdf.setTextColor(100, 100, 100);
-      pdf.text(dateStr, margin, margin + 16);
+      pdf.setFont(undefined, 'normal');
+      pdf.text(dateStr, pageWidth - margin, yPos, { align: 'right' });
 
-      // Boyutlar
-      let yPos = margin + 28;
+      // Ayırıcı çizgi
+      yPos += 5;
+      pdf.setDrawColor(200, 200, 200);
+      pdf.setLineWidth(0.3);
+      pdf.line(margin, yPos, pageWidth - margin, yPos);
+
+      // Bilgi kutuları (cards)
+      yPos += 8;
+
+      // Boyutlar kutusu
+      pdf.setFillColor(245, 247, 250);
+      pdf.roundedRect(margin, yPos, contentWidth, 18, 2, 2, 'F');
+
+      pdf.setFontSize(10);
+      pdf.setTextColor(60, 60, 60);
+      pdf.setFont(undefined, 'bold');
+      pdf.text('Boyutlar', margin + 5, yPos + 6);
+
+      pdf.setFont(undefined, 'normal');
       pdf.setFontSize(11);
       pdf.setTextColor(0, 0, 0);
-      pdf.text('Boyutlar:', margin, yPos);
-
-      yPos += 6;
-      pdf.setFontSize(10);
       const dimensions = Object.entries(item.dimensions)
         .map(([key, value]) => `${key}: ${Number.isInteger(value) ? value : value.toFixed(1)} cm`)
-        .join(' | ');
-      pdf.text(dimensions, margin, yPos);
+        .join('  •  ');
+      pdf.text(dimensions, margin + 5, yPos + 13);
 
-      // Alan bilgisi
-      yPos += 10;
+      // Alan bilgisi kutusu
+      yPos += 22;
+      pdf.setFillColor(240, 253, 244);
+      pdf.roundedRect(margin, yPos, contentWidth, 18, 2, 2, 'F');
+
+      pdf.setFontSize(10);
+      pdf.setTextColor(22, 101, 52);
+      pdf.setFont(undefined, 'bold');
+      pdf.text('Alan Hesabı', margin + 5, yPos + 6);
+
+      pdf.setFont(undefined, 'normal');
       pdf.setFontSize(11);
-      pdf.text(`Alan: ${parseFloat(item.area).toFixed(2)} m²`, margin, yPos);
-      pdf.text(`Adet: ${item.quantity}`, margin + 60, yPos);
+      pdf.setTextColor(0, 0, 0);
       const totalArea = (parseFloat(item.area) * item.quantity).toFixed(2);
-      pdf.text(`Toplam: ${totalArea} m²`, margin + 100, yPos);
+      pdf.text(`Birim Alan: ${parseFloat(item.area).toFixed(2)} m²  •  Adet: ${item.quantity}  •  Toplam Alan: ${totalArea} m²`, margin + 5, yPos + 13);
+
+      // Görüntüler başlığı
+      yPos += 24;
+      pdf.setFontSize(12);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont(undefined, 'bold');
+      pdf.text('3D Görünümler', margin, yPos);
 
       // 4 screenshot'ı yerleştir (2x2 grid)
-      yPos += 10;
-      const horizontalGap = 2; // Yatay boşluk (minimuma indirildi)
-      const verticalGap = 5; // Dikey boşluk (minimuma indirildi)
-      const labelHeight = 4; // Label yüksekliği
+      yPos += 6;
+      const horizontalGap = 4; // Görünümler arası boşluk
+      const verticalGap = 6;
       const imgWidth = (contentWidth - horizontalGap) / 2;
       const imgHeight = imgWidth * 0.75; // 4:3 aspect ratio
 
@@ -291,52 +337,50 @@ export class OrderManager {
         const row = Math.floor(j / 2);
         const col = j % 2;
         const x = margin + (col * (imgWidth + horizontalGap));
-        const y = yPos + (row * (imgHeight + verticalGap + labelHeight));
+        const y = yPos + (row * (imgHeight + verticalGap + 6));
 
-        // Screenshot label
-        pdf.setFontSize(8);
-        pdf.setTextColor(80, 80, 80);
-        pdf.text(screenshots[j].label, x, y);
+        // Görsel çerçevesi (beyaz arka plan + gölge efekti)
+        pdf.setFillColor(255, 255, 255);
+        pdf.setDrawColor(220, 220, 220);
+        pdf.setLineWidth(0.2);
+        pdf.roundedRect(x - 1, y - 1, imgWidth + 2, imgHeight + 8, 2, 2, 'FD');
 
-        // Ayırıcı çizgi (label ile görsel arası)
-        pdf.setDrawColor(200, 200, 200);
-        pdf.setLineWidth(0.1);
-        pdf.line(x, y + 1, x + imgWidth, y + 1);
+        // Screenshot label (çerçeve içinde üstte)
+        pdf.setFontSize(9);
+        pdf.setTextColor(100, 100, 100);
+        pdf.setFont(undefined, 'normal');
+        pdf.text(screenshots[j].label, x + imgWidth / 2, y + 4, { align: 'center' });
 
-        // Screenshot image (yüksek kalite, compression yok)
+        // Screenshot image (yüksek kalite)
         try {
           pdf.addImage(
             screenshots[j].data,
             'PNG',
             x,
-            y + 2,
+            y + 5,
             imgWidth,
             imgHeight,
             undefined,
-            'SLOW' // Yüksek kalite - compression yok
+            'SLOW' // Yüksek kalite
           );
         } catch (error) {
           console.warn(`Screenshot ${j} eklenemedi:`, error);
           // Hata durumunda placeholder
-          pdf.setDrawColor(200, 200, 200);
-          pdf.rect(x, y + 2, imgWidth, imgHeight);
-        }
-
-        // Görsel çerçevesi (opsiyonel - görünümler arası ayırıcı)
-        if (row === 0 && col === 1) {
-          // Sağ üst ile sol üst arası dikey çizgi
-          pdf.setDrawColor(220, 220, 220);
-          pdf.setLineWidth(0.1);
-          pdf.line(x - horizontalGap/2, y, x - horizontalGap/2, y + imgHeight + 2);
-        }
-        if (row === 1) {
-          // Alt satır ile üst satır arası yatay çizgi
-          pdf.setDrawColor(220, 220, 220);
-          pdf.setLineWidth(0.1);
-          const lineY = y - verticalGap/2;
-          pdf.line(margin, lineY, margin + contentWidth, lineY);
+          pdf.setDrawColor(240, 240, 240);
+          pdf.setFillColor(250, 250, 250);
+          pdf.rect(x, y + 5, imgWidth, imgHeight, 'FD');
+          pdf.setTextColor(180, 180, 180);
+          pdf.setFontSize(10);
+          pdf.text('Görsel yüklenemedi', x + imgWidth / 2, y + 5 + imgHeight / 2, { align: 'center' });
         }
       }
+
+      // Alt bilgi (footer)
+      pdf.setFontSize(8);
+      pdf.setTextColor(150, 150, 150);
+      pdf.setFont(undefined, 'normal');
+      pdf.text('3D Kanal Sipariş Sistemi - DuctCalc', margin, pageHeight - 8);
+      pdf.text(`Oluşturulma: ${new Date().toLocaleDateString('tr-TR')}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
     }
 
     // PDF'i indir
