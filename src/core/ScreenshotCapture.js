@@ -72,7 +72,7 @@ export class ScreenshotCapture {
 
       if (hideUI) {
         // Temiz görüntü - sadece WebGL canvas (ölçüler gizli)
-        dataURL = this.renderer.domElement.toDataURL('image/jpeg', 0.8);
+        dataURL = this.renderer.domElement.toDataURL('image/png');
       } else {
         // Ölçülerle birlikte görüntü - CSS2D label'ları ekle
         if (this.scene3D.labelRenderer) {
@@ -80,7 +80,7 @@ export class ScreenshotCapture {
         }
 
         // Kısa bekleme (label'ların render edilmesini bekle)
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise(resolve => setTimeout(resolve, 100));
 
         // Screenshot al - WebGL canvas + HTML label'ları birleştir
         dataURL = await this.captureWithLabels();
@@ -157,14 +157,8 @@ export class ScreenshotCapture {
       compositeCanvas.width = width;
       compositeCanvas.height = height;
 
-      // Arka plan rengini çiz (scene background color)
-      const bgColor = this.scene.background;
-      if (bgColor) {
-        ctx.fillStyle = `rgb(${Math.floor(bgColor.r * 255)}, ${Math.floor(bgColor.g * 255)}, ${Math.floor(bgColor.b * 255)})`;
-        ctx.fillRect(0, 0, width, height);
-      }
-
-      // 1) WebGL canvas'ını çiz (3D model + ölçü çizgileri)
+      // 1) WebGL canvas'ını çiz (3D model + ölçü çizgileri + arka plan)
+      // NOT: WebGL canvas zaten arka plan rengini içeriyor
       ctx.drawImage(this.renderer.domElement, 0, 0, width, height);
 
       // 2) HTML label'ları çiz (CSS2DRenderer'dan)
@@ -223,8 +217,8 @@ export class ScreenshotCapture {
         });
       }
 
-      // JPEG olarak export et
-      const dataURL = compositeCanvas.toDataURL('image/jpeg', 0.8);
+      // PNG olarak export et (yüksek kalite, kayıpsız)
+      const dataURL = compositeCanvas.toDataURL('image/png');
       resolve(dataURL);
     });
   }
