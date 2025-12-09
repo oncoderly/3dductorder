@@ -110,7 +110,10 @@ export class OrderManager {
     return {
       totalItems: cart.length, // Parça çeşidi
       totalQuantity: cart.reduce((sum, item) => sum + item.quantity, 0), // Toplam adet
-      totalArea: cart.reduce((sum, item) => sum + (item.area * item.quantity), 0) // Toplam alan (m²)
+      totalArea: cart.reduce((sum, item) => {
+        const area = parseFloat(item.area) || 0;
+        return sum + (area * item.quantity);
+      }, 0) // Toplam alan (m²)
     };
   }
 

@@ -69,9 +69,10 @@ class OrdersPage {
       })
       .join('');
 
-    // Alan formatla
-    const areaFormatted = item.area.toFixed(2);
-    const totalArea = (item.area * item.quantity).toFixed(2);
+    // Alan formatla (area string olabilir, sayıya çevir)
+    const area = parseFloat(item.area) || 0;
+    const areaFormatted = area.toFixed(2);
+    const totalArea = (area * item.quantity).toFixed(2);
 
     card.innerHTML = `
       <div class="order-item-header">
