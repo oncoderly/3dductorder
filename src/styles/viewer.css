@@ -1042,12 +1042,13 @@ html, body {
 /* Responsive - Tablet */
 @media (max-width: 768px) {
   .order-fab {
-    bottom: 30px; /* Alt boşluk */
-    right: 10px;
+    top: 90px; /* Header'ın altında */
+    right: 16px;
+    bottom: auto;
     width: 70px;
-    height: 56px;
-    border-radius: 28px;
-    z-index: 1001; /* Navigasyon ve panel üzerinde */
+    height: 60px;
+    border-radius: 30px;
+    z-index: 1002; /* ViewCube ve navigation üzerinde */
   }
 
   .order-fab-icon {
@@ -1071,12 +1072,14 @@ html, body {
 /* Responsive - Mobile */
 @media (max-width: 480px) {
   .order-fab {
-    bottom: 20px; /* Alt boşluk - navigasyonun üstünde */
-    right: 8px;
-    width: 56px;
-    height: 56px;
-    border-radius: 28px;
-    z-index: 1001; /* Navigasyon ve panel üzerinde */
+    top: 80px; /* Header'ın hemen altında */
+    right: 16px;
+    bottom: auto; /* Bottom'u iptal et */
+    width: 70px;
+    height: 70px;
+    border-radius: 35px;
+    z-index: 1002; /* ViewCube ve navigation üzerinde */
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.5);
   }
 
   .order-fab-icon {
