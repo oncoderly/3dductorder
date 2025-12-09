@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0b0e12">
+  <title>Sipariş Sepeti - DuctCalc</title>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json">
+
+  <!-- App Icons -->
+  <link rel="icon" type="image/png" href="/logo13dductorder.png">
+  <link rel="apple-touch-icon" href="/logo13dductorder.png">
+
+  <link rel="stylesheet" href="/src/styles/orders.css?v=1">
+</head>
+<body>
+  <div class="orders-container">
+    <!-- Header -->
+    <header class="orders-header">
+      <div class="header-content">
+        <a href="/viewer.html" class="logo-link">
+          <img src="/logo23dductorder.png" alt="DuctCalc Logo" class="app-logo">
+        </a>
+        <h1 class="orders-title">🛒 Sipariş Sepeti</h1>
+      </div>
+      <a href="/viewer.html" class="back-btn">← Görüntüleyiciye Dön</a>
+    </header>
+
+    <!-- Main Content -->
+    <main class="orders-main">
+      <!-- Empty State -->
+      <div id="empty-state" class="empty-state">
+        <div class="empty-icon">📦</div>
+        <h2>Sepetiniz Boş</h2>
+        <p>Henüz sipariş eklenmemiş. 3D görüntüleyicide parça tasarlayıp "Siparişe Ekle" butonuna basarak sipariş oluşturabilirsiniz.</p>
+        <a href="/viewer.html" class="btn btn-primary">3D Görüntüleyiciye Git</a>
+      </div>
+
+      <!-- Orders List -->
+      <div id="orders-content" class="orders-content" style="display: none;">
+        <!-- Summary Panel -->
+        <aside class="summary-panel">
+          <div class="summary-card">
+            <h2>📊 Sipariş Özeti</h2>
+            <div class="summary-row">
+              <span>Parça Çeşidi:</span>
+              <strong id="summary-items">0</strong>
+            </div>
+            <div class="summary-row">
+              <span>Toplam Adet:</span>
+              <strong id="summary-quantity">0</strong>
+            </div>
+            <div class="summary-row highlight">
+              <span>Toplam Alan:</span>
+              <strong id="summary-area">0 m²</strong>
+            </div>
+            <div class="summary-actions">
+              <button id="clear-cart-btn" class="btn btn-danger">
+                🗑️ Sepeti Temizle
+              </button>
+              <button id="export-csv-btn" class="btn btn-success">
+                📥 Excel İndir
+              </button>
+            </div>
+          </div>
+
+          <!-- Storage Info -->
+          <div class="storage-info">
+            <div class="storage-label">Depolama Kullanımı</div>
+            <div class="storage-bar">
+              <div id="storage-fill" class="storage-fill" style="width: 0%"></div>
+            </div>
+            <div id="storage-text" class="storage-text">0 MB / 5 MB</div>
+          </div>
+        </aside>
+
+        <!-- Orders Grid -->
+        <div class="orders-grid">
+          <div id="orders-list"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="orders-footer">
+      <p>DuctCalc - 3D Kanal Sipariş Sistemi</p>
+      <p class="footer-note">Siparişler tarayıcınızda yerel olarak saklanır.</p>
+    </footer>
+  </div>
+
+  <script type="module" src="/src/orders.js"></script>
+</body>
+</html>

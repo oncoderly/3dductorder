@@ -13,6 +13,9 @@ import { DimensionPopup } from './ui/DimensionPopup.js';
 import { getAllParts } from './config/parts-config.js';
 import { ENV } from './config/environment.js';
 import { ErrorHandler, setupGlobalErrorHandler } from './utils/ErrorHandler.js';
+import { ScreenshotCapture } from './core/ScreenshotCapture.js';
+import { OrderManager } from './core/OrderManager.js';
+import { OrderButton } from './ui/OrderButton.js';
 
 class App {
   constructor() {
@@ -23,6 +26,11 @@ class App {
     this.viewControls = null;
     this.dimensionPopup = null;
     this.errorHandler = new ErrorHandler();
+
+    // Sipariş sistemi
+    this.screenshotCapture = null;
+    this.orderManager = null;
+    this.orderButton = null;
 
     this.init();
   }
@@ -55,6 +63,7 @@ class App {
     this.setupViewControls();
     this.setupHUD();
     this.setupMobileToggle();
+    this.setupOrderSystem();
 
       // İlk parçayı yükle
       this.loadPart('duz-kanal');
@@ -273,6 +282,94 @@ class App {
   getCurrentPartKey() {
     const selector = document.getElementById('part-selector');
     return selector ? selector.value : null;
+  }
+
+  // Sipariş sistemi setup
+  setupOrderSystem() {
+    try {
+      // Screenshot capture
+      this.screenshotCapture = new ScreenshotCapture(this.scene);
+
+      // Order manager
+      this.orderManager = new OrderManager();
+
+      // Order button
+      const buttonContainer = document.querySelector('.canvas-wrapper');
+      if (buttonContainer) {
+        this.orderButton = new OrderButton(buttonContainer, () => {
+          this.handleAddToCart();
+        });
+
+        // Badge'i güncelle
+        const cart = this.orderManager.getCart();
+        this.orderButton.updateBadge(cart.length);
+      }
+    } catch (error) {
+      console.error('Order system setup error:', error);
+    }
+  }
+
+  // Siparişe ekle
+  async handleAddToCart() {
+    if (!this.currentPart) {
+      this.errorHandler.error('Sipariş eklenemedi', 'Lütfen önce bir parça seçin');
+      return;
+    }
+
+    try {
+      this.orderButton.showLoading();
+
+      // 4 görüntüyü çek
+      const screenshots = await this.screenshotCapture.captureAllViews();
+
+      // Parça bilgilerini al
+      const partKey = this.getCurrentPartKey();
+      const partConfig = this.getPartConfig(partKey);
+
+      // Sipariş kalemi oluştur
+      const orderItem = {
+        id: `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        timestamp: Date.now(),
+        partType: partKey,
+        partName: partConfig ? partConfig.name : this.currentPart.constructor.name,
+        params: this.currentPart.exportParams(),
+        dimensions: this.currentPart.getDimensions(),
+        area: this.currentPart.calculateArea(),
+        quantity: 1,
+        screenshots: screenshots
+      };
+
+      // Sepete ekle
+      this.orderManager.addToCart(orderItem);
+
+      // Badge güncelle
+      const cart = this.orderManager.getCart();
+      this.orderButton.updateBadge(cart.length);
+
+      this.orderButton.showSuccess();
+
+      // Başarı mesajı
+      if (ENV.isDevelopment()) {
+        this.errorHandler.info(
+          'Siparişe eklendi!',
+          `${orderItem.partName} sepete eklendi. Toplam: ${cart.length} parça`
+        );
+      }
+
+    } catch (error) {
+      this.errorHandler.error('Siparişe eklenemedi', error.message);
+      console.error('Add to cart error:', error);
+
+      if (this.orderButton) {
+        this.orderButton.button.classList.remove('loading');
+      }
+    }
+  }
+
+  // Parça config bilgisini al
+  getPartConfig(partKey) {
+    const parts = getAllParts();
+    return parts.find(p => p.key === partKey);
   }
 }
 

@@ -865,6 +865,211 @@ html, body {
 }
 
 /* ========================================
+   ORDER BUTTON - Floating Action Button
+   ======================================== */
+.order-fab {
+  position: absolute;
+  bottom: 220px; /* ViewCube'ün üstünde */
+  right: 20px;
+  width: 80px;
+  height: 64px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-radius: 32px;
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
+  border: none;
+  cursor: pointer;
+  z-index: 998; /* ViewCube'den bir altında */
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.order-fab:hover {
+  transform: scale(1.05);
+  box-shadow: 0 12px 32px rgba(16, 185, 129, 0.6);
+}
+
+.order-fab:active {
+  transform: scale(0.95);
+}
+
+.order-fab-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  transition: opacity 0.3s ease;
+}
+
+.order-fab-icon {
+  font-size: 24px;
+}
+
+.order-fab-text {
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+}
+
+/* Badge - Sepet sayısı */
+.order-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #ef4444;
+  color: white;
+  border-radius: 14px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 24px;
+  display: none; /* Varsayılan gizli, JS ile gösterilir */
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 1;
+}
+
+/* Loading state */
+.order-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #10b981, #059669);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.order-fab.loading .order-loading {
+  display: flex;
+}
+
+.order-fab.loading .order-fab-content {
+  opacity: 0;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Success state */
+.order-success {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #10b981, #059669);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.order-fab.success .order-success {
+  display: flex;
+  animation: successPulse 0.5s ease;
+}
+
+.order-fab.success .order-fab-content {
+  opacity: 0;
+}
+
+.success-check {
+  font-size: 32px;
+  color: white;
+  animation: checkAppear 0.3s ease;
+}
+
+@keyframes successPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+@keyframes checkAppear {
+  0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+/* Responsive - Tablet */
+@media (max-width: 768px) {
+  .order-fab {
+    bottom: 160px;
+    right: 10px;
+    width: 70px;
+    height: 56px;
+    border-radius: 28px;
+  }
+
+  .order-fab-icon {
+    font-size: 20px;
+  }
+
+  .order-fab-text {
+    font-size: 10px;
+  }
+
+  .spinner {
+    width: 20px;
+    height: 20px;
+  }
+
+  .success-check {
+    font-size: 28px;
+  }
+}
+
+/* Responsive - Mobile */
+@media (max-width: 480px) {
+  .order-fab {
+    bottom: 140px;
+    right: 8px;
+    width: 56px;
+    height: 56px;
+    border-radius: 28px;
+  }
+
+  .order-fab-icon {
+    font-size: 24px;
+  }
+
+  .order-fab-text {
+    display: none; /* Mobilde sadece ikon */
+  }
+
+  .spinner {
+    width: 18px;
+    height: 18px;
+  }
+
+  .success-check {
+    font-size: 24px;
+  }
+
+  .order-badge {
+    top: -4px;
+    right: -4px;
+    padding: 2px 6px;
+    font-size: 10px;
+    min-width: 20px;
+  }
+}
+
+/* ========================================
    RESPONSIVE - MOBILE LAYOUT
    ======================================== */
 
