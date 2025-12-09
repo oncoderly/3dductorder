@@ -300,12 +300,21 @@ class App {
           this.handleAddToCart();
         });
 
-        // Badge'i güncelle
+        // Badge'leri güncelle
         const cart = this.orderManager.getCart();
         this.orderButton.updateBadge(cart.length);
+        this.updateHeaderBadge(cart.length);
       }
     } catch (error) {
       console.error('Order system setup error:', error);
+    }
+  }
+
+  // Header badge'i güncelle
+  updateHeaderBadge(count) {
+    const headerBadge = document.getElementById('header-orders-badge');
+    if (headerBadge) {
+      headerBadge.textContent = count;
     }
   }
 
@@ -342,9 +351,10 @@ class App {
       // Sepete ekle
       this.orderManager.addToCart(orderItem);
 
-      // Badge güncelle
+      // Badge'leri güncelle
       const cart = this.orderManager.getCart();
       this.orderButton.updateBadge(cart.length);
+      this.updateHeaderBadge(cart.length);
 
       this.orderButton.showSuccess();
 
