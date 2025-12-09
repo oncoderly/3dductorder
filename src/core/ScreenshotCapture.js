@@ -68,16 +68,23 @@ export class ScreenshotCapture {
       // Render et
       this.renderer.render(this.scene, this.camera);
 
-      // CSS2D label'ları da render et
-      if (this.scene3D.labelRenderer) {
-        this.scene3D.labelRenderer.render(this.scene, this.camera);
+      let dataURL;
+
+      if (hideUI) {
+        // Temiz görüntü - sadece WebGL canvas (ölçüler gizli)
+        dataURL = this.renderer.domElement.toDataURL('image/jpeg', 0.8);
+      } else {
+        // Ölçülerle birlikte görüntü - CSS2D label'ları ekle
+        if (this.scene3D.labelRenderer) {
+          this.scene3D.labelRenderer.render(this.scene, this.camera);
+        }
+
+        // Kısa bekleme (label'ların render edilmesini bekle)
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        // Screenshot al - WebGL canvas + HTML label'ları birleştir
+        dataURL = await this.captureWithLabels();
       }
-
-      // Kısa bekleme (label'ların render edilmesini bekle)
-      await new Promise(resolve => setTimeout(resolve, 50));
-
-      // Screenshot al - WebGL canvas + HTML label'ları birleştir
-      const dataURL = await this.captureWithLabels();
 
       // Orijinal duruma geri dön
       this.camera.position.copy(originalPosition);
