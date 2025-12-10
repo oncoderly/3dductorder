@@ -38,6 +38,11 @@ export class ScreenshotCapture {
     const originalDimensionsVisible = this.scene3D.dimensionGroup ? this.scene3D.dimensionGroup.visible : false;
     const originalLabelsVisible = this.scene3D.labelGroup ? this.scene3D.labelGroup.visible : false;
 
+    // Orijinal renderer boyutlarını kaydet
+    const originalWidth = this.renderer.domElement.width;
+    const originalHeight = this.renderer.domElement.height;
+    const originalPixelRatio = this.renderer.getPixelRatio();
+
     try {
       // UI elementlerini gizle (temiz görüntü için)
       if (hideUI) {
@@ -48,6 +53,16 @@ export class ScreenshotCapture {
         if (this.scene3D.labelGroup) this.scene3D.labelGroup.visible = false;
       }
 
+      // Yüksek çözünürlük için geçici olarak renderer'ı büyüt (2x)
+      const highResWidth = 1920;
+      const highResHeight = 1440;
+      this.renderer.setSize(highResWidth, highResHeight, false);
+      this.renderer.setPixelRatio(2);
+
+      // Kamera aspect ratio'sunu güncelle
+      this.camera.aspect = highResWidth / highResHeight;
+      this.camera.updateProjectionMatrix();
+
       // Kamera pozisyonunu ayarla
       const box = new THREE.Box3().setFromObject(this.scene3D.geometryGroup);
       const center = new THREE.Vector3();
@@ -55,8 +70,15 @@ export class ScreenshotCapture {
 
       const size = new THREE.Vector3();
       box.getSize(size);
+
+      // Parça boyutuna göre dinamik mesafe hesapla
+      // FOV'u (Field of View) dikkate alarak optimal mesafeyi bul
+      const fov = this.camera.fov * (Math.PI / 180); // Radyan'a çevir
       const maxDim = Math.max(size.x, size.y, size.z);
-      const distance = maxDim * 2;
+
+      // Parçayı tam olarak çerçevelemek için gerekli mesafe
+      // %20 padding ekle (1.2 çarpanı)
+      const distance = (maxDim * 1.2) / (2 * Math.tan(fov / 2));
 
       const direction = view.position.clone().normalize();
       const cameraPosition = center.clone().add(direction.multiplyScalar(distance));
@@ -65,15 +87,14 @@ export class ScreenshotCapture {
       this.controls.target.copy(center);
       this.controls.update();
 
-      // Render et
+      // Render et (yüksek çözünürlükte)
       this.renderer.render(this.scene, this.camera);
 
       let dataURL;
 
       if (hideUI) {
-        // Temiz görüntü - sadece WebGL canvas (ölçüler gizli)
-        // JPEG kullan (PNG yerine) - dosya boyutunu %70-80 azaltır
-        dataURL = this.renderer.domElement.toDataURL('image/jpeg', 0.85);
+        // Temiz görüntü - yüksek çözünürlük JPEG
+        dataURL = this.renderer.domElement.toDataURL('image/jpeg', 0.90);
       } else {
         // Ölçülerle birlikte görüntü - CSS2D label'ları ekle
         if (this.scene3D.labelRenderer) {
@@ -91,6 +112,14 @@ export class ScreenshotCapture {
       this.camera.position.copy(originalPosition);
       this.controls.target.copy(originalTarget);
       this.controls.update();
+
+      // Renderer boyutlarını ve pixel ratio'yu geri yükle
+      this.renderer.setSize(originalWidth, originalHeight, false);
+      this.renderer.setPixelRatio(originalPixelRatio);
+
+      // Kamera aspect ratio'sunu geri yükle
+      this.camera.aspect = originalWidth / originalHeight;
+      this.camera.updateProjectionMatrix();
 
       if (hideUI) {
         if (this.scene3D.grid) this.scene3D.grid.visible = originalGridVisible;
@@ -110,6 +139,14 @@ export class ScreenshotCapture {
       this.camera.position.copy(originalPosition);
       this.controls.target.copy(originalTarget);
       this.controls.update();
+
+      // Renderer boyutlarını ve pixel ratio'yu geri yükle
+      this.renderer.setSize(originalWidth, originalHeight, false);
+      this.renderer.setPixelRatio(originalPixelRatio);
+
+      // Kamera aspect ratio'sunu geri yükle
+      this.camera.aspect = originalWidth / originalHeight;
+      this.camera.updateProjectionMatrix();
 
       if (hideUI) {
         if (this.scene3D.grid) this.scene3D.grid.visible = originalGridVisible;
@@ -219,7 +256,7 @@ export class ScreenshotCapture {
       }
 
       // JPEG olarak export et (yüksek kalite, sıkıştırmalı - depolama tasarrufu)
-      const dataURL = compositeCanvas.toDataURL('image/jpeg', 0.85);
+      const dataURL = compositeCanvas.toDataURL('image/jpeg', 0.90);
       resolve(dataURL);
     });
   }

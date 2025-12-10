@@ -1,23 +1,44 @@
-// OrderManager - Sipariş sepetini LocalStorage ile yönetir
+// OrderManager - Sipariş sepetini IndexedDB ile yönetir (büyük kapasite)
+import { StorageManager } from './StorageManager.js';
+
 export class OrderManager {
   constructor() {
     this.storageKey = 'ductcalc-orders';
+    this.storage = new StorageManager('DuctCalcDB', 'orders', 1);
+    this.initialized = false;
+  }
+
+  /**
+   * Storage'ı başlat ve migrasyon yap
+   */
+  async init() {
+    if (this.initialized) return;
+
+    try {
+      await this.storage.init();
+      // LocalStorage'dan migrasyon yap (ilk kez)
+      await this.storage.migrateFromLocalStorage(this.storageKey);
+      this.initialized = true;
+    } catch (error) {
+      console.error('OrderManager init error:', error);
+      // Fallback: localStorage kullan
+      this.initialized = false;
+    }
   }
 
   /**
    * Sepete yeni parça ekle
    * @param {Object} orderItem - Sipariş kalemi
-   * @returns {boolean} - Başarılı ise true
+   * @returns {Promise<boolean>} - Başarılı ise true
    */
-  addToCart(orderItem) {
+  async addToCart(orderItem) {
     try {
-      const cart = this.getCart();
-      cart.push(orderItem);
-      localStorage.setItem(this.storageKey, JSON.stringify(cart));
+      await this.init();
+      await this.storage.addItem(orderItem);
       return true;
     } catch (error) {
       if (error.name === 'QuotaExceededError') {
-        throw new Error('LocalStorage limiti doldu! Lütfen eski siparişleri silin.');
+        throw new Error('Depolama limiti doldu! Lütfen eski siparişleri silin.');
       }
       throw error;
     }
@@ -26,14 +47,12 @@ export class OrderManager {
   /**
    * Sepetten parça sil
    * @param {string} itemId - Silinecek parça ID'si
-   * @returns {boolean} - Başarılı ise true
+   * @returns {Promise<boolean>} - Başarılı ise true
    */
-  removeFromCart(itemId) {
+  async removeFromCart(itemId) {
     try {
-      let cart = this.getCart();
-      cart = cart.filter(item => item.id !== itemId);
-      localStorage.setItem(this.storageKey, JSON.stringify(cart));
-      return true;
+      await this.init();
+      return await this.storage.removeItem(itemId);
     } catch (error) {
       console.error('Remove from cart error:', error);
       return false;
@@ -44,16 +63,15 @@ export class OrderManager {
    * Parça adedini güncelle
    * @param {string} itemId - Parça ID'si
    * @param {number} quantity - Yeni adet
-   * @returns {boolean} - Başarılı ise true
+   * @returns {Promise<boolean>} - Başarılı ise true
    */
-  updateQuantity(itemId, quantity) {
+  async updateQuantity(itemId, quantity) {
     try {
-      const cart = this.getCart();
-      const item = cart.find(i => i.id === itemId);
+      await this.init();
+      const item = await this.storage.getItem(itemId);
       if (item) {
         item.quantity = Math.max(1, parseInt(quantity) || 1);
-        localStorage.setItem(this.storageKey, JSON.stringify(cart));
-        return true;
+        return await this.storage.updateItem(item);
       }
       return false;
     } catch (error) {
@@ -64,12 +82,12 @@ export class OrderManager {
 
   /**
    * Sepeti getir
-   * @returns {Array} - Sipariş kalemleri
+   * @returns {Promise<Array>} - Sipariş kalemleri
    */
-  getCart() {
+  async getCart() {
     try {
-      const cart = localStorage.getItem(this.storageKey);
-      return cart ? JSON.parse(cart) : [];
+      await this.init();
+      return await this.storage.getAllItems();
     } catch (error) {
       console.error('Get cart error:', error);
       return [];
@@ -79,21 +97,26 @@ export class OrderManager {
   /**
    * Tek bir parçayı getir
    * @param {string} itemId - Parça ID'si
-   * @returns {Object|null} - Sipariş kalemi
+   * @returns {Promise<Object|null>} - Sipariş kalemi
    */
-  getItem(itemId) {
-    const cart = this.getCart();
-    return cart.find(item => item.id === itemId) || null;
+  async getItem(itemId) {
+    try {
+      await this.init();
+      return await this.storage.getItem(itemId);
+    } catch (error) {
+      console.error('Get item error:', error);
+      return null;
+    }
   }
 
   /**
    * Sepeti temizle
-   * @returns {boolean} - Başarılı ise true
+   * @returns {Promise<boolean>} - Başarılı ise true
    */
-  clearCart() {
+  async clearCart() {
     try {
-      localStorage.removeItem(this.storageKey);
-      return true;
+      await this.init();
+      return await this.storage.clearAll();
     } catch (error) {
       console.error('Clear cart error:', error);
       return false;
@@ -102,10 +125,10 @@ export class OrderManager {
 
   /**
    * Sepet özeti
-   * @returns {Object} - { totalItems, totalQuantity, totalArea }
+   * @returns {Promise<Object>} - { totalItems, totalQuantity, totalArea }
    */
-  getCartSummary() {
-    const cart = this.getCart();
+  async getCartSummary() {
+    const cart = await this.getCart();
 
     return {
       totalItems: cart.length, // Parça çeşidi
@@ -119,11 +142,11 @@ export class OrderManager {
 
   /**
    * Siparişi JSON olarak export et
-   * @returns {string} - JSON string
+   * @returns {Promise<string>} - JSON string
    */
-  exportToJSON() {
-    const cart = this.getCart();
-    const summary = this.getCartSummary();
+  async exportToJSON() {
+    const cart = await this.getCart();
+    const summary = await this.getCartSummary();
     const orderNumber = `ORD-${new Date().toISOString().split('T')[0].replace(/-/g, '')}-${Date.now().toString().slice(-4)}`;
 
     const exportData = {
@@ -138,11 +161,11 @@ export class OrderManager {
 
   /**
    * Siparişi CSV olarak export et (Excel uyumlu)
-   * @returns {string} - CSV string
+   * @returns {Promise<string>} - CSV string
    */
-  exportToCSV() {
-    const cart = this.getCart();
-    const summary = this.getCartSummary();
+  async exportToCSV() {
+    const cart = await this.getCart();
+    const summary = await this.getCartSummary();
     const orderNumber = `ORD-${new Date().toISOString().split('T')[0].replace(/-/g, '')}-${Date.now().toString().slice(-4)}`;
 
     let csv = `Sipariş No:,${orderNumber}\n`;

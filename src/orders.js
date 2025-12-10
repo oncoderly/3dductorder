@@ -7,14 +7,14 @@ class OrdersPage {
     this.init();
   }
 
-  init() {
-    this.renderPage();
+  async init() {
+    await this.renderPage();
     this.setupEventListeners();
-    this.updateStorageInfo();
+    await this.updateStorageInfo();
   }
 
-  renderPage() {
-    const cart = this.orderManager.getCart();
+  async renderPage() {
+    const cart = await await this.orderManager.getCart();
     const emptyState = document.getElementById('empty-state');
     const ordersContent = document.getElementById('orders-content');
 
@@ -122,8 +122,8 @@ class OrdersPage {
     return card;
   }
 
-  renderSummary() {
-    const summary = this.orderManager.getCartSummary();
+  async renderSummary() {
+    const summary = await this.orderManager.getCartSummary();
 
     document.getElementById('summary-items').textContent = summary.totalItems;
     document.getElementById('summary-quantity').textContent = summary.totalQuantity;
@@ -206,20 +206,20 @@ class OrdersPage {
 
   handleDelete(itemId) {
     if (confirm('Bu parçayı sepetten silmek istediğinizden emin misiniz?')) {
-      this.orderManager.removeFromCart(itemId);
+      await this.orderManager.removeFromCart(itemId);
       this.renderPage();
       this.updateStorageInfo();
     }
   }
 
-  handleQuantityChange(itemId, quantity) {
-    this.orderManager.updateQuantity(itemId, quantity);
+  async handleQuantityChange(itemId, quantity) {
+    await this.orderManager.updateQuantity(itemId, quantity);
     this.renderPage();
   }
 
   handleClearCart() {
     if (confirm('Sepetteki tüm parçaları silmek istediğinizden emin misiniz?')) {
-      this.orderManager.clearCart();
+      await this.orderManager.clearCart();
       this.renderPage();
       this.updateStorageInfo();
     }
@@ -227,7 +227,7 @@ class OrdersPage {
 
   handleExportCSV() {
     try {
-      this.orderManager.downloadCSV();
+      await this.orderManager.downloadCSV();
       // Success feedback
       const exportBtn = document.getElementById('export-csv-btn');
       const originalText = exportBtn.textContent;
@@ -278,7 +278,7 @@ class OrdersPage {
     }
   }
 
-  updateStorageInfo() {
+  async updateStorageInfo() {
     const stats = this.orderManager.getStorageStats();
     const fillElement = document.getElementById('storage-fill');
     const textElement = document.getElementById('storage-text');

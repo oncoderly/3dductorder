@@ -305,10 +305,11 @@ class App {
           this.handleAddToCart();
         });
 
-        // Badge'leri güncelle
-        const cart = this.orderManager.getCart();
-        this.orderButton.updateBadge(cart.length);
-        this.updateHeaderBadge(cart.length);
+        // Badge'leri güncelle (async)
+        this.orderManager.getCart().then(cart => {
+          this.orderButton.updateBadge(cart.length);
+          this.updateHeaderBadge(cart.length);
+        });
       }
     } catch (error) {
       console.error('Order system setup error:', error);
@@ -353,11 +354,11 @@ class App {
         screenshots: screenshots
       };
 
-      // Sepete ekle
-      this.orderManager.addToCart(orderItem);
+      // Sepete ekle (async)
+      await this.orderManager.addToCart(orderItem);
 
       // Badge'leri güncelle
-      const cart = this.orderManager.getCart();
+      const cart = await this.orderManager.getCart();
       this.orderButton.updateBadge(cart.length);
       this.updateHeaderBadge(cart.length);
 
