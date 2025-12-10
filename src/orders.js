@@ -14,7 +14,7 @@ class OrdersPage {
   }
 
   async renderPage() {
-    const cart = await await this.orderManager.getCart();
+    const cart = await this.orderManager.getCart();
     const emptyState = document.getElementById('empty-state');
     const ordersContent = document.getElementById('orders-content');
 
@@ -32,7 +32,7 @@ class OrdersPage {
       emptyState.style.display = 'none';
       ordersContent.style.display = 'grid';
       this.renderOrders(cart);
-      this.renderSummary();
+      await this.renderSummary();
     }
   }
 
@@ -204,28 +204,28 @@ class OrdersPage {
     });
   }
 
-  handleDelete(itemId) {
+  async handleDelete(itemId) {
     if (confirm('Bu parçayı sepetten silmek istediğinizden emin misiniz?')) {
       await this.orderManager.removeFromCart(itemId);
-      this.renderPage();
-      this.updateStorageInfo();
+      await this.renderPage();
+      await this.updateStorageInfo();
     }
   }
 
   async handleQuantityChange(itemId, quantity) {
     await this.orderManager.updateQuantity(itemId, quantity);
-    this.renderPage();
+    await this.renderPage();
   }
 
-  handleClearCart() {
+  async handleClearCart() {
     if (confirm('Sepetteki tüm parçaları silmek istediğinizden emin misiniz?')) {
       await this.orderManager.clearCart();
-      this.renderPage();
-      this.updateStorageInfo();
+      await this.renderPage();
+      await this.updateStorageInfo();
     }
   }
 
-  handleExportCSV() {
+  async handleExportCSV() {
     try {
       await this.orderManager.downloadCSV();
       // Success feedback

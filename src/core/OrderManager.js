@@ -196,8 +196,8 @@ export class OrderManager {
    * CSV'yi dosya olarak indir
    * @param {string} filename - Dosya adı (default: siparis-YYYYMMDD.csv)
    */
-  downloadCSV(filename = null) {
-    const csv = this.exportToCSV();
+  async downloadCSV(filename = null) {
+    const csv = await this.exportToCSV();
     const orderDate = new Date().toISOString().split('T')[0];
     const defaultFilename = `siparis-${orderDate}.csv`;
 
@@ -241,7 +241,7 @@ export class OrderManager {
    * @param {Function} onProgress - İlerleme callback (current, total)
    */
   async downloadPDF(filename = null, onProgress = null) {
-    const cart = this.getCart();
+    const cart = await this.getCart();
     if (cart.length === 0) {
       throw new Error('Sepet boş! PDF oluşturulamaz.');
     }
