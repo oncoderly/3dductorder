@@ -39,8 +39,9 @@ export class ScreenshotCapture {
     const originalLabelsVisible = this.scene3D.labelGroup ? this.scene3D.labelGroup.visible : false;
 
     // Orijinal renderer boyutlarını kaydet
-    const originalWidth = this.renderer.domElement.width;
-    const originalHeight = this.renderer.domElement.height;
+    const canvas = this.renderer.domElement;
+    const originalWidth = canvas.clientWidth;
+    const originalHeight = canvas.clientHeight;
     const originalPixelRatio = this.renderer.getPixelRatio();
 
     try {
@@ -142,7 +143,8 @@ export class ScreenshotCapture {
       this.controls.update();
 
       // Renderer boyutlarını ve pixel ratio'yu geri yükle
-      this.renderer.setSize(originalWidth, originalHeight, false);
+      // updateStyle: true kullan ki CSS boyutları da geri yüklensin
+      this.renderer.setSize(originalWidth, originalHeight, true);
       this.renderer.setPixelRatio(originalPixelRatio);
 
       // Kamera aspect ratio'sunu geri yükle
@@ -169,7 +171,8 @@ export class ScreenshotCapture {
       this.controls.update();
 
       // Renderer boyutlarını ve pixel ratio'yu geri yükle
-      this.renderer.setSize(originalWidth, originalHeight, false);
+      // updateStyle: true kullan ki CSS boyutları da geri yüklensin
+      this.renderer.setSize(originalWidth, originalHeight, true);
       this.renderer.setPixelRatio(originalPixelRatio);
 
       // Kamera aspect ratio'sunu geri yükle
