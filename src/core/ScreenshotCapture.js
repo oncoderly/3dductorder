@@ -72,7 +72,8 @@ export class ScreenshotCapture {
 
       if (hideUI) {
         // Temiz görüntü - sadece WebGL canvas (ölçüler gizli)
-        dataURL = this.renderer.domElement.toDataURL('image/png');
+        // JPEG kullan (PNG yerine) - dosya boyutunu %70-80 azaltır
+        dataURL = this.renderer.domElement.toDataURL('image/jpeg', 0.85);
       } else {
         // Ölçülerle birlikte görüntü - CSS2D label'ları ekle
         if (this.scene3D.labelRenderer) {
@@ -217,8 +218,8 @@ export class ScreenshotCapture {
         });
       }
 
-      // PNG olarak export et (yüksek kalite, kayıpsız)
-      const dataURL = compositeCanvas.toDataURL('image/png');
+      // JPEG olarak export et (yüksek kalite, sıkıştırmalı - depolama tasarrufu)
+      const dataURL = compositeCanvas.toDataURL('image/jpeg', 0.85);
       resolve(dataURL);
     });
   }

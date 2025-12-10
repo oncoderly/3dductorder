@@ -348,7 +348,7 @@ class App {
         partName: partConfig ? partConfig.name : this.currentPart.constructor.name,
         params: this.currentPart.exportParams(),
         dimensions: this.currentPart.getDimensions(),
-        area: this.currentPart.calculateArea(),
+        area: this.currentPart.calculateArea().outer || 0, // Alan objesinden outer değerini al
         quantity: 1,
         screenshots: screenshots
       };

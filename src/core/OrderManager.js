@@ -191,6 +191,28 @@ export class OrderManager {
   }
 
   /**
+   * Türkçe karakterleri PDF uyumlu hale getir
+   * jsPDF'in standart fontları Türkçe karakterleri desteklemediği için
+   * karakterleri Latin-1 uyumlu eşdeğerlerine çevirir
+   */
+  turkishToPdfText(text) {
+    if (!text) return '';
+    return text
+      .replace(/ğ/g, 'g')
+      .replace(/Ğ/g, 'G')
+      .replace(/ü/g, 'u')
+      .replace(/Ü/g, 'U')
+      .replace(/ş/g, 's')
+      .replace(/Ş/g, 'S')
+      .replace(/ı/g, 'i')
+      .replace(/İ/g, 'I')
+      .replace(/ö/g, 'o')
+      .replace(/Ö/g, 'O')
+      .replace(/ç/g, 'c')
+      .replace(/Ç/g, 'C');
+  }
+
+  /**
    * PDF'yi dosya olarak indir (jsPDF kullanarak)
    * @param {string} filename - Dosya adı (default: siparis-YYYYMMDD.pdf)
    * @param {Function} onProgress - İlerleme callback (current, total)
@@ -212,8 +234,13 @@ export class OrderManager {
       orientation: 'portrait',
       unit: 'mm',
       format: 'a4',
-      compress: true
+      compress: true,
+      putOnlyUsedFonts: true,
+      floatPrecision: 16
     });
+
+    // Türkçe karakter desteği için font ayarları
+    pdf.setLanguage("tr-TR");
 
     const pageWidth = 210;
     const pageHeight = 297;
@@ -242,19 +269,19 @@ export class OrderManager {
       const pageNum = i + 1;
       pdf.setFontSize(9);
       pdf.setTextColor(255, 255, 255);
-      pdf.text(`Sayfa ${pageNum} / ${cart.length}`, pageWidth - margin, 8, { align: 'right' });
+      pdf.text(this.turkishToPdfText(`Sayfa ${pageNum} / ${cart.length}`), pageWidth - margin, 8, { align: 'right' });
 
       // Logo/Başlık (beyaz, üst çubukta)
       pdf.setFontSize(11);
       pdf.setFont(undefined, 'bold');
-      pdf.text('3D Kanal Sipariş Sistemi', margin, 8);
+      pdf.text(this.turkishToPdfText('3D Kanal Siparis Sistemi'), margin, 8);
 
       // Parça başlığı (büyük, bold)
       let yPos = margin + 5;
       pdf.setFontSize(18);
       pdf.setTextColor(0, 0, 0);
       pdf.setFont(undefined, 'bold');
-      pdf.text(`${item.partName}`, margin, yPos);
+      pdf.text(this.turkishToPdfText(`${item.partName}`), margin, yPos);
 
       // Tarih (sağ üstte)
       const date = new Date(item.timestamp);
@@ -268,7 +295,7 @@ export class OrderManager {
       pdf.setFontSize(9);
       pdf.setTextColor(100, 100, 100);
       pdf.setFont(undefined, 'normal');
-      pdf.text(dateStr, pageWidth - margin, yPos, { align: 'right' });
+      pdf.text(this.turkishToPdfText(dateStr), pageWidth - margin, yPos, { align: 'right' });
 
       // Ayırıcı çizgi
       yPos += 5;
@@ -286,7 +313,7 @@ export class OrderManager {
       pdf.setFontSize(10);
       pdf.setTextColor(60, 60, 60);
       pdf.setFont(undefined, 'bold');
-      pdf.text('Boyutlar', margin + 5, yPos + 6);
+      pdf.text(this.turkishToPdfText('Boyutlar'), margin + 5, yPos + 6);
 
       pdf.setFont(undefined, 'normal');
       pdf.setFontSize(11);
@@ -294,7 +321,7 @@ export class OrderManager {
       const dimensions = Object.entries(item.dimensions)
         .map(([key, value]) => `${key}: ${Number.isInteger(value) ? value : value.toFixed(1)} cm`)
         .join('  •  ');
-      pdf.text(dimensions, margin + 5, yPos + 13);
+      pdf.text(this.turkishToPdfText(dimensions), margin + 5, yPos + 13);
 
       // Alan bilgisi kutusu
       yPos += 22;
@@ -304,20 +331,22 @@ export class OrderManager {
       pdf.setFontSize(10);
       pdf.setTextColor(22, 101, 52);
       pdf.setFont(undefined, 'bold');
-      pdf.text('Alan Hesabı', margin + 5, yPos + 6);
+      pdf.text(this.turkishToPdfText('Alan Hesabi'), margin + 5, yPos + 6);
 
       pdf.setFont(undefined, 'normal');
       pdf.setFontSize(11);
       pdf.setTextColor(0, 0, 0);
-      const totalArea = (parseFloat(item.area) * item.quantity).toFixed(2);
-      pdf.text(`Birim Alan: ${parseFloat(item.area).toFixed(2)} m²  •  Adet: ${item.quantity}  •  Toplam Alan: ${totalArea} m²`, margin + 5, yPos + 13);
+      // Alan değerini obje veya sayı olarak destekle
+      const areaValue = typeof item.area === 'object' ? (item.area.outer || 0) : parseFloat(item.area) || 0;
+      const totalArea = (areaValue * item.quantity).toFixed(2);
+      pdf.text(this.turkishToPdfText(`Birim Alan: ${areaValue.toFixed(2)} m²  •  Adet: ${item.quantity}  •  Toplam Alan: ${totalArea} m²`), margin + 5, yPos + 13);
 
       // Görüntüler başlığı
       yPos += 24;
       pdf.setFontSize(12);
       pdf.setTextColor(0, 0, 0);
       pdf.setFont(undefined, 'bold');
-      pdf.text('3D Görünümler', margin, yPos);
+      pdf.text(this.turkishToPdfText('3D Gorunumler'), margin, yPos);
 
       // 4 screenshot'ı yerleştir (2x2 grid)
       yPos += 6;
@@ -327,10 +356,10 @@ export class OrderManager {
       const imgHeight = imgWidth * 0.75; // 4:3 aspect ratio
 
       const screenshots = [
-        { label: 'Ön Görünüm', data: item.screenshots.front },
-        { label: 'Sağ Görünüm', data: item.screenshots.right },
-        { label: 'Üst Görünüm', data: item.screenshots.top },
-        { label: 'İzometrik', data: item.screenshots.iso }
+        { label: 'On Gorunum', data: item.screenshots.front },
+        { label: 'Sag Gorunum', data: item.screenshots.right },
+        { label: 'Ust Gorunum', data: item.screenshots.top },
+        { label: 'Izometrik', data: item.screenshots.iso }
       ];
 
       for (let j = 0; j < screenshots.length; j++) {
@@ -349,13 +378,13 @@ export class OrderManager {
         pdf.setFontSize(9);
         pdf.setTextColor(100, 100, 100);
         pdf.setFont(undefined, 'normal');
-        pdf.text(screenshots[j].label, x + imgWidth / 2, y + 4, { align: 'center' });
+        pdf.text(this.turkishToPdfText(screenshots[j].label), x + imgWidth / 2, y + 4, { align: 'center' });
 
         // Screenshot image (yüksek kalite)
         try {
           pdf.addImage(
             screenshots[j].data,
-            'PNG',
+            'JPEG',
             x,
             y + 5,
             imgWidth,
@@ -371,7 +400,7 @@ export class OrderManager {
           pdf.rect(x, y + 5, imgWidth, imgHeight, 'FD');
           pdf.setTextColor(180, 180, 180);
           pdf.setFontSize(10);
-          pdf.text('Görsel yüklenemedi', x + imgWidth / 2, y + 5 + imgHeight / 2, { align: 'center' });
+          pdf.text(this.turkishToPdfText('Gorsel yuklenemedi'), x + imgWidth / 2, y + 5 + imgHeight / 2, { align: 'center' });
         }
       }
 
@@ -379,8 +408,8 @@ export class OrderManager {
       pdf.setFontSize(8);
       pdf.setTextColor(150, 150, 150);
       pdf.setFont(undefined, 'normal');
-      pdf.text('3D Kanal Sipariş Sistemi - DuctCalc', margin, pageHeight - 8);
-      pdf.text(`Oluşturulma: ${new Date().toLocaleDateString('tr-TR')}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
+      pdf.text(this.turkishToPdfText('3D Kanal Siparis Sistemi - DuctCalc'), margin, pageHeight - 8);
+      pdf.text(this.turkishToPdfText(`Olusturulma: ${new Date().toLocaleDateString('tr-TR')}`), pageWidth - margin, pageHeight - 8, { align: 'right' });
     }
 
     // PDF'i indir
