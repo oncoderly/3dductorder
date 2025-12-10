@@ -65,21 +65,32 @@ export class ScreenshotCapture {
       this.camera.updateProjectionMatrix();
 
       // Kamera pozisyonunu ayarla
-      const box = new THREE.Box3().setFromObject(this.scene3D.geometryGroup);
+      // Bounding box hesabına hem parçayı hem ölçü çizgilerini dahil et
+      const box = new THREE.Box3();
+
+      // Parça geometrisini ekle
+      box.setFromObject(this.scene3D.geometryGroup);
+
+      // Ölçü çizgilerini de dahil et (eğer varsa ve görünürse)
+      if (this.scene3D.dimensionGroup && this.scene3D.dimensionGroup.visible) {
+        const dimensionBox = new THREE.Box3().setFromObject(this.scene3D.dimensionGroup);
+        box.union(dimensionBox);
+      }
+
       const center = new THREE.Vector3();
       box.getCenter(center);
 
       const size = new THREE.Vector3();
       box.getSize(size);
 
-      // Parça boyutuna göre dinamik mesafe hesapla
+      // Parça + ölçü çizgilerine göre dinamik mesafe hesapla
       // FOV'u (Field of View) dikkate alarak optimal mesafeyi bul
       const fov = this.camera.fov * (Math.PI / 180); // Radyan'a çevir
       const maxDim = Math.max(size.x, size.y, size.z);
 
-      // Parçayı tam olarak çerçevelemek için gerekli mesafe
-      // %20 padding ekle (1.2 çarpanı)
-      const distance = (maxDim * 1.2) / (2 * Math.tan(fov / 2));
+      // Her şeyi çerçevelemek için gerekli mesafe
+      // %30 padding ekle (1.3 çarpanı - ölçü çizgileri için daha fazla alan)
+      const distance = (maxDim * 1.3) / (2 * Math.tan(fov / 2));
 
       const direction = view.position.clone().normalize();
       const cameraPosition = center.clone().add(direction.multiplyScalar(distance));
