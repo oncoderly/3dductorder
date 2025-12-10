@@ -87,8 +87,36 @@ export class ScreenshotCapture {
       this.controls.target.copy(center);
       this.controls.update();
 
-      // Render et (yüksek çözünürlükte)
+      // CSS transitions/animations'ı geçici olarak devre dışı bırak
+      const labelRenderer = this.scene3D.labelRenderer;
+      let originalTransitions = [];
+      if (labelRenderer) {
+        const labels = labelRenderer.domElement.querySelectorAll('.dimension-label');
+        labels.forEach((label, index) => {
+          originalTransitions[index] = label.style.transition;
+          label.style.transition = 'none';
+        });
+      }
+
+      // Birden fazla render pass yap (label'ların yerleşmesi için)
       this.renderer.render(this.scene, this.camera);
+      if (labelRenderer) {
+        labelRenderer.render(this.scene, this.camera);
+      }
+
+      // İkinci render pass (stabilizasyon için)
+      await new Promise(resolve => setTimeout(resolve, 50));
+      this.renderer.render(this.scene, this.camera);
+      if (labelRenderer) {
+        labelRenderer.render(this.scene, this.camera);
+      }
+
+      // Son render ve screenshot
+      await new Promise(resolve => setTimeout(resolve, 150));
+      this.renderer.render(this.scene, this.camera);
+      if (labelRenderer) {
+        labelRenderer.render(this.scene, this.camera);
+      }
 
       let dataURL;
 
@@ -96,16 +124,16 @@ export class ScreenshotCapture {
         // Temiz görüntü - yüksek çözünürlük JPEG
         dataURL = this.renderer.domElement.toDataURL('image/jpeg', 0.90);
       } else {
-        // Ölçülerle birlikte görüntü - CSS2D label'ları ekle
-        if (this.scene3D.labelRenderer) {
-          this.scene3D.labelRenderer.render(this.scene, this.camera);
-        }
-
-        // Kısa bekleme (label'ların render edilmesini bekle)
-        await new Promise(resolve => setTimeout(resolve, 100));
-
         // Screenshot al - WebGL canvas + HTML label'ları birleştir
         dataURL = await this.captureWithLabels();
+      }
+
+      // Transitions'ı geri yükle
+      if (labelRenderer && originalTransitions.length > 0) {
+        const labels = labelRenderer.domElement.querySelectorAll('.dimension-label');
+        labels.forEach((label, index) => {
+          label.style.transition = originalTransitions[index] || '';
+        });
       }
 
       // Orijinal duruma geri dön
@@ -170,10 +198,12 @@ export class ScreenshotCapture {
   async captureAllViews(hideUI = true) {
     const screenshots = {};
 
-    // Her görünümü sırayla çek (küçük bekleme ile smooth geçiş)
+    // Her görünümü sırayla çek
+    // captureView içinde zaten stabilizasyon bekleme süresi var
     for (const viewName of ['front', 'right', 'top', 'iso']) {
-      await new Promise(resolve => setTimeout(resolve, 100)); // 100ms bekleme
       screenshots[viewName] = await this.captureView(viewName, hideUI);
+      // Görünümler arası küçük bekleme (kontrolün serbest kalması için)
+      await new Promise(resolve => setTimeout(resolve, 50));
     }
 
     return screenshots;
