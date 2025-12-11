@@ -771,6 +771,11 @@ html, body {
   z-index: 1000;
 }
 
+/* Plenum Box Ø Labels - Orijinal boyutta tut (10px) */
+.label.plenum-diameter-label {
+  font-size: 10px !important;
+}
+
 /* Eksen Etiketleri (X, Y, Z) */
 .axis-label {
   font-weight: 700;
@@ -1571,4 +1576,209 @@ html, body {
   font-size: clamp(9px, 2.5vw, 12px);
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+/* ========================================
+   QUANTITY MODAL - Adet Seçim Popup'ı
+   ======================================== */
+.quantity-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.quantity-modal.active {
+  display: flex;
+}
+
+.quantity-modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+}
+
+.quantity-modal-content {
+  position: relative;
+  background: linear-gradient(135deg, #1c2030 0%, #12161f 100%);
+  border: 1px solid #2d3748;
+  border-radius: 16px;
+  padding: 32px;
+  min-width: 320px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.quantity-modal-content h3 {
+  margin: 0 0 24px 0;
+  color: #e6edf3;
+  font-size: 20px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.quantity-selector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.quantity-btn {
+  width: 48px;
+  height: 48px;
+  border: 2px solid #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border-radius: 12px;
+  font-size: 24px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.quantity-btn:hover {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #34d399;
+  transform: scale(1.05);
+}
+
+.quantity-btn:active {
+  transform: scale(0.95);
+}
+
+.quantity-input {
+  width: 100px;
+  height: 56px;
+  background: #0d1117;
+  border: 2px solid #2d3748;
+  border-radius: 12px;
+  color: #e6edf3;
+  font-size: 28px;
+  font-weight: 700;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.quantity-input:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+/* Chrome, Safari, Edge, Opera - Hide spinner */
+.quantity-input::-webkit-outer-spin-button,
+.quantity-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox - Hide spinner */
+.quantity-input[type=number] {
+  -moz-appearance: textfield;
+}
+
+.quantity-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.quantity-modal-cancel,
+.quantity-modal-confirm {
+  flex: 1;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quantity-modal-cancel {
+  background: #2d3748;
+  color: #9ca3af;
+}
+
+.quantity-modal-cancel:hover {
+  background: #374151;
+  color: #e6edf3;
+}
+
+.quantity-modal-confirm {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.quantity-modal-confirm:hover {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+  transform: translateY(-2px);
+}
+
+.quantity-modal-confirm:active {
+  transform: translateY(0);
+}
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+  .quantity-modal-content {
+    min-width: 280px;
+    padding: 24px;
+    margin: 0 16px;
+  }
+
+  .quantity-modal-content h3 {
+    font-size: 18px;
+    margin-bottom: 20px;
+  }
+
+  .quantity-selector {
+    gap: 12px;
+  }
+
+  .quantity-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+  }
+
+  .quantity-input {
+    width: 80px;
+    height: 52px;
+    font-size: 24px;
+  }
+
+  .quantity-modal-cancel,
+  .quantity-modal-confirm {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
 }

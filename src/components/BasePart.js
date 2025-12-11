@@ -60,7 +60,7 @@ export class BasePart {
         { key: 'keepViewOnEdit', label: 'Görüşü Koru', type: 'checkbox' }
       ],
       flange: [
-        { key: 'flangeLip', label: 'Flanş Payı', min: 0.5, max: 8, step: 0.1, unit: 'cm', default: 3.0 },
+        { key: 'flangeLip', label: 'Flanş Payı', min: 1, max: 8, step: 1, unit: 'cm', default: 3.0 },
         { key: 'flangeThick', label: 'Flanş Kalınlığı', min: 0.2, max: 2, step: 0.05, unit: 'cm', default: 0.6 }
       ],
       material: [
@@ -70,13 +70,13 @@ export class BasePart {
       dimension: [
         { key: 'dimAlwaysOnTop', label: 'Ölçüler Üstte', type: 'checkbox' },
         { key: 'dimFixedOffset', label: 'Sabit Ofset', type: 'checkbox' },
-        { key: 'dimOffsetCm', label: 'Ölçü Ofseti', min: 0, max: 10, step: 0.1, unit: 'cm', default: 1.5 },
-        { key: 'arrowHeadCm', label: 'Ok Başı', min: 1, max: 10, step: 0.1, unit: 'cm', default: 4.0 },
-        { key: 'arrowRadiusCm', label: 'Ok Yarıçapı', min: 0.5, max: 5, step: 0.1, unit: 'cm', default: 1.2 },
+        { key: 'dimOffsetCm', label: 'Ölçü Ofseti', min: 0, max: 10, step: 1, unit: 'cm', default: 1.5 },
+        { key: 'arrowHeadCm', label: 'Ok Başı', min: 1, max: 10, step: 1, unit: 'cm', default: 4.0 },
+        { key: 'arrowRadiusCm', label: 'Ok Yarıçapı', min: 1, max: 5, step: 1, unit: 'cm', default: 1.2 },
         { key: 'extLenCm', label: 'Uzatma', min: 5, max: 50, step: 1, unit: 'cm', default: 15 },
-        { key: 'extGapCm', label: 'Boşluk', min: 0, max: 10, step: 0.1, unit: 'cm', default: 1 },
+        { key: 'extGapCm', label: 'Boşluk', min: 0, max: 10, step: 1, unit: 'cm', default: 1 },
         { key: 'dimPlaneOffsetCm', label: 'Düzlem Ofseti', min: 5, max: 100, step: 1, unit: 'cm', default: 20 },
-        { key: 'labelOffsetCm', label: 'Etiket Ofseti', min: 0, max: 5, step: 0.1, unit: 'cm', default: 0.5 }
+        { key: 'labelOffsetCm', label: 'Etiket Ofseti', min: 0, max: 5, step: 1, unit: 'cm', default: 0.5 }
       ],
       area: [
         { key: 'areaIncludeFlange', label: 'Flanşı Dahil Et', type: 'checkbox' },
@@ -337,8 +337,8 @@ export class BasePart {
     return new THREE.Vector3(x, y, z);
   }
 
-  // Ölçü değerini formatla (120.0 → 120, 25.5 → 25.5)
+  // Ölçü değerini formatla - tam sayıya yuvarla
   static formatDimension(value) {
-    return Number.isInteger(value) ? value.toString() : value.toFixed(1);
+    return Math.round(value).toString();
   }
 }

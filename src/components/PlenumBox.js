@@ -68,11 +68,11 @@ export class PlenumBox extends BasePart {
 
     return {
       dimensions: [
-        { key: 'W1', label: 'Genişlik (W)', min: 10, max: 400, step: 0.1, unit: 'cm', default: 100 },
-        { key: 'H1', label: 'Yükseklik (H)', min: 10, max: 400, step: 0.1, unit: 'cm', default: 80 },
-        { key: 'L', label: 'Derinlik (L)', min: 10, max: 1000, step: 0.1, unit: 'cm', default: 120 },
-        { key: 'Phi', label: 'Ø varsayılan', min: 10, max: 400, step: 0.1, unit: 'cm', default: 60 },
-        { key: 'spigotLenCm', label: 'Manşon Uzunluğu', min: 1, max: 100, step: 0.1, unit: 'cm', default: 10 },
+        { key: 'W1', label: 'Genişlik (W)', min: 10, max: 400, step: 1, unit: 'cm', default: 100 },
+        { key: 'H1', label: 'Yükseklik (H)', min: 10, max: 400, step: 1, unit: 'cm', default: 80 },
+        { key: 'L', label: 'Derinlik (L)', min: 10, max: 1000, step: 1, unit: 'cm', default: 120 },
+        { key: 'Phi', label: 'Ø varsayılan', min: 10, max: 400, step: 1, unit: 'cm', default: 60 },
+        { key: 'spigotLenCm', label: 'Manşon Uzunluğu', min: 1, max: 100, step: 1, unit: 'cm', default: 10 },
         { key: 't', label: 'Sac Kalınlığı', min: 0.02, max: 1.0, step: 0.01, unit: 'cm', default: 0.12 },
         { key: 'steps', label: 'Segment Sayısı', min: 8, max: 400, step: 1, unit: '', default: 80 }
       ],
@@ -370,7 +370,7 @@ export class PlenumBox extends BasePart {
   }
 
   // PlenumBox için dimension line override - rotatedDimensionGroup kullan
-  createDimensionLine(p1, p2, offsetDir, label, color, paramKey) {
+  createDimensionLine(p1, p2, offsetDir, label, color, paramKey, customClass = null) {
     const n = offsetDir.clone().normalize();
     const gap = BasePart.cm(this.params.extGapCm);
     const targetOff = this.params.dimFixedOffset
@@ -421,7 +421,7 @@ export class PlenumBox extends BasePart {
       }
     }
 
-    return this.scene.addLabel(label, midWorld, color, paramData);
+    return this.scene.addLabel(label, midWorld, color, paramData, customClass);
   }
 
   createArrowForDimension(p1, p2, color, head, rad) {
@@ -503,9 +503,9 @@ export class PlenumBox extends BasePart {
       'L'
     );
 
-    // Ø ölçüleri (manşonlar)
+    // Ø ölçüleri (manşonlar) - küçük font için özel class
     this.dimsToDraw.forEach(d => {
-      this.createDimensionLine(d.pA, d.pB, d.off, d.text, this.params.colorPhi, 'Phi');
+      this.createDimensionLine(d.pA, d.pB, d.off, d.text, this.params.colorPhi, 'Phi', 'plenum-diameter-label');
     });
 
     // Yüz etiketleri - yüzeye yapışık 3D mesh etiketler (alt kenar y=0)

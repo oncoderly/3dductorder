@@ -30,9 +30,9 @@ export class DuzKanal extends BasePart {
 
     return {
       dimensions: [
-        { key: 'W1', label: 'Genişlik (W)', min: 10, max: 200, step: 0.1, unit: 'cm', default: 25 },
-        { key: 'H1', label: 'Yükseklik (H)', min: 10, max: 200, step: 0.1, unit: 'cm', default: 30 },
-        { key: 'L', label: 'Uzunluk (L)', min: 10, max: 500, step: 0.1, unit: 'cm', default: 120 },
+        { key: 'W1', label: 'Genişlik (W)', min: 10, max: 200, step: 1, unit: 'cm', default: 25 },
+        { key: 'H1', label: 'Yükseklik (H)', min: 10, max: 200, step: 1, unit: 'cm', default: 30 },
+        { key: 'L', label: 'Uzunluk (L)', min: 10, max: 500, step: 1, unit: 'cm', default: 120 },
         { key: 't', label: 'Sac Kalınlığı', min: 0.02, max: 1.0, step: 0.01, unit: 'cm', default: 0.12 },
         { key: 'steps', label: 'Segment Sayısı', min: 2, max: 64, step: 1, unit: '', default: 16 }
       ],

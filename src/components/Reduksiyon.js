@@ -55,11 +55,11 @@ export class Reduksiyon extends BasePart {
         {
           name: 'Ölçüler',
           params: [
-            { key: 'W1', label: 'W1 (bitiş) cm', type: 'number', min: 1, max: 400, step: 0.1 },
-            { key: 'H1', label: 'H1 (bitiş) cm', type: 'number', min: 1, max: 400, step: 0.1 },
-            { key: 'W2', label: 'W2 (başlangıç) cm', type: 'number', min: 1, max: 400, step: 0.1 },
-            { key: 'H2', label: 'H2 (başlangıç) cm', type: 'number', min: 1, max: 400, step: 0.1 },
-            { key: 'L', label: 'L (uzunluk) cm', type: 'number', min: 1, max: 1000, step: 0.1 },
+            { key: 'W1', label: 'W1 (bitiş) cm', type: 'number', min: 1, max: 400, step: 1 },
+            { key: 'H1', label: 'H1 (bitiş) cm', type: 'number', min: 1, max: 400, step: 1 },
+            { key: 'W2', label: 'W2 (başlangıç) cm', type: 'number', min: 1, max: 400, step: 1 },
+            { key: 'H2', label: 'H2 (başlangıç) cm', type: 'number', min: 1, max: 400, step: 1 },
+            { key: 'L', label: 'L (uzunluk) cm', type: 'number', min: 1, max: 1000, step: 1 },
             { key: 't', label: 'Sac Kalınlığı t', type: 'number', min: 0.02, max: 1, step: 0.01 }
           ]
         },
@@ -84,7 +84,7 @@ export class Reduksiyon extends BasePart {
                 { value: 'value', label: 'Değer' }
               ]
             },
-            { key: 'offWcm', label: 'Ofset-Genişlik (cm)', type: 'number', min: -200, max: 200, step: 0.1 },
+            { key: 'offWcm', label: 'Ofset-Genişlik (cm)', type: 'number', min: -200, max: 200, step: 1 },
             {
               key: 'modeH',
               label: 'Ofset-Yükseklik',
@@ -96,7 +96,7 @@ export class Reduksiyon extends BasePart {
                 { value: 'value', label: 'Değer' }
               ]
             },
-            { key: 'offHcm', label: 'Ofset-Yükseklik (cm)', type: 'number', min: -200, max: 200, step: 0.1 }
+            { key: 'offHcm', label: 'Ofset-Yükseklik (cm)', type: 'number', min: -200, max: 200, step: 1 }
           ]
         },
         {

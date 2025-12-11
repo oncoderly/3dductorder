@@ -35,12 +35,12 @@ export class ReduksiyonDirsek extends BasePart {
 
     return {
       dimensions: [
-        { key: 'W1', label: 'Son Genişlik (W1)', min: 10, max: 200, step: 0.1, unit: 'cm', default: 40 },
-        { key: 'H1', label: 'Son Yükseklik (H1)', min: 10, max: 200, step: 0.1, unit: 'cm', default: 25 },
-        { key: 'W2', label: 'Başlangıç Genişlik (W2)', min: 10, max: 200, step: 0.1, unit: 'cm', default: 30 },
-        { key: 'H2', label: 'Başlangıç Yükseklik (H2)', min: 10, max: 200, step: 0.1, unit: 'cm', default: 20 },
+        { key: 'W1', label: 'Son Genişlik (W1)', min: 10, max: 200, step: 1, unit: 'cm', default: 40 },
+        { key: 'H1', label: 'Son Yükseklik (H1)', min: 10, max: 200, step: 1, unit: 'cm', default: 25 },
+        { key: 'W2', label: 'Başlangıç Genişlik (W2)', min: 10, max: 200, step: 1, unit: 'cm', default: 30 },
+        { key: 'H2', label: 'Başlangıç Yükseklik (H2)', min: 10, max: 200, step: 1, unit: 'cm', default: 20 },
         { key: 't', label: 'Sac Kalınlığı', min: 0.02, max: 1.0, step: 0.01, unit: 'cm', default: 0.12 },
-        { key: 'R_in', label: 'İç Yarıçap', min: 1, max: 300, step: 0.1, unit: 'cm', default: 20 },
+        { key: 'R_in', label: 'İç Yarıçap', min: 1, max: 300, step: 1, unit: 'cm', default: 20 },
         { key: 'A', label: 'Açı', min: 10, max: 180, step: 1, unit: '°', default: 90 },
         { key: 'steps', label: 'Segment Sayısı', min: 16, max: 400, step: 1, unit: '', default: 100 }
       ],
@@ -68,12 +68,13 @@ export class ReduksiyonDirsek extends BasePart {
 
     const steps = Math.max(16, Math.floor(this.params.steps));
 
-    // Çeyrek daire path - merkez hat yarıçapı
-    const Rc = Rin + (Math.max(W1, W2) / 2);
-
-    // Merkezi hesapla (ark'ın geometrik merkezi)
-    const centerX = -Rc * (Math.cos(theta / 2));
-    const centerZ = Rc * (Math.sin(theta / 2));
+    // İç yay sabit Rin yarıçapında
+    // Path orta hatta (Rin + W/2) - değişken yarıçaplı
+    // Geometri merkezi hesabı için ortalama yarıçap
+    const W_avg = (W1 + W2) / 2;
+    const R_mid = Rin + W_avg / 2;
+    const centerX = -R_mid * (Math.cos(theta / 2));
+    const centerZ = R_mid * (Math.sin(theta / 2));
 
     // Outer ve inner rings
     const ringsOuter = [];
@@ -83,35 +84,36 @@ export class ReduksiyonDirsek extends BasePart {
       const u = i / steps;
       const angle = u * theta;
 
-      // Path pozisyonu (merkezde)
-      const x = -Rc * Math.cos(angle) - centerX;
-      const z = Rc * Math.sin(angle) - centerZ;
-      const pathPos = new THREE.Vector3(x, 0, z);
-
-      // Tangent, normal, binormal
-      const tangent = new THREE.Vector3(Rc * Math.sin(angle), 0, Rc * Math.cos(angle)).normalize();
-      const binormal = new THREE.Vector3(0, 1, 0);
-      const normal = new THREE.Vector3().crossVectors(binormal, tangent).normalize();
-
       // Boyut interpolasyonu
       const W = W2 + (W1 - W2) * u;
       const H = H2 + (H1 - H2) * u;
+
+      // Path pozisyonu - orta hatta (Rin + W/2 yarıçapında - DEĞİŞKEN)
+      const R_center = Rin + W / 2;
+      const x = -R_center * Math.cos(angle) - centerX;
+      const z = R_center * Math.sin(angle) - centerZ;
+      const pathPos = new THREE.Vector3(x, 0, z);
+
+      // Tangent, normal, binormal
+      const tangent = new THREE.Vector3(R_center * Math.sin(angle), 0, R_center * Math.cos(angle)).normalize();
+      const binormal = new THREE.Vector3(0, 1, 0);
+      const normal = new THREE.Vector3().crossVectors(binormal, tangent).normalize();
       const Wi = Math.max(W - 2 * t, 0.001);
       const Hi = Math.max(H - 2 * t, 0.001);
 
-      // Dikdörtgen köşeleri (4 köşe)
+      // Dikdörtgen köşeleri - path ortada, kesit her iki yöne W/2 uzanır
       const outerRing = [
-        pathPos.clone().add(normal.clone().multiplyScalar(-W / 2)).add(binormal.clone().multiplyScalar(-H / 2)),
-        pathPos.clone().add(normal.clone().multiplyScalar(W / 2)).add(binormal.clone().multiplyScalar(-H / 2)),
-        pathPos.clone().add(normal.clone().multiplyScalar(W / 2)).add(binormal.clone().multiplyScalar(H / 2)),
-        pathPos.clone().add(normal.clone().multiplyScalar(-W / 2)).add(binormal.clone().multiplyScalar(H / 2))
+        pathPos.clone().add(normal.clone().multiplyScalar(-W / 2)).add(binormal.clone().multiplyScalar(-H / 2)),  // iç-alt
+        pathPos.clone().add(normal.clone().multiplyScalar(W / 2)).add(binormal.clone().multiplyScalar(-H / 2)),   // dış-alt
+        pathPos.clone().add(normal.clone().multiplyScalar(W / 2)).add(binormal.clone().multiplyScalar(H / 2)),    // dış-üst
+        pathPos.clone().add(normal.clone().multiplyScalar(-W / 2)).add(binormal.clone().multiplyScalar(H / 2))    // iç-üst
       ];
 
       const innerRing = [
-        pathPos.clone().add(normal.clone().multiplyScalar(-Wi / 2)).add(binormal.clone().multiplyScalar(-Hi / 2)),
-        pathPos.clone().add(normal.clone().multiplyScalar(Wi / 2)).add(binormal.clone().multiplyScalar(-Hi / 2)),
-        pathPos.clone().add(normal.clone().multiplyScalar(Wi / 2)).add(binormal.clone().multiplyScalar(Hi / 2)),
-        pathPos.clone().add(normal.clone().multiplyScalar(-Wi / 2)).add(binormal.clone().multiplyScalar(Hi / 2))
+        pathPos.clone().add(normal.clone().multiplyScalar(-Wi / 2)).add(binormal.clone().multiplyScalar(-Hi / 2)),  // iç-alt
+        pathPos.clone().add(normal.clone().multiplyScalar(Wi / 2)).add(binormal.clone().multiplyScalar(-Hi / 2)),   // dış-alt
+        pathPos.clone().add(normal.clone().multiplyScalar(Wi / 2)).add(binormal.clone().multiplyScalar(Hi / 2)),    // dış-üst
+        pathPos.clone().add(normal.clone().multiplyScalar(-Wi / 2)).add(binormal.clone().multiplyScalar(Hi / 2))    // iç-üst
       ];
 
       ringsOuter.push(outerRing);
@@ -188,14 +190,16 @@ export class ReduksiyonDirsek extends BasePart {
     const fth = BasePart.cm(this.params.flangeThick);
     const Rin = BasePart.cm(this.params.R_in);
     const theta = THREE.MathUtils.degToRad(this.params.A);
-    const Rc = Rin + (Math.max(W1, W2) / 2);
 
-    // Merkezi hesapla (ark'ın geometrik merkezi)
-    const centerX = -Rc * (Math.cos(theta / 2));
-    const centerZ = Rc * (Math.sin(theta / 2));
+    // buildGeometry ile aynı merkez hesabı
+    const W_avg = (W1 + W2) / 2;
+    const R_mid = Rin + W_avg / 2;
+    const centerX = -R_mid * (Math.cos(theta / 2));
+    const centerZ = R_mid * (Math.sin(theta / 2));
 
-    // Başlangıç flanşı (u=0, merkezde)
-    const p0 = new THREE.Vector3(-Rc - centerX, 0, 0 - centerZ);
+    // Başlangıç flanşı (u=0) - orta hatta, her iki yöne W2/2 uzanır
+    const R_center0 = Rin + W2 / 2;
+    const p0 = new THREE.Vector3(-R_center0 - centerX, 0, 0 - centerZ);
     const t0 = new THREE.Vector3(0, 0, 1);
     const n0 = new THREE.Vector3(1, 0, 0);
     const b0 = new THREE.Vector3(0, 1, 0);
@@ -206,9 +210,10 @@ export class ReduksiyonDirsek extends BasePart {
     F0.position.copy(p0.clone().add(t0.clone().multiplyScalar(-fth * 0.5)));
     this.scene.flangeGroup.add(F0);
 
-    // Bitiş flanşı (u=1, merkezde)
-    const p1 = new THREE.Vector3(-Rc * Math.cos(theta) - centerX, 0, Rc * Math.sin(theta) - centerZ);
-    const t1 = new THREE.Vector3(Rc * Math.sin(theta), 0, Rc * Math.cos(theta)).normalize();
+    // Bitiş flanşı (u=1) - orta hatta, her iki yöne W1/2 uzanır
+    const R_center1 = Rin + W1 / 2;
+    const p1 = new THREE.Vector3(-R_center1 * Math.cos(theta) - centerX, 0, R_center1 * Math.sin(theta) - centerZ);
+    const t1 = new THREE.Vector3(R_center1 * Math.sin(theta), 0, R_center1 * Math.cos(theta)).normalize();
     const b1 = new THREE.Vector3(0, 1, 0);
     const n1 = new THREE.Vector3().crossVectors(b1, t1).normalize();
 
@@ -258,15 +263,20 @@ export class ReduksiyonDirsek extends BasePart {
     const H2m = BasePart.cm(this.params.H2);
     const Rin = BasePart.cm(this.params.R_in);
     const theta = THREE.MathUtils.degToRad(this.params.A);
-    const Rc = Rin + (Math.max(W1m, W2m) / 2);
 
-    // Merkezi hesapla (ark'ın geometrik merkezi)
-    const centerX = -Rc * (Math.cos(theta / 2));
-    const centerZ = Rc * (Math.sin(theta / 2));
+    // buildGeometry ile aynı merkez hesabı
+    const W_avg = (W1m + W2m) / 2;
+    const R_mid = Rin + W_avg / 2;
+    const centerX = -R_mid * (Math.cos(theta / 2));
+    const centerZ = R_mid * (Math.sin(theta / 2));
 
-    // Başlangıç ve bitiş noktaları (merkezde)
-    const p0 = new THREE.Vector3(-Rc - centerX, 0, 0 - centerZ);
-    const p1 = new THREE.Vector3(-Rc * Math.cos(theta) - centerX, 0, Rc * Math.sin(theta) - centerZ);
+    // Başlangıç noktası (u=0) - orta hatta
+    const R_center0 = Rin + W2m / 2;
+    const p0 = new THREE.Vector3(-R_center0 - centerX, 0, 0 - centerZ);
+
+    // Bitiş noktası (u=1) - orta hatta
+    const R_center1 = Rin + W1m / 2;
+    const p1 = new THREE.Vector3(-R_center1 * Math.cos(theta) - centerX, 0, R_center1 * Math.sin(theta) - centerZ);
 
     // Başlangıç frame (u=0)
     const t0 = new THREE.Vector3(0, 0, 1);
@@ -274,43 +284,46 @@ export class ReduksiyonDirsek extends BasePart {
     const n0 = new THREE.Vector3(1, 0, 0);
 
     // Bitiş frame (u=1)
-    const t1 = new THREE.Vector3(Rc * Math.sin(theta), 0, Rc * Math.cos(theta)).normalize();
+    const t1 = new THREE.Vector3(R_center1 * Math.sin(theta), 0, R_center1 * Math.cos(theta)).normalize();
     const b1 = new THREE.Vector3(0, 1, 0);
     const n1 = new THREE.Vector3().crossVectors(b1, t1).normalize();
 
-    // Başlangıç ağız W2, H2 ölçüleri
-    const p0_LB = p0.clone().add(n0.clone().multiplyScalar(-W2m / 2)).add(b0.clone().multiplyScalar(-H2m / 2));
-    const p0_RB = p0.clone().add(n0.clone().multiplyScalar(W2m / 2)).add(b0.clone().multiplyScalar(-H2m / 2));
-    const p0_LT = p0.clone().add(n0.clone().multiplyScalar(-W2m / 2)).add(b0.clone().multiplyScalar(H2m / 2));
+    // Başlangıç ağız W2, H2 ölçüleri - orta hatta, her iki yöne uzanır
+    const p0_LB = p0.clone().add(n0.clone().multiplyScalar(-W2m / 2)).add(b0.clone().multiplyScalar(-H2m / 2));  // iç-alt
+    const p0_RB = p0.clone().add(n0.clone().multiplyScalar(W2m / 2)).add(b0.clone().multiplyScalar(-H2m / 2));   // dış-alt
+    const p0_LT = p0.clone().add(n0.clone().multiplyScalar(-W2m / 2)).add(b0.clone().multiplyScalar(H2m / 2));   // iç-üst
 
     // W2: alt kenar boyunca, uzatma aşağı
     this.createDimensionLine(p0_LB, p0_RB, b0.clone().negate(), `W2 = ${BasePart.formatDimension(this.params.W2)} cm`, this.params.colorW2, 'W2');
 
-    // H2: sol kenar boyunca, uzatma sola
+    // H2: iç kenar boyunca, uzatma içe
     this.createDimensionLine(p0_LB, p0_LT, n0.clone().negate(), `H2 = ${BasePart.formatDimension(this.params.H2)} cm`, this.params.colorH2, 'H2');
 
-    // Bitiş ağız W1, H1 ölçüleri
-    const p1_LB = p1.clone().add(n1.clone().multiplyScalar(-W1m / 2)).add(b1.clone().multiplyScalar(-H1m / 2));
-    const p1_RB = p1.clone().add(n1.clone().multiplyScalar(W1m / 2)).add(b1.clone().multiplyScalar(-H1m / 2));
-    const p1_LT = p1.clone().add(n1.clone().multiplyScalar(-W1m / 2)).add(b1.clone().multiplyScalar(H1m / 2));
+    // Bitiş ağız W1, H1 ölçüleri - orta hatta, her iki yöne uzanır
+    const p1_LB = p1.clone().add(n1.clone().multiplyScalar(-W1m / 2)).add(b1.clone().multiplyScalar(-H1m / 2));  // iç-alt
+    const p1_RB = p1.clone().add(n1.clone().multiplyScalar(W1m / 2)).add(b1.clone().multiplyScalar(-H1m / 2));   // dış-alt
+    const p1_LT = p1.clone().add(n1.clone().multiplyScalar(-W1m / 2)).add(b1.clone().multiplyScalar(H1m / 2));   // iç-üst
 
     // W1: alt kenar boyunca, uzatma aşağı
     this.createDimensionLine(p1_LB, p1_RB, b1.clone().negate(), `W1 = ${BasePart.formatDimension(this.params.W1)} cm`, this.params.colorW1, 'W1');
 
-    // H1: sol kenar boyunca, uzatma sola
+    // H1: iç kenar boyunca, uzatma içe
     this.createDimensionLine(p1_LB, p1_LT, n1.clone().negate(), `H1 = ${BasePart.formatDimension(this.params.H1)} cm`, this.params.colorH1, 'H1');
 
-    // R(iç) yarıçapı gösterimi (merkezde)
-    const center = new THREE.Vector3(0 - centerX, 0, 0 - centerZ);
-    const arcPoint = new THREE.Vector3(-Rin - centerX, 0, 0 - centerZ);
+    // R(iç) yarıçapı gösterimi - gerçek iç yay üzerinde
+    // İç yay merkezi Rin yarıçapında olmalı
+    const innerArcCenter = new THREE.Vector3(0 - centerX, 0, 0 - centerZ);
+
+    // İç yay başlangıç noktası: başlangıç ağzının iç kenarı
+    const innerArcPoint = new THREE.Vector3(-Rin - centerX, 0, 0 - centerZ);
 
     const headLen = BasePart.cm(this.params.arrowHeadCm);
     const radius = BasePart.cm(this.params.arrowRadiusCm);
-    const dirR = new THREE.Vector3().subVectors(arcPoint, center).normalize();
-    const startR = center.clone().add(dirR.clone().multiplyScalar(BasePart.cm(this.params.dimOffsetCm)));
+    const dirR = new THREE.Vector3().subVectors(innerArcPoint, innerArcCenter).normalize();
+    const startR = innerArcCenter.clone().add(dirR.clone().multiplyScalar(BasePart.cm(this.params.dimOffsetCm)));
 
     const lineMat = this.materials.createDimensionLineMaterial(this.params.colorR, this.params.dimAlwaysOnTop);
-    const geoR = new THREE.BufferGeometry().setFromPoints([startR, arcPoint]);
+    const geoR = new THREE.BufferGeometry().setFromPoints([startR, innerArcPoint]);
     const lineR = new THREE.Line(geoR, lineMat);
     lineR.renderOrder = this.params.dimAlwaysOnTop ? 999 : 0;
     this.scene.dimensionGroup.add(lineR);
@@ -318,7 +331,7 @@ export class ReduksiyonDirsek extends BasePart {
     const arrowMat = this.materials.createDimensionArrowMaterial(this.params.colorR, this.params.dimAlwaysOnTop);
     const cone = new THREE.Mesh(new THREE.ConeGeometry(radius, headLen, 12), arrowMat);
     cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dirR);
-    cone.position.copy(arcPoint);
+    cone.position.copy(innerArcPoint);
     cone.renderOrder = this.params.dimAlwaysOnTop ? 999 : 0;
     this.scene.dimensionGroup.add(cone);
 
@@ -332,30 +345,37 @@ export class ReduksiyonDirsek extends BasePart {
     const paramDataR = allParams.find(p => p.key === 'R_in');
     const paramDataA = allParams.find(p => p.key === 'A');
 
+    // R(iç) etiketi - iç yay üzerinde, biraz dışa kaydırılmış
+    const labelOffsetR = 0.15; // R etiketi için offset
     this.scene.addLabel(`R(iç) = ${BasePart.formatDimension(this.params.R_in)} cm`,
-      startR.clone().add(arcPoint).multiplyScalar(0.5), this.params.colorR, paramDataR);
+      startR.clone().add(innerArcPoint).multiplyScalar(0.5).add(new THREE.Vector3(0, labelOffsetR, 0)), this.params.colorR, paramDataR);
 
-    // Açı yayı (merkezde)
+    // Açı yayı - orta hat üzerinde (merkez çizgisi)
     const arcPts = [];
     const segs = 48;
+    const R_mid_arc = Rin + W_avg / 2; // Orta hat yarıçapı
     for (let i = 0; i <= segs; i++) {
       const a = i / segs * theta;
-      arcPts.push(new THREE.Vector3(-Rc * Math.cos(a) - centerX, 0, Rc * Math.sin(a) - centerZ));
+      arcPts.push(new THREE.Vector3(-R_mid_arc * Math.cos(a) - centerX, 0, R_mid_arc * Math.sin(a) - centerZ));
     }
     const arcLine = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints(arcPts),
       new THREE.LineDashedMaterial({
         color: new THREE.Color(this.params.colorA),
         dashSize: 0.06,
-        gapSize: 0.04
+        gapSize: 0.04,
+        depthTest: !this.params.dimAlwaysOnTop
       })
     );
     arcLine.computeLineDistances();
     arcLine.renderOrder = this.params.dimAlwaysOnTop ? 999 : 0;
     this.scene.dimensionGroup.add(arcLine);
 
+    // Açı etiketi - orta hat üzerinde, merkeze daha yakın
+    const midAngle = theta / 2;
+    const labelOffsetA = -0.1; // A etiketi için offset (aşağı)
     this.scene.addLabel(`A = ${this.params.A}°`,
-    new THREE.Vector3(-Rc * 0.6 - centerX, 0, Rc * 0.6 - centerZ), this.params.colorA, paramDataA);
+    new THREE.Vector3(-R_mid_arc * Math.cos(midAngle) * 0.7 - centerX, labelOffsetA, R_mid_arc * Math.sin(midAngle) * 0.7 - centerZ), this.params.colorA, paramDataA);
   }
 
   calculateArea() {

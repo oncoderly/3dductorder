@@ -372,7 +372,7 @@ export class ParameterPanel {
       portInput.className = 'param-input';
       portInput.min = 1;
       portInput.max = 400;
-      portInput.step = 0.1;
+      portInput.step = 1;
       portInput.value = port.diam;
 
       portInput.addEventListener('input', (e) => {
@@ -439,7 +439,7 @@ export class ParameterPanel {
     content.className = 'param-section-content';
 
     const flangeParams = [
-      { key: 'flangeLip', label: 'Flanş Payı', min: 0.5, max: 8, step: 0.1, unit: 'cm' },
+      { key: 'flangeLip', label: 'Flanş Payı', min: 1, max: 8, step: 1, unit: 'cm' },
       { key: 'flangeThick', label: 'Flanş Kalınlığı', min: 0.2, max: 2, step: 0.05, unit: 'cm' }
     ];
 
@@ -571,7 +571,9 @@ export class ParameterPanel {
 
     const value = document.createElement('span');
     value.className = 'param-value';
-    value.textContent = this.part.params[param.key].toFixed(2);
+    // cm ölçülerinde tam sayı, diğerlerinde ondalık göster
+    const formatValue = (val) => param.unit === 'cm' ? Math.round(val).toString() : val.toFixed(2);
+    value.textContent = formatValue(this.part.params[param.key]);
 
     labelRow.appendChild(label);
     labelRow.appendChild(value);
@@ -587,7 +589,7 @@ export class ParameterPanel {
     slider.addEventListener('input', (e) => {
       const val = parseFloat(e.target.value);
       this.part.params[param.key] = val;
-      value.textContent = val.toFixed(2);
+      value.textContent = formatValue(val);
 
       if (param.key === 'metalRough' || param.key === 'metalness') {
         this.part.updateMaterialProperties();

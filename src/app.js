@@ -325,7 +325,7 @@ class App {
   }
 
   // Siparişe ekle
-  async handleAddToCart() {
+  async handleAddToCart(quantity = 1) {
     if (!this.currentPart) {
       this.errorHandler.error('Sipariş eklenemedi', 'Lütfen önce bir parça seçin');
       return;
@@ -350,7 +350,7 @@ class App {
         params: this.currentPart.exportParams(),
         dimensions: this.currentPart.getDimensions(),
         area: this.currentPart.calculateArea().outer || 0, // Alan objesinden outer değerini al
-        quantity: 1,
+        quantity: quantity, // Kullanıcının seçtiği adet
         screenshots: screenshots
       };
 

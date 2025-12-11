@@ -76,7 +76,7 @@ export class DimensionPopup {
     this.slider.className = 'dimension-popup-slider';
     this.slider.min = '0';
     this.slider.max = '300';
-    this.slider.step = '0.1';
+    this.slider.step = '1';
     this.slider.style.flex = '1';
     this.slider.style.height = '8px';
     this.slider.style.background = 'linear-gradient(90deg, #3a3a4e 0%, #4a4a5e 100%)';
@@ -186,7 +186,7 @@ export class DimensionPopup {
     // Slider ve değeri güncelle
     const currentValue = part.params[paramData.key];
     this.slider.value = currentValue;
-    this.valueDisplay.textContent = currentValue.toFixed(1);
+    this.valueDisplay.textContent = Math.round(currentValue).toString();
 
     // Min/max değerlerini ayarla (parametre tanımından)
     if (paramData.min !== undefined) {
@@ -288,7 +288,7 @@ export class DimensionPopup {
 
   updateValue(value) {
     // Değer display'i güncelle
-    this.valueDisplay.textContent = value.toFixed(1);
+    this.valueDisplay.textContent = Math.round(value).toString();
 
     // Part parametresini güncelle
     if (this.currentPart && this.currentParam) {

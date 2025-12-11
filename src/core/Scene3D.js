@@ -317,9 +317,9 @@ export class Scene3D {
   }
 
   // Label Management
-  addLabel(text, position, color = null, paramData = null) {
+  addLabel(text, position, color = null, paramData = null, customClass = null) {
     const div = document.createElement('div');
-    div.className = 'label';
+    div.className = customClass ? `label ${customClass}` : 'label';
     div.textContent = text;
     if (color) div.style.color = color;
 

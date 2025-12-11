@@ -1,27 +1,17 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dir /b \"C:\\Users\\sosmanli\\Documents\\GitHub\\3dductorder\\1-düz kanal.html\")",
-      "Bash(node:*)",
-      "Bash(python:*)",
-      "Bash(dir)",
-      "Bash(dir:*)",
-      "Bash(taskkill:*)",
-      "Bash(start http://localhost:3000/viewer.html)",
-      "Bash(start:*)",
-      "Bash(netstat:*)",
-      "Bash(findstr:*)",
+      "Bash(çok güzeldi\"\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push)",
+      "Bash(git rm:*)",
       "Bash(git add:*)",
-      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Modern 3D Kanal Görüntüleyici v1.0\n\n- Modern premium UI tasarımı (indigo/blue/green tema)\n- Responsive design (desktop, tablet, mobile)\n- Accordion menü sistemi (tüm parametreler katlanabilir)\n- Otomatik ölçeklendirme (clamp ile viewport-based)\n- Gradient animasyonlar ve geçişler\n- Three.js ile 3D görselleştirme\n- Dinamik parametre kontrolleri\n- +5/-5 hızlı artırma butonları\n- Mobil uyumlu slider ve kontroller\n- Custom scrollbar ve hover efektleri\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git commit:*)",
-      "Bash(git remote:*)",
+      "Bash(node --version:*)",
+      "Bash(npm start)",
       "Bash(git push:*)",
-      "Bash(gh:*)",
-      "Bash(git branch:*)",
-      "Bash(npx http-server -p 3000)",
-      "Bash(done)",
-      "Bash(echo:*)",
-      "Bash(timeout 3 cmd:*)"
+      "Bash(start http://localhost:3000/orders.html)",
+      "Bash(python -m http.server:*)",
+      "Bash(npm run dev:*)"
     ],
     "deny": [],
     "ask": []

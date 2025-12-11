@@ -36,13 +36,13 @@ export class EsParcasi extends BasePart {
 
     return {
       dimensions: [
-        { key: 'W1', label: 'W1 (ön)', min: 10, max: 400, step: 0.1, unit: 'cm', default: 100 },
-        { key: 'H1', label: 'H1 (ön)', min: 10, max: 400, step: 0.1, unit: 'cm', default: 80 },
-        { key: 'W2', label: 'W2 (arka)', min: 10, max: 400, step: 0.1, unit: 'cm', default: 100 },
-        { key: 'H2', label: 'H2 (arka)', min: 10, max: 400, step: 0.1, unit: 'cm', default: 80 },
-        { key: 'L', label: 'L (uzunluk)', min: 10, max: 1000, step: 0.1, unit: 'cm', default: 120 },
-        { key: 'ES', label: 'ES (X ofset)', min: 0, max: 1000, step: 0.1, unit: 'cm', default: 60 },
-        { key: 'ESmarginCm', label: 'ES Marjı', min: 0, max: 100, step: 0.1, unit: 'cm', default: 5 },
+        { key: 'W1', label: 'W1 (ön)', min: 10, max: 400, step: 1, unit: 'cm', default: 100 },
+        { key: 'H1', label: 'H1 (ön)', min: 10, max: 400, step: 1, unit: 'cm', default: 80 },
+        { key: 'W2', label: 'W2 (arka)', min: 10, max: 400, step: 1, unit: 'cm', default: 100 },
+        { key: 'H2', label: 'H2 (arka)', min: 10, max: 400, step: 1, unit: 'cm', default: 80 },
+        { key: 'L', label: 'L (uzunluk)', min: 10, max: 1000, step: 1, unit: 'cm', default: 120 },
+        { key: 'ES', label: 'ES (X ofset)', min: 0, max: 1000, step: 1, unit: 'cm', default: 60 },
+        { key: 'ESmarginCm', label: 'ES Marjı', min: 0, max: 100, step: 1, unit: 'cm', default: 5 },
         { key: 't', label: 'Sac Kalınlığı', min: 0.02, max: 1.0, step: 0.01, unit: 'cm', default: 0.12 },
         { key: 'steps', label: 'Segment Sayısı', min: 8, max: 200, step: 1, unit: '', default: 64 }
       ],
