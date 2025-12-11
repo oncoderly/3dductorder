@@ -7,6 +7,8 @@ import { EsParcasi } from './components/EsParcasi.js';
 import { PlenumBox } from './components/PlenumBox.js';
 import { KaredenYuvarlaga } from './components/KaredenYuvarlaga.js';
 import { Reduksiyon } from './components/Reduksiyon.js';
+import { DuzPantolon } from './components/DuzPantolon.js';
+import { SideBranch } from './components/SideBranch.js';
 import { ParameterPanel } from './ui/ParameterPanel.js';
 import { ViewControls } from './ui/ViewControls.js';
 import { DimensionPopup } from './ui/DimensionPopup.js';
@@ -205,6 +207,12 @@ class App {
           break;
         case 'reduksiyon':
           this.currentPart = new Reduksiyon(this.scene, this.materials);
+          break;
+        case 'duz-pantolon':
+          this.currentPart = new DuzPantolon(this.scene, this.materials);
+          break;
+        case 'side-branch':
+          this.currentPart = new SideBranch(this.scene, this.materials);
           break;
         default:
           this.errorHandler.error(

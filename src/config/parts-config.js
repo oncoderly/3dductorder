@@ -35,6 +35,18 @@ export const PARTS_CONFIG = {
     icon: '📐',
     description: 'Taper prizma redüksiyon',
     component: 'Reduksiyon'
+  },
+  'duz-pantolon': {
+    name: 'Düz Pantolon',
+    icon: '🔀',
+    description: 'Düz pantolon side branch (taper prizma)',
+    component: 'DuzPantolon'
+  },
+  'side-branch': {
+    name: 'Side Branch',
+    icon: '🔱',
+    description: 'Dirsek + Taper Prizma birleşik parça (pozisyon ayarlanabilir)',
+    component: 'SideBranch'
   }
 };
 

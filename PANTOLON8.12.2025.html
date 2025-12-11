@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <title>Three.js – Dirsek + Taper Prizma (Tek Sahne)</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #0b0e12;
+    }
+    #hud {
+      position:absolute;
+      top:10px;
+      left:10px;
+      z-index:10;
+      color:#e6edf3;
+      font:13px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+    }
+    .label {
+      color: inherit;
+      font-weight:700;
+      text-shadow:0 0 2px #000;
+    }
+    .axis-label {
+      color:#ffffff;
+      font-weight:700;
+      text-shadow:0 0 2px #000;
+      pointer-events:none;
+    }
+    .corner-label {
+      font-size: 1em;
+    }
+  </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="hud">
+    Sol tık: döndür • Sağ tık: kaydır • Tekerlek: zoom
+  </div>
+  <canvas id="c"></canvas>
+
+  <script type="module">
+    // Ana Three.js sahne kurulumu ve dirsek + taper prizma görselleştirme
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+    import GUI from 'https://cdn.jsdelivr.net/npm/lil-gui@0.19/+esm';
+
+    const canvas = document.getElementById('c');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.01, 10000);
+    camera.position.set(3.2, 1.9, 3.2);
+    scene.add(camera);
+
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x101018, 0.9); scene.add(hemi);
+    const dir  = new THREE.DirectionalLight(0xffffff, 0.7); dir.position.set(3,5,4); scene.add(dir);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.enablePan = true;
+    controls.enableZoom = true;
+
+    const grid = new THREE.GridHelper(10, 20, 0x2a2e35, 0x1a1d23); scene.add(grid);
+    const axes = new THREE.AxesHelper(1.0); scene.add(axes);
+
+    const labelRenderer = new CSS2DRenderer();
+    labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    labelRenderer.domElement.style.position = 'absolute';
+    labelRenderer.domElement.style.top = '0';
+    labelRenderer.domElement.style.pointerEvents = 'none';
+    document.body.appendChild(labelRenderer.domElement);
+
+    const hud = document.getElementById('hud');
+    const areaEl = document.createElement('div');
+    areaEl.style.marginTop = '6px';
+    hud.appendChild(areaEl);
+
+    const P = {
+      W1: 40.0,
+      H1: 25.0,
+      W2: 30.0,
+      H2: 20.0,
+      t: 0.12,
+      R_in: 20.0,
+      A: 90,
+      steps: 200,
+      edgeSegs: 6,
+      showEdges: true,
+      showDims: true,
+      showFlange: true,
+      flangeLip: 3.0,
+      flangeThick: 0.6,
+      metalRough: 0.35,
+      metalness: 0.85,
+      showAxis: false,
+      showGrid: true,
+      dimOffsetCm: 1.5,
+      arrowHeadCm: 4.0,
+      arrowRadiusCm: 1.2,
+      showSideLabels: true,
+      colorW1: '#007bff',
+      colorH1: '#ffd400',
+      colorW2: '#00c853',
+      colorH2: '#ff8c00',
+      colorR:  '#ff1744',
+      colorA:  '#7e57c2'
+    };
+
+    const PT = {
+      W1: 100,
+      H1: 80,
+      W2: 60,
+      H2: 40,
+      L: 120,
+      t: 0.12,
+      steps: 120,
+      edgeSegs: 6,
+      showEdges: true,
+      showFlange: true,
+      showDims: true,
+      flangeLip: 3.0,
+      flangeThick: 0.6,
+      colorW1: '#007bff',
+      colorH1: '#ffd400',
+      colorW2: '#00c853',
+      colorH2: '#ff8c00',
+      colorL:  '#00bcd4',
+      wastePercent: 25
+    };
+
+    const Shared = { H: 80 };
+
+    const metalMat  = new THREE.MeshPhysicalMaterial({
+      color: 0xbfc7d2,
+      roughness: P.metalRough,
+      metalness: P.metalness,
+      clearcoat: 0.5,
+      clearcoatRoughness: 0.25,
+      side: THREE.DoubleSide
+    });
+    const flangeMat = new THREE.MeshPhysicalMaterial({ color: 0x9aa3ad, roughness: 0.6, metalness: 0.9 });
+    const edgeMat   = new THREE.LineBasicMaterial({ color: 0x3a3f46 });
+
+    const elbowGroup  = new THREE.Group(); scene.add(elbowGroup);
+    const flangeGroup = new THREE.Group(); scene.add(flangeGroup);
+    const dimsGroup   = new THREE.Group(); scene.add(dimsGroup);
+
+    const taperGroup       = new THREE.Group(); scene.add(taperGroup);
+    const taperFlangeGroup = new THREE.Group(); scene.add(taperFlangeGroup);
+    const taperDimsGroup   = new THREE.Group(); scene.add(taperDimsGroup);
+
+    const coordAxesGroup = new THREE.Group(); scene.add(coordAxesGroup);
+
+    // Ana gövde mesh referansları (köşe etiketlerini doğru yere oturtmak için)
+    let elbowMesh = null;
+    let taperMesh = null;
+
+    let currentLabelOwner = 'elbow';
+
+    function clearGroup(g){
+      while(g.children.length) {
+        const c = g.children.pop();
+        if (c.geometry) c.geometry.dispose?.();
+        if (c.material){
+          if (Array.isArray(c.material)) c.material.forEach(m=>m.dispose?.());
+          else c.material.dispose?.();
+        }
+      }
+    }
+
+    function clearLabels(owner){
+      const cls = owner === 'taper' ? 'label-taper' : 'label-elbow';
+      document.querySelectorAll('.' + cls).forEach(el=>el.remove());
+      const toRemove = [];
+      scene.traverse(obj => {
+        if (obj.element && obj.element.classList && obj.element.classList.contains(cls)){
+          toRemove.push(obj);
+        }
+      });
+      toRemove.forEach(obj => {
+        if (obj.parent) obj.parent.remove(obj);
+      });
+    }
+
+    function addLabel(text, position, color, parent){
+      const div = document.createElement('div');
+      const ownerClass = (currentLabelOwner === 'taper') ? 'label-taper' : 'label-elbow';
+      div.className = 'label ' + ownerClass;
+      div.textContent = text;
+      if (color) div.style.color = color;
+      const obj = new CSS2DObject(div);
+      obj.position.copy(position);
+      (parent || scene).add(obj);
+      return obj;
+    }
+
+    function arrowBothToGroup(group, p1, p2, color=0xff4d4d, headLen=0.04, radius=0.01){
+      const geo = new THREE.BufferGeometry().setFromPoints([p1, p2]);
+      const line = new THREE.Line(geo, new THREE.LineBasicMaterial({color}));
+      const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
+      const cone2 = new THREE.Mesh(new THREE.ConeGeometry(radius, headLen, 12), new THREE.MeshBasicMaterial({color}));
+      const cone1 = new THREE.Mesh(new THREE.ConeGeometry(radius, headLen, 12), new THREE.MeshBasicMaterial({color}));
+      const q2 = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0), dir);
+      const q1 = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0), dir.clone().negate());
+      cone2.quaternion.copy(q2); cone2.position.copy(p2);
+      cone1.quaternion.copy(q1); cone1.position.copy(p1);
+      group.add(line); group.add(cone1); group.add(cone2);
+    }
+
+    function arrowOneToGroup(group, p1, p2, color=0xff4d4d, headLen=0.04, radius=0.01){
+      const geo = new THREE.BufferGeometry().setFromPoints([p1, p2]);
+      const line = new THREE.Line(geo, new THREE.LineBasicMaterial({color}));
+      const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(radius, headLen, 12), new THREE.MeshBasicMaterial({color}));
+      const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0), dir);
+      cone.quaternion.copy(q); cone.position.copy(p2);
+      group.add(line); group.add(cone);
+    }
+
+    function dimLineToGroup(group, p1,p2,offsetDir,label,color){
+      const off = offsetDir.clone().normalize().multiplyScalar(0.05);
+      let a1 = p1.clone().add(off), a2 = p2.clone().add(off);
+      const dir = new THREE.Vector3().subVectors(a2,a1).normalize();
+      const arrowOffset = (P.dimOffsetCm || 1.5) * 0.01;
+      a1 = a1.add(dir.clone().multiplyScalar(arrowOffset));
+      a2 = a2.add(dir.clone().multiplyScalar(-arrowOffset));
+      const headLen = (P.arrowHeadCm || 4.0) * 0.01;
+      const radius  = (P.arrowRadiusCm || 1.2) * 0.01;
+      arrowBothToGroup(group, a1,a2,color || 0xff4d4d, headLen, radius);
+      const mid = a1.clone().add(a2).multiplyScalar(0.5);
+      return addLabel(label, mid, color, group);
+    }
+
+    class QuarterArc extends THREE.Curve {
+      constructor(Rc, thetaRad){ super(); this.Rc = Rc; this.theta = thetaRad; }
+      getPoint(t){ const a = t * this.theta; return new THREE.Vector3(-this.Rc*Math.cos(a), 0, this.Rc*Math.sin(a)); }
+      getTangent(t){ const a = t * this.theta; const v = new THREE.Vector3(this.Rc*Math.sin(a), 0, this.Rc*Math.cos(a)); return v.normalize(); }
+    }
+
+    function makeFlangeFrame(Wm,Hm,lipm,thickm){
+      const s = new THREE.Shape([
+        new THREE.Vector2(-Wm/2 - lipm, -Hm/2 - lipm),
+        new THREE.Vector2( Wm/2 + lipm, -Hm/2 - lipm),
+        new THREE.Vector2( Wm/2 + lipm,  Hm/2 + lipm),
+        new THREE.Vector2(-Wm/2 - lipm,  Hm/2 + lipm)
+      ]);
+      const hole = new THREE.Path([
+        new THREE.Vector2(-Wm/2, -Hm/2),
+        new THREE.Vector2( Wm/2, -Hm/2),
+        new THREE.Vector2( Wm/2,  Hm/2),
+        new THREE.Vector2(-Wm/2,  Hm/2)
+      ]);
+      s.holes.push(hole);
+      const g = new THREE.ExtrudeGeometry(s, { depth: thickm, bevelEnabled:false });
+      g.center();
+      const m = new THREE.Mesh(g, flangeMat);
+      m.add(new THREE.LineSegments(new THREE.EdgesGeometry(g), edgeMat));
+      return m;
+    }
+
+    function placeAtFrame(obj, p, t, n, b){
+      const M = new THREE.Matrix4().makeBasis(n.clone(), b.clone(), t.clone());
+      const Q = new THREE.Quaternion().setFromRotationMatrix(M);
+      obj.position.copy(p);
+      obj.quaternion.copy(Q);
+    }
+
+    function frameObject(obj){
+      const box = new THREE.Box3().setFromObject(obj);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const dist = maxDim / (2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))) * 1.4;
+      const dir = new THREE.Vector3(1,0.6,1).normalize();
+      camera.position.copy(center.clone().add(dir.multiplyScalar(dist)));
+      camera.near = dist/100; camera.far = dist*100; camera.updateProjectionMatrix();
+      controls.target.copy(center); controls.update();
+    }
+
+    function buildCoordAxes(){
+      while(coordAxesGroup.children.length){
+        coordAxesGroup.remove(coordAxesGroup.children[0]);
+      }
+      const len = 0.9;
+      const shaftLen = 0.7;
+      const headLen = len - shaftLen;
+      const radius = 0.03;
+
+      function axisArrow(dir, color){
+        const g = new THREE.Group();
+        const cylGeo = new THREE.CylinderGeometry(radius, radius, shaftLen, 16);
+        const coneGeo = new THREE.ConeGeometry(radius*1.6, headLen, 16);
+        const mat = new THREE.MeshStandardMaterial({ color });
+
+        const cyl = new THREE.Mesh(cylGeo, mat);
+        const cone = new THREE.Mesh(coneGeo, mat.clone());
+        cyl.position.y  = shaftLen*0.5;
+        cone.position.y = shaftLen + headLen*0.5;
+        g.add(cyl, cone);
+
+        const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0), dir.clone().normalize());
+        g.quaternion.copy(q);
+        coordAxesGroup.add(g);
+      }
+
+      const xDir = new THREE.Vector3(1,0,0);
+      const yDir = new THREE.Vector3(0,1,0);
+      const zDir = new THREE.Vector3(0,0,1);
+
+      axisArrow(xDir, 0xff4444);
+      axisArrow(yDir, 0x44ff44);
+      axisArrow(zDir, 0x4444ff);
+
+      function axisLabel(char, dir){
+        const div = document.createElement('div');
+        div.className = 'axis-label';
+        div.textContent = char;
+        const obj = new CSS2DObject(div);
+        obj.position.copy(dir.clone().multiplyScalar(len*1.2));
+        coordAxesGroup.add(obj);
+      }
+
+      axisLabel('X', xDir);
+      axisLabel('Y', yDir);
+      axisLabel('Z', zDir);
+    }
+
+    buildCoordAxes();
+
+    function buildElbowBase(){
+      clearGroup(elbowGroup);
+      clearGroup(flangeGroup);
+      clearGroup(dimsGroup);
+      clearLabels('elbow');
+      currentLabelOwner = 'elbow';
+
+      P.W1 = Shared.H;
+
+      const W1m = P.W1*0.01, H1m = P.H1*0.01;
+      const W2m = P.W2*0.01, H2m = P.H2*0.01;
+      const tm = P.t*0.01; const Rinm = P.R_in*0.01;
+      const lipm = P.flangeLip*0.01; const thickm = P.flangeThick*0.01;
+      const theta = THREE.MathUtils.degToRad(P.A);
+
+      const path = new QuarterArc(Rinm + (Math.max(W1m,W2m)/2), theta);
+      const fr = path.computeFrenetFrames(P.steps, false);
+
+      const edgeSegs = Math.max(1, Math.floor(P.edgeSegs));
+      const perSide = edgeSegs;
+      const ptsPerLoop = perSide*4;
+      const vertices = [];
+      const indices = [];
+
+      function lerp(a,b,t){return a+(b-a)*t;}
+      function addQuad(a,b,c,d){ indices.push(a,b,c, a,c,d); }
+
+      const ringsOuter=[]; const ringsInner=[];
+      for(let i=0;i<=P.steps;i++){
+        const u = i/P.steps;
+        const p = path.getPoint(u);
+        const n = fr.normals[i];
+        const b = fr.binormals[i];
+        const W = lerp(W2m, W1m, u);
+        const H = lerp(H2m, H1m, u);
+        const Wi = Math.max(W-2*tm, 1e-5);
+        const Hi = Math.max(H-2*tm, 1e-5);
+
+        function rectLoop(halfW, halfH){
+          const arr=[];
+          for(let s=0;s<perSide;s++){
+            const x = -halfW + (2*halfW)*s/(perSide-1);
+            arr.push( new THREE.Vector3().copy(p).add(n.clone().multiplyScalar(x)).add(b.clone().multiplyScalar(-halfH)) );
+          }
+          for(let s=0;s<perSide;s++){
+            const y = -halfH + (2*halfH)*s/(perSide-1);
+            arr.push( new THREE.Vector3().copy(p).add(n.clone().multiplyScalar( halfW)).add(b.clone().multiplyScalar(y)) );
+          }
+          for(let s=0;s<perSide;s++){
+            const x = halfW - (2*halfW)*s/(perSide-1);
+            arr.push( new THREE.Vector3().copy(p).add(n.clone().multiplyScalar(x)).add(b.clone().multiplyScalar( halfH)) );
+          }
+          for(let s=0;s<perSide;s++){
+            const y = halfH - (2*halfH)*s/(perSide-1);
+            arr.push( new THREE.Vector3().copy(p).add(n.clone().multiplyScalar(-halfW)).add(b.clone().multiplyScalar(y)) );
+          }
+          return arr;
+        }
+        ringsOuter.push( rectLoop(W/2, H/2) );
+        ringsInner.push( rectLoop(Wi/2, Hi/2) );
+      }
+
+      const N = ptsPerLoop;
+      function pushRing(r){ for(const v of r){ vertices.push(v.x,v.y,v.z); } }
+      for(let i=0;i<=P.steps;i++){ pushRing(ringsOuter[i]); }
+      const baseInner = vertices.length/3;
+      for(let i=0;i<=P.steps;i++){ pushRing(ringsInner[i]); }
+
+      for(let i=0;i<P.steps;i++){
+        const base0 = i*N; const base1 = (i+1)*N;
+        for(let k=0;k<N;k++){
+          const a=base0+k, bI=base0+(k+1)%N, c=base1+(k+1)%N, d=base1+k; addQuad(a,bI,c,d);
+        }
+      }
+      for(let i=0;i<P.steps;i++){
+        const base0 = baseInner + i*N; const base1 = baseInner + (i+1)*N;
+        for(let k=0;k<N;k++){
+          const a=base0+k, bI=base0+(k+1)%N, c=base1+(k+1)%N, d=base1+k; addQuad(d,c,bI,a);
+        }
+      }
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices,3));
+      geo.setIndex(indices);
+      geo.computeVertexNormals();
+      const mesh = new THREE.Mesh(geo, metalMat);
+      // Dirsek ana gövde mesh'ini kaydet
+      elbowMesh = mesh;
+      elbowGroup.add(mesh);
+      if(P.showEdges){ elbowGroup.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo,1), edgeMat)); }
+
+      if (P.showFlange){
+        const p0 = path.getPoint(0); const p1 = path.getPoint(1);
+        const nf0 = fr.normals[0], bf0 = fr.binormals[0], tf0 = fr.tangents[0];
+        const nf1 = fr.normals[P.steps], bf1 = fr.binormals[P.steps], tf1 = fr.tangents[P.steps];
+        const flStart = makeFlangeFrame(W2m,H2m,lipm,thickm);
+        const flEnd   = makeFlangeFrame(W1m,H1m,lipm,thickm);
+        placeAtFrame(flStart, p0.clone().add(tf0.clone().multiplyScalar(-thickm*0.5)), tf0, nf0, bf0);
+        placeAtFrame(flEnd,   p1.clone().add(tf1.clone().multiplyScalar( thickm*0.5)),  tf1, nf1, bf1);
+        flangeGroup.add(flStart); flangeGroup.add(flEnd);
+      }
+
+      if(P.showDims){
+        const p0 = path.getPoint(0); const p1 = path.getPoint(1);
+        const n0=fr.normals[0], b0=fr.binormals[0];
+        const n1=fr.normals[P.steps], b1=fr.binormals[P.steps];
+
+        const x0 = n0.clone().multiplyScalar(W2m/2), y0 = b0.clone().multiplyScalar(H2m/2);
+        dimLineToGroup(dimsGroup, p0.clone().add(x0.clone().negate()), p0.clone().add(x0), b0, `W2 = ${P.W2.toFixed(1)} cm`, P.colorW2);
+        dimLineToGroup(dimsGroup, p0.clone().add(y0.clone().negate()), p0.clone().add(y0), n0, `H2 = ${P.H2.toFixed(1)} cm`, P.colorH2);
+
+        const x1 = n1.clone().multiplyScalar(W1m/2), y1 = b1.clone().multiplyScalar(H1m/2);
+        dimLineToGroup(dimsGroup, p1.clone().add(x1.clone().negate()), p1.clone().add(x1), b1, `W1 = ${P.W1.toFixed(1)} cm`, P.colorW1);
+        dimLineToGroup(dimsGroup, p1.clone().add(y1.clone().negate()), p1.clone().add(y1), n1, `H1 = ${P.H1.toFixed(1)} cm`, P.colorH1);
+
+        const center = new THREE.Vector3(0,0,0); const Rin = Rinm;
+        const arcPoint = new THREE.Vector3(-Rin,0,0);
+        const headLen = (P.arrowHeadCm||4.0)*0.01; const radius=(P.arrowRadiusCm||1.2)*0.01;
+        const dirR = new THREE.Vector3().subVectors(arcPoint, center).normalize();
+        const startR = center.clone().add(dirR.clone().multiplyScalar((P.dimOffsetCm||1.5)*0.01));
+        arrowOneToGroup(dimsGroup, startR, arcPoint, P.colorR, headLen, radius);
+        addLabel(`R(iç) = ${P.R_in.toFixed(1)} cm`, startR.clone().add(arcPoint).multiplyScalar(0.5), P.colorR);
+
+        const R_center = Rinm + Math.max(W1m,W2m)/2; const segs=48; const arcPts=[];
+        for(let i=0;i<=segs;i++){ const a=i/segs*theta; arcPts.push(new THREE.Vector3(-R_center*Math.cos(a),0,R_center*Math.sin(a))); }
+        const arcL = new THREE.Line(new THREE.BufferGeometry().setFromPoints(arcPts), new THREE.LineDashedMaterial({ color: new THREE.Color(P.colorA), dashSize: 0.06, gapSize: 0.04 }));
+        arcL.computeLineDistances(); dimsGroup.add(arcL);
+        addLabel(`A = ${P.A}°`, new THREE.Vector3(-R_center*0.6, 0, R_center*0.6), P.colorA);
+
+        const flattenPts = [];
+        for(let i=0;i<=P.steps;i++){
+          const u = i/P.steps;
+          flattenPts.push(path.getPoint(u));
+        }
+        const flattenGeo = new THREE.BufferGeometry().setFromPoints(flattenPts);
+        const flattenMat = new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: 0.08, gapSize: 0.04 });
+        const flattenLine = new THREE.Line(flattenGeo, flattenMat);
+        flattenLine.computeLineDistances();
+        dimsGroup.add(flattenLine);
+        addLabel('Düzleme Ekseni', path.getPoint(0.5).clone().add(new THREE.Vector3(0,0.05,0)), '#ffffff', dimsGroup);
+      }
+    }
+
+    function buildTaperBase(){
+      clearGroup(taperGroup);
+      clearGroup(taperFlangeGroup);
+      clearGroup(taperDimsGroup);
+      clearLabels('taper');
+      currentLabelOwner = 'taper';
+
+      PT.H1 = Shared.H;
+
+      const W1m = PT.W1*0.01, H1m = PT.H1*0.01;
+      const W2m = PT.W2*0.01, H2m = PT.H2*0.01;
+      const Lm  = PT.L*0.01;
+      const tm  = PT.t*0.01;
+      const lipm   = PT.flangeLip*0.01;
+      const thickm = PT.flangeThick*0.01;
+
+      const n = new THREE.Vector3(1,0,0);
+      const b = new THREE.Vector3(0,1,0);
+      const t = new THREE.Vector3(0,0,1);
+
+      const steps = Math.max(4, Math.floor(PT.steps));
+      const perSide = Math.max(2, Math.floor(PT.edgeSegs));
+      const ptsPerLoop = perSide*4;
+      const vertices = [];
+      const indices  = [];
+
+      const ringsOuter = [];
+      const ringsInner = [];
+
+      function lerp(a,b,u){ return a + (b-a)*u; }
+
+      function rectLoop(center, halfW, halfH){
+        const arr = [];
+        for(let s=0;s<perSide;s++){
+          const x = -halfW + (2*halfW)*s/(perSide-1);
+          arr.push(center.clone().add(n.clone().multiplyScalar(x)).add(b.clone().multiplyScalar(-halfH)));
+        }
+        for(let s=0;s<perSide;s++){
+          const y = -halfH + (2*halfH)*s/(perSide-1);
+          arr.push(center.clone().add(n.clone().multiplyScalar(halfW)).add(b.clone().multiplyScalar(y)));
+        }
+        for(let s=0;s<perSide;s++){
+          const x = halfW - (2*halfW)*s/(perSide-1);
+          arr.push(center.clone().add(n.clone().multiplyScalar(x)).add(b.clone().multiplyScalar(halfH)));
+        }
+        for(let s=0;s<perSide;s++){
+          const y = halfH - (2*halfH)*s/(perSide-1);
+          arr.push(center.clone().add(n.clone().multiplyScalar(-halfW)).add(b.clone().multiplyScalar(y)));
+        }
+        return arr;
+      }
+
+      for(let i=0;i<=steps;i++){
+        const u = i/steps;
+        const W = lerp(W2m, W1m, u);
+        const H = lerp(H2m, H1m, u);
+        const Wi = Math.max(W-2*tm,1e-5);
+        const Hi = Math.max(H-2*tm,1e-5);
+
+        const center = new THREE.Vector3(0,0,u*Lm);
+
+        ringsOuter.push(rectLoop(center, W/2, H/2));
+        ringsInner.push(rectLoop(center, Wi/2, Hi/2));
+      }
+
+      const N = ptsPerLoop;
+      function pushRing(r){ for(const v of r){ vertices.push(v.x,v.y,v.z); } }
+
+      for(let i=0;i<=steps;i++) pushRing(ringsOuter[i]);
+      const baseInner = vertices.length/3;
+      for(let i=0;i<=steps;i++) pushRing(ringsInner[i]);
+
+      function addQuad(a,b,c,d){ indices.push(a,b,c, a,c,d); }
+
+      for(let i=0;i<steps;i++){
+        const base0 = i*N, base1 = (i+1)*N;
+        for(let k=0;k<N;k++){
+          const a=base0+k, bI=base0+(k+1)%N, c=base1+(k+1)%N, d=base1+k;
+          addQuad(a,bI,c,d);
+        }
+      }
+      for(let i=0;i<steps;i++){
+        const base0 = baseInner + i*N, base1 = baseInner + (i+1)*N;
+        for(let k=0;k<N;k++){
+          const a=base0+k, bI=base0+(k+1)%N, c=base1+(k+1)%N, d=base1+k;
+          addQuad(d,c,bI,a);
+        }
+      }
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices,3));
+      geo.setIndex(indices);
+      geo.computeVertexNormals();
+      const mesh = new THREE.Mesh(geo, metalMat);
+      // Taper ana gövde mesh'ini kaydet
+      taperMesh = mesh;
+      taperGroup.add(mesh);
+      if(PT.showEdges){ taperGroup.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo,1), edgeMat)); }
+
+      const per0 = 2*(W2m+H2m);
+      const per1 = 2*(W1m+H1m);
+      const perAvg = 0.5*(per0+per1);
+      const Wi0 = Math.max(W2m-2*tm,0), Hi0 = Math.max(H2m-2*tm,0);
+      const Wi1 = Math.max(W1m-2*tm,0), Hi1 = Math.max(H1m-2*tm,0);
+      const perInner0 = 2*(Wi0+Hi0);
+      const perInner1 = 2*(Wi1+Hi1);
+      const perInnerAvg = 0.5*(perInner0+perInner1);
+      const sheetArea = 0.5*(perAvg+perInnerAvg)*Lm;
+      const totalWithWaste = sheetArea*(1+(PT.wastePercent||0)/100);
+      areaEl.textContent = `Taper sac alanı ≈ ${sheetArea.toFixed(3)} m²  |  +%${(PT.wastePercent||0).toFixed(1)} atık ⇒ ${totalWithWaste.toFixed(3)} m²`;
+
+      if(PT.showFlange){
+        const p0 = new THREE.Vector3(0,0,0);
+        const p1 = new THREE.Vector3(0,0,Lm);
+        const fl0 = makeFlangeFrame(W2m,H2m,lipm,thickm);
+        const fl1 = makeFlangeFrame(W1m,H1m,lipm,thickm);
+        placeAtFrame(fl0, p0.clone().add(t.clone().multiplyScalar(-thickm*0.5)), t, n, b);
+        placeAtFrame(fl1, p1.clone().add(t.clone().multiplyScalar( thickm*0.5)), t, n, b);
+        taperFlangeGroup.add(fl0, fl1);
+      }
+
+      if(PT.showDims){
+        const p0 = new THREE.Vector3(0,0,0);
+        const p1 = new THREE.Vector3(0,0,Lm);
+
+        const x0L = n.clone().multiplyScalar(-W2m/2);
+        const x0R = n.clone().multiplyScalar( W2m/2);
+        const y0B = b.clone().multiplyScalar(-H2m/2);
+        const y0T = b.clone().multiplyScalar( H2m/2);
+
+        dimLineToGroup(taperDimsGroup, p0.clone().add(x0L).add(y0T), p0.clone().add(x0R).add(y0T), b, `W2 = ${PT.W2.toFixed(1)} cm`, PT.colorW2);
+        dimLineToGroup(taperDimsGroup, p0.clone().add(x0R).add(y0B), p0.clone().add(x0R).add(y0T), n, `H2 = ${PT.H2.toFixed(1)} cm`, PT.colorH2);
+
+        const x1L = n.clone().multiplyScalar(-W1m/2);
+        const x1R = n.clone().multiplyScalar( W1m/2);
+        const y1B = b.clone().multiplyScalar(-H1m/2);
+        const y1T = b.clone().multiplyScalar( H1m/2);
+
+        dimLineToGroup(taperDimsGroup, p1.clone().add(x1L).add(y1T), p1.clone().add(x1R).add(y1T), b, `W1 = ${PT.W1.toFixed(1)} cm`, PT.colorW1);
+        dimLineToGroup(taperDimsGroup, p1.clone().add(x1R).add(y1B), p1.clone().add(x1R).add(y1T), n, `H1 = ${PT.H1.toFixed(1)} cm`, PT.colorH2);
+
+        const rightX = Math.max(W1m/2,W2m/2);
+        const bottomY = Math.min(-H1m/2,-H2m/2);
+        const pL0 = new THREE.Vector3(rightX,bottomY,0);
+        const pL1 = new THREE.Vector3(rightX,bottomY,Lm);
+        dimLineToGroup(taperDimsGroup, pL0,pL1, n.clone().negate(), `L = ${PT.L.toFixed(1)} cm`, PT.colorL);
+
+        const tAxisPts = [ new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,Lm) ];
+        const tAxisGeo = new THREE.BufferGeometry().setFromPoints(tAxisPts);
+        const tAxisMat = new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: 0.08, gapSize: 0.04 });
+        const tAxisLine = new THREE.Line(tAxisGeo, tAxisMat);
+        tAxisLine.computeLineDistances();
+        taperDimsGroup.add(tAxisLine);
+        addLabel('Düzleme Ekseni', new THREE.Vector3(0,0,Lm*0.5+0.02), '#ffffff', taperDimsGroup);
+      }
+    }
+
+    // Köşe etiketleri: E1..E8 ve T1..T8
+    function labelCorners(mesh, prefix){
+      // Sadece ana gövde mesh'inin köşelerini etiketle
+      if (!mesh || !mesh.isMesh || !mesh.geometry) return;
+
+      // Dünya matrislerini güncelle ki localToWorld doğru çalışsın
+      mesh.updateMatrixWorld(true);
+
+      const pos = mesh.geometry.getAttribute('position');
+      if (!pos) return;
+
+      // Geometri uzayında bounding box
+      if (!mesh.geometry.boundingBox) {
+        mesh.geometry.computeBoundingBox();
+      }
+      const box = mesh.geometry.boundingBox;
+      if (!box || box.isEmpty()) return;
+
+      // Bounding box köşeleri (local uzayda)
+      const cornersLocal = [
+        new THREE.Vector3(box.min.x, box.min.y, box.min.z),
+        new THREE.Vector3(box.max.x, box.min.y, box.min.z),
+        new THREE.Vector3(box.min.x, box.max.y, box.min.z),
+        new THREE.Vector3(box.max.x, box.max.y, box.min.z),
+        new THREE.Vector3(box.min.x, box.min.y, box.max.z),
+        new THREE.Vector3(box.max.x, box.min.y, box.max.z),
+        new THREE.Vector3(box.min.x, box.max.y, box.max.z),
+        new THREE.Vector3(box.max.x, box.max.y, box.max.z)
+      ];
+
+      const vLocal = new THREE.Vector3();
+      const vWorld = new THREE.Vector3();
+
+      cornersLocal.forEach((cornerLocal, i) => {
+        // İstenen teorik köşe noktası (dünya uzayında)
+        const targetWorld = mesh.localToWorld(cornerLocal.clone());
+
+        // Bu köşeye en yakın gerçek vertex'i bul
+        let bestDist2 = Infinity;
+        const bestWorld = new THREE.Vector3().copy(targetWorld);
+
+        for (let idx = 0; idx < pos.count; idx++) {
+          vLocal.fromBufferAttribute(pos, idx);
+          vWorld.copy(vLocal);
+          mesh.localToWorld(vWorld);
+          const d2 = vWorld.distanceToSquared(targetWorld);
+          if (d2 < bestDist2) {
+            bestDist2 = d2;
+            bestWorld.copy(vWorld);
+          }
+        }
+
+        const text = `${prefix}${i+1}\n(${bestWorld.x.toFixed(3)}, ${bestWorld.y.toFixed(3)}, ${bestWorld.z.toFixed(3)})`;
+        const lbl = addLabel(text, bestWorld, '#ffffff');
+        if (lbl && lbl.element) lbl.element.classList.add('corner-label');
+      });
+    }
+
+    function orientElbow(){
+      const groups = [elbowGroup, flangeGroup, dimsGroup];
+
+      groups.forEach(g => {
+        g.rotation.set(0,0,0);
+        g.position.set(0,0,0);
+        g.updateMatrixWorld();
+      });
+
+      groups.forEach(g => {
+        g.rotateX(Math.PI);
+      });
+
+      const box = new THREE.Box3().setFromObject(elbowGroup);
+      if (!box.isEmpty()){
+        const E5 = new THREE.Vector3(box.min.x, box.min.y, box.max.z);
+        groups.forEach(g => {
+          g.position.sub(E5);
+          g.updateMatrixWorld();
+          g.rotateY(Math.PI);
+          g.position.add(E5);
+        });
+      }
+    }
+
+    function moveElbowE8ToOrigin(){
+      // Dirseği, E8 gerçek köşe noktasını (vertex) orijine (0,0,0) gelecek şekilde taşır
+      // E8 = (max.x, max.y, max.z)
+      if (!elbowMesh || !elbowMesh.isMesh || !elbowMesh.geometry) return;
+
+      elbowMesh.updateMatrixWorld(true);
+      const geom = elbowMesh.geometry;
+      const pos = geom.getAttribute('position');
+      if (!pos) return;
+
+      if (!geom.boundingBox) {
+        geom.computeBoundingBox();
+      }
+      const box = geom.boundingBox;
+      if (!box || box.isEmpty()) return;
+
+      // Teorik E8 = (max.x, max.y, max.z) köşesi (local uzay)
+      const e8Local = new THREE.Vector3(box.max.x, box.max.y, box.max.z);
+      const targetWorld = elbowMesh.localToWorld(e8Local.clone());
+
+      // Bu teorik köşeye en yakın GERÇEK vertex'i bul
+      const vLocal = new THREE.Vector3();
+      const vWorld = new THREE.Vector3();
+      let bestDist2 = Infinity;
+      const bestWorld = new THREE.Vector3().copy(targetWorld);
+
+      for (let idx = 0; idx < pos.count; idx++) {
+        vLocal.fromBufferAttribute(pos, idx);
+        vWorld.copy(vLocal);
+        elbowMesh.localToWorld(vWorld);
+        const d2 = vWorld.distanceToSquared(targetWorld);
+        if (d2 < bestDist2) {
+          bestDist2 = d2;
+          bestWorld.copy(vWorld);
+        }
+      }
+
+      // Artık bestWorld, E8 etiketiyle gösterilen gerçek köşe noktası
+      // Bunu tam (0,0,0)'a taşımak için gereken offset:
+      const offset = bestWorld.clone().negate();
+
+      const groups = [elbowGroup, flangeGroup, dimsGroup];
+      groups.forEach(g => {
+        g.position.add(offset);
+        g.updateMatrixWorld(true);
+      });
+    }
+
+    function rotateElbowAroundY90(){
+      // E8 noktasının orijinde olduğunu varsayarak, Y ekseninde
+      // 90° saat yönünün tersine (pozitif açı) döndür.
+      const angle = THREE.MathUtils.degToRad(90);
+      const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), angle);
+      const pivot = new THREE.Vector3(0,0,0); // E8 dünya koordinatı
+
+      const groups = [elbowGroup, flangeGroup, dimsGroup];
+      groups.forEach(g => {
+        // Konumu pivot etrafında döndür (dünya uzayında)
+        g.position.sub(pivot).applyQuaternion(q).add(pivot);
+        // Yönelimi dünya Y ekseni etrafında döndür (premultiply)
+        g.quaternion.premultiply(q);
+        g.updateMatrixWorld(true);
+      });
+    }
+
+    function moveTaperT5ToOrigin(){
+      // Taper ana gövdesini, T5 gerçek köşe noktasını (vertex) orijine (0,0,0) gelecek şekilde taşır
+      // T5 = (min.x, min.y, max.z) – labelCorners içindeki 5. köşe ile aynı tanım
+      if (!taperMesh || !taperMesh.isMesh || !taperMesh.geometry) return;
+
+      taperMesh.updateMatrixWorld(true);
+      const geom = taperMesh.geometry;
+      const pos  = geom.getAttribute('position');
+      if (!pos) return;
+
+      if (!geom.boundingBox) {
+        geom.computeBoundingBox();
+      }
+      const box = geom.boundingBox;
+      if (!box || box.isEmpty()) return;
+
+      // Teorik T5 = (min.x, min.y, max.z) köşesi (local uzay)
+      const t5Local = new THREE.Vector3(box.min.x, box.min.y, box.max.z);
+      const targetWorld = taperMesh.localToWorld(t5Local.clone());
+
+      // Bu teorik köşeye en yakın GERÇEK vertex'i bul
+      const vLocal = new THREE.Vector3();
+      const vWorld = new THREE.Vector3();
+      let bestDist2 = Infinity;
+      const bestWorld = new THREE.Vector3().copy(targetWorld);
+
+      for (let idx = 0; idx < pos.count; idx++) {
+        vLocal.fromBufferAttribute(pos, idx);
+        vWorld.copy(vLocal);
+        taperMesh.localToWorld(vWorld);
+        const d2 = vWorld.distanceToSquared(targetWorld);
+        if (d2 < bestDist2) {
+          bestDist2 = d2;
+          bestWorld.copy(vWorld);
+        }
+      }
+
+      // Artık bestWorld, T5 etiketiyle gösterilen gerçek köşe noktası
+      // Bunu tam (0,0,0)'a taşımak için gereken offset:
+      const offset = bestWorld.clone().negate();
+
+      const groups = [taperGroup, taperFlangeGroup, taperDimsGroup];
+      groups.forEach(g => {
+        g.position.add(offset);
+        g.updateMatrixWorld(true);
+      });
+    }
+
+    function rebuildElbowFull(){
+      buildElbowBase();
+      orientElbow();
+      // Dirsek paçasını, E8 köşesi (bitiş tarafı üst arka köşe) tam orijine gelecek şekilde taşı
+      moveElbowE8ToOrigin();
+      rotateElbowAroundY90();
+      clearLabels('elbow');
+      currentLabelOwner = 'elbow';
+      labelCorners(elbowMesh || elbowGroup, 'E');
+    }
+
+    function rebuildTaperFull(){
+      buildTaperBase();
+      moveTaperT5ToOrigin();
+      clearLabels('taper');
+      currentLabelOwner = 'taper';
+      labelCorners(taperMesh || taperGroup, 'T');
+    }
+
+    // Basit "self-test" kontrolleri (hata ayıklama için)
+    function selfTest(){
+      console.assert(typeof buildElbowBase === 'function', 'buildElbowBase tanımlı değil');
+      console.assert(typeof buildTaperBase === 'function', 'buildTaperBase tanımlı değil');
+      console.assert(typeof rebuildElbowFull === 'function', 'rebuildElbowFull tanımlı değil');
+      console.assert(typeof rebuildTaperFull === 'function', 'rebuildTaperFull tanımlı değil');
+    }
+
+    selfTest();
+
+    rebuildElbowFull();
+    rebuildTaperFull();
+
+    axes.visible = P.showAxis;
+    grid.visible = P.showGrid;
+
+    const gui = new GUI({ title: 'Parametreler' });
+
+    const fShared = gui.addFolder('Ortak Ölçüler');
+    fShared.add(Shared, 'H', 1, 400, 0.1).name('H (ortak)');
+    fShared.controllers[0].onChange(()=>{
+      rebuildElbowFull();
+      rebuildTaperFull();
+    });
+
+    const f = gui.addFolder('Dirsek Ölçüler (cm)');
+    f.add(P, 'H1', 1, 200, 0.1).name('H1 (bitiş) cm').onChange(rebuildElbowFull);
+    f.add(P, 'W2', 1, 200, 0.1).name('W2 (başlangıç) cm').onChange(rebuildElbowFull);
+    f.add(P, 'H2', 1, 200, 0.1).name('H2 (başlangıç) cm').onChange(rebuildElbowFull);
+    f.add(P, 't', 0.02, 1.0, 0.01).name('Sac Kalınlığı t').onChange(rebuildElbowFull);
+    f.add(P, 'R_in', 1, 300, 0.1).name('İç Yarıçap R').onChange(rebuildElbowFull);
+    f.add(P, 'A', 10, 180, 1).name('Açı (°)').onChange(rebuildElbowFull);
+    f.add(P, 'steps', 16, 400, 1).name('Segment (steps)').onChange(rebuildElbowFull);
+    f.add(P, 'edgeSegs', 2, 16, 1).name('Kenar örnek (kalite)').onChange(rebuildElbowFull);
+
+    const f2 = gui.addFolder('Dirsek Görünüm / Flanş');
+    f2.add(P, 'showEdges').name('Kenar Çizgileri').onChange(rebuildElbowFull);
+    f2.add(P, 'showDims').name('Ölçülendirme').onChange(rebuildElbowFull);
+    f2.add(P, 'showFlange').name('Flanşları Göster').onChange(rebuildElbowFull);
+    f2.add(P, 'flangeLip', 0.5, 8.0, 0.1).name('Flanş Payı (lip) cm').onChange(rebuildElbowFull);
+    f2.add(P, 'flangeThick', 0.2, 2.0, 0.05).name('Flanş Kalınlığı cm').onChange(rebuildElbowFull);
+    f2.add(P, 'metalRough', 0, 1, 0.01).name('Roughness').onChange(()=>{
+      metalMat.roughness = P.metalRough; renderer.render(scene,camera);
+    });
+    f2.add(P, 'metalness', 0, 1, 0.01).name('Metalness').onChange(()=>{
+      metalMat.metalness = P.metalness; renderer.render(scene,camera);
+    });
+    f2.add(P, 'showAxis').name('Eksenleri Göster').onChange(v=>{
+      axes.visible = v;
+      coordAxesGroup.visible = v;
+    });
+    f2.add(P, 'showGrid').name('Grid Göster').onChange(v=>{ grid.visible = v; });
+    f2.add(P, 'dimOffsetCm', 0.5, 5.0, 0.1).name('Ok Ucu Kısalt (cm)').onChange(()=>{ rebuildElbowFull(); rebuildTaperFull(); });
+    f2.add(P, 'arrowHeadCm', 1.0, 8.0, 0.1).name('Ok Boyu (cm)').onChange(()=>{ rebuildElbowFull(); rebuildTaperFull(); });
+    f2.add(P, 'arrowRadiusCm', 0.5, 3.0, 0.1).name('Ok Kalınlığı (cm)').onChange(()=>{ rebuildElbowFull(); rebuildTaperFull(); });
+
+    const f3 = gui.addFolder('Dirsek Renkler');
+    f3.addColor(P, 'colorW1').name('W1 Rengi').onChange(rebuildElbowFull);
+    f3.addColor(P, 'colorH1').name('H1 Rengi').onChange(rebuildElbowFull);
+    f3.addColor(P, 'colorW2').name('W2 Rengi').onChange(rebuildElbowFull);
+    f3.addColor(P, 'colorH2').name('H2 Rengi').onChange(rebuildElbowFull);
+    f3.addColor(P, 'colorR').name('R(iç) Rengi').onChange(rebuildElbowFull);
+    f3.addColor(P, 'colorA').name('Açı Rengi').onChange(rebuildElbowFull);
+
+    const ft = gui.addFolder('Taper Prizma (cm)');
+    ft.add(PT, 'W1', 1, 400, 0.1).name('W1 (bitiş) cm').onChange(rebuildTaperFull);
+    ft.add(PT, 'W2', 1, 400, 0.1).name('W2 (başlangıç) cm').onChange(rebuildTaperFull);
+    ft.add(PT, 'H2', 1, 400, 0.1).name('H2 (başlangıç) cm').onChange(rebuildTaperFull);
+    ft.add(PT, 'L',  1, 1000, 0.1).name('L (uzunluk) cm').onChange(rebuildTaperFull);
+    ft.add(PT, 't',  0.02, 1.0, 0.01).name('Sac Kalınlığı t').onChange(rebuildTaperFull);
+    ft.add(PT, 'steps', 8, 400, 1).name('Yol Segmenti (steps)').onChange(rebuildTaperFull);
+    ft.add(PT, 'edgeSegs', 2, 16, 1).name('Kesit Kenar Segmenti').onChange(rebuildTaperFull);
+    ft.add(PT, 'showEdges').name('Kenar Çizgileri').onChange(rebuildTaperFull);
+    ft.add(PT, 'showFlange').name('Flanşları Göster').onChange(rebuildTaperFull);
+    ft.add(PT, 'showDims').name('Ölçülendirme').onChange(rebuildTaperFull);
+    ft.add(PT, 'flangeLip', 0.5, 8.0, 0.1).name('Flanş Payı (lip) cm').onChange(rebuildTaperFull);
+    ft.add(PT, 'flangeThick', 0.2, 2.0, 0.05).name('Flanş Kalınlığı cm').onChange(rebuildTaperFull);
+    ft.add(PT, 'wastePercent', 0, 100, 1).name('% Atık/Pay').onChange(rebuildTaperFull);
+
+    const ftc = gui.addFolder('Taper Renkler');
+    ftc.addColor(PT, 'colorW1').name('W1 Rengi').onChange(rebuildTaperFull);
+    ftc.addColor(PT, 'colorH1').name('H1 Rengi').onChange(rebuildTaperFull);
+    ftc.addColor(PT, 'colorW2').name('W2 Rengi').onChange(rebuildTaperFull);
+    ftc.addColor(PT, 'colorH2').name('H2 Rengi').onChange(rebuildTaperFull);
+    ftc.addColor(PT, 'colorL').name('L Rengi').onChange(rebuildTaperFull);
+
+    window.addEventListener('resize', ()=>{
+      camera.aspect = window.innerWidth/window.innerHeight; 
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    (function animate(){
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+      labelRenderer.render(scene, camera);
+    })();
+  </script>
+</body>
+</html>

@@ -11,7 +11,14 @@
       "Bash(git push:*)",
       "Bash(start http://localhost:3000/orders.html)",
       "Bash(python -m http.server:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(tasklist:*)",
+      "Bash(set PORT=3001)",
+      "Bash(node:*)",
+      "Bash(powershell -Command \"$env:PORT=3001; cd ''c:\\Users\\sosmanli\\Documents\\GitHub\\3dductorder''; node server.js\")"
     ],
     "deny": [],
     "ask": []
