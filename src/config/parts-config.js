@@ -47,6 +47,24 @@ export const PARTS_CONFIG = {
     icon: '🔱',
     description: 'Dirsek + Taper Prizma birleşik parça (pozisyon ayarlanabilir)',
     component: 'SideBranch'
+  },
+  'side-branch-2': {
+    name: 'Side Branch 2',
+    icon: '🔷',
+    description: 'Redüksiyonlu Dirsek (Side Branch 2)',
+    component: 'SideBranch2'
+  },
+  'y-branch': {
+    name: 'Y-Branch',
+    icon: '🔱',
+    description: 'İki kollu simetrik Y dallanma (çift dirsek)',
+    component: 'YBranch'
+  },
+  'y-branch-2': {
+    name: 'Y-Branch 2',
+    icon: '🔱',
+    description: 'Y-Branch (ReduksiyonDirsek tabanlı)',
+    component: 'YBranch2'
   }
 };
 

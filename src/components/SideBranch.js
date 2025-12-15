@@ -273,55 +273,45 @@ export class SideBranch extends BasePart {
       this.elbowPart.buildFlange();
     }
 
-    // Dirsek'i 180 derece döndür (X ekseni etrafında)
+    // Dirsek'i 180 derece döndür (X ekseni etrafında) + 90° Y ekseni
     tempElbowGeometry.rotation.x = Math.PI; // 180° = π radyan
+    tempElbowGeometry.rotation.y = Math.PI / 2; // +90° = π/2 radyan (saat yönünün tersi)
     tempElbowFlange.rotation.x = Math.PI;
+    tempElbowFlange.rotation.y = Math.PI / 2;
     tempElbowDimension.rotation.x = Math.PI;
+    tempElbowDimension.rotation.y = Math.PI / 2;
 
-    // Dirsek'i taper'a hizala
-    // Taper'ın H1 kenarı: +L/2 konumunda
-    // Dirsek'in merkezleme hesabı (ReduksiyonDirsek.js'den)
-    const taperL = BasePart.cm(this.params.taper_L);
-    const taperH1Edge = taperL / 2; // Taper'ın bitiş kenarı
+    // Dirsek'i taper'a hizala - SOL tarafa hizala
+    // Matrix'leri güncelle (rotation uygulandıktan sonra)
+    tempElbowGeometry.updateMatrixWorld(true);
 
-    // Dirsek'in centerZ hesabı (kendi merkezleme ofseti)
-    const elbowW1 = BasePart.cm(this.params.elbow_W1);
-    const elbowW2 = BasePart.cm(this.params.elbow_W2);
-    const elbowRin = BasePart.cm(this.params.elbow_R_in);
-    const elbowTheta = THREE.MathUtils.degToRad(this.params.elbow_A);
-    const elbowW_avg = (elbowW1 + elbowW2) / 2;
-    const elbowR_mid = elbowRin + elbowW_avg / 2;
-    const elbowCenterZ = elbowR_mid * Math.sin(elbowTheta / 2);
+    // Bounding box hesapla
+    const elbowBox = new THREE.Box3().setFromObject(tempElbowGeometry);
 
-    // 180° döndürme sonrası dirsek'in başlangıç kenarı -centerZ konumunda
-    // Bu kenarı taper'ın bitiş kenarına taşı (Z ekseni)
-    const elbowOffsetZ = taperH1Edge + elbowCenterZ;
-
-    // X ekseni hizalama: Dirsek'in W1 kenarını taper'ın W1 kenarına hizala
-    // Taper'ın W1 kenarı pozisyonu (ofset moduna göre)
+    // Taper'ın hedef pozisyonları (SOL TARAF)
     const taperW1 = BasePart.cm(this.params.taper_W1);
-    const taperCX1 = this.calculateTaperCX(1, taperW1); // u=1 (bitiş noktası)
-    const taperW1EdgeX = taperCX1 + taperW1 / 2; // Sağ kenar (W1/2)
+    const taperL = BasePart.cm(this.params.taper_L);
+    const taperCX1 = this.calculateTaperCX(1, taperW1);
+    const taperLeftEdgeX = taperCX1 - taperW1 / 2; // Taper'ın SOL kenarı
+    const taperFrontEdgeZ = taperL / 2; // Taper'ın ön kenarı
 
-    // Dirsek'in centerX hesabı
-    const elbowCenterX = -elbowR_mid * Math.cos(elbowTheta / 2);
+    // Dirsek'in SOL kenarı ve ön kenarı (bounding box'tan)
+    const elbowLeftEdgeX = elbowBox.min.x; // MIN = sol kenar
+    const elbowFrontEdgeZ = elbowBox.max.z;
 
-    // 180° X dönüşü sonrası dirsek'in W1 kenarı
-    // Orijinal: W1 kenarı angle=theta noktasında, normal vektörü dış tarafa bakan
-    const elbowR_center1 = elbowRin + elbowW1 / 2;
+    // Offset: Dirsek'in sol-ön köşesini taper'ın sol-ön köşesine hizala
+    const elbowOffsetX = taperLeftEdgeX - elbowLeftEdgeX;
+    const elbowOffsetZ = taperFrontEdgeZ - elbowFrontEdgeZ;
 
-    // angle=theta'daki normal vektörü (dış tarafa)
-    const elbowTheta_normal_x = -Math.sin(elbowTheta); // Normal X komponenti
-
-    // Orta hat pozisyonu
-    const elbowW1CenterX = -elbowR_center1 * Math.cos(elbowTheta) - elbowCenterX;
-
-    // Sağ kenar (normal yönünde +W1/2)
-    const elbowW1EdgeX_original = elbowW1CenterX + (elbowTheta_normal_x * elbowW1 / 2);
-
-    // 180° X döndürme sonrası: Y koordinatı ters döner ama X değişmez
-    // Ancak geometri baş aşağı olduğu için kenar pozisyonu aynı kalır
-    const elbowOffsetX = taperW1EdgeX - elbowW1EdgeX_original;
+    // Debug
+    console.log('=== LEFT SIDE Alignment ===');
+    console.log('Elbow BBox:', {
+      min: { x: elbowBox.min.x, y: elbowBox.min.y, z: elbowBox.min.z },
+      max: { x: elbowBox.max.x, y: elbowBox.max.y, z: elbowBox.max.z }
+    });
+    console.log('Taper target:', { leftX: taperLeftEdgeX, frontZ: taperFrontEdgeZ });
+    console.log('Elbow edges:', { leftX: elbowLeftEdgeX, frontZ: elbowFrontEdgeZ });
+    console.log('Offset:', { x: elbowOffsetX, z: elbowOffsetZ });
 
     tempElbowGeometry.position.set(elbowOffsetX, 0, elbowOffsetZ);
     tempElbowFlange.position.set(elbowOffsetX, 0, elbowOffsetZ);

@@ -9,6 +9,9 @@ import { KaredenYuvarlaga } from './components/KaredenYuvarlaga.js';
 import { Reduksiyon } from './components/Reduksiyon.js';
 import { DuzPantolon } from './components/DuzPantolon.js';
 import { SideBranch } from './components/SideBranch.js';
+import { SideBranch2 } from './components/sidebranch-2.js';
+import { YBranch } from './components/YBranch.js';
+import { YBranch2 } from './components/YBranch-2.js';
 import { ParameterPanel } from './ui/ParameterPanel.js';
 import { ViewControls } from './ui/ViewControls.js';
 import { DimensionPopup } from './ui/DimensionPopup.js';
@@ -213,6 +216,15 @@ class App {
           break;
         case 'side-branch':
           this.currentPart = new SideBranch(this.scene, this.materials);
+          break;
+        case 'side-branch-2':
+          this.currentPart = new SideBranch2(this.scene, this.materials);
+          break;
+        case 'y-branch':
+          this.currentPart = new YBranch(this.scene, this.materials);
+          break;
+        case 'y-branch-2':
+          this.currentPart = new YBranch2(this.scene, this.materials);
           break;
         default:
           this.errorHandler.error(

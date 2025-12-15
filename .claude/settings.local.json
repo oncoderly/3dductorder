@@ -18,7 +18,8 @@
       "Bash(tasklist:*)",
       "Bash(set PORT=3001)",
       "Bash(node:*)",
-      "Bash(powershell -Command \"$env:PORT=3001; cd ''c:\\Users\\sosmanli\\Documents\\GitHub\\3dductorder''; node server.js\")"
+      "Bash(powershell -Command \"$env:PORT=3001; cd ''c:\\Users\\sosmanli\\Documents\\GitHub\\3dductorder''; node server.js\")",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []

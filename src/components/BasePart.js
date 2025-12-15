@@ -256,6 +256,34 @@ export class BasePart {
     return ab.cross(ac).length() * 0.5;
   }
 
+  // Helper to add local coordinate axes (tangent, normal, binormal)
+  addLocalAxes(position, tangent, normal, binormal, labelPrefix, axisLengthCm = 10) {
+    const axisLength = BasePart.cm(axisLengthCm);
+    const axisMatX = this.materials.createDimensionLineMaterial('#ff0000', this.params.dimAlwaysOnTop); // Red for Normal (local X)
+    const axisMatY = this.materials.createDimensionLineMaterial('#00ff00', this.params.dimAlwaysOnTop); // Green for Binormal (local Y)
+    const axisMatZ = this.materials.createDimensionLineMaterial('#0000ff', this.params.dimAlwaysOnTop); // Blue for Tangent (local Z)
+
+    const p = position.clone();
+
+    // Normal (Local X)
+    const normalEnd = p.clone().add(normal.clone().multiplyScalar(axisLength));
+    const normalLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([p, normalEnd]), axisMatX);
+    this.scene.dimensionGroup.add(normalLine);
+    this.scene.addLabel(`${labelPrefix}_N`, normalEnd, '#ff0000');
+
+    // Binormal (Local Y)
+    const binormalEnd = p.clone().add(binormal.clone().multiplyScalar(axisLength));
+    const binormalLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([p, binormalEnd]), axisMatY);
+    this.scene.dimensionGroup.add(binormalLine);
+    this.scene.addLabel(`${labelPrefix}_B`, binormalEnd, '#00ff00');
+
+    // Tangent (Local Z)
+    const tangentEnd = p.clone().add(tangent.clone().multiplyScalar(axisLength));
+    const tangentLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([p, tangentEnd]), axisMatZ);
+    this.scene.dimensionGroup.add(tangentLine);
+    this.scene.addLabel(`${labelPrefix}_T`, tangentEnd, '#0000ff');
+  }
+
   // Flanş oluşturma helper (dikdörtgen)
   createFlangeRect(Wm, Hm, lip, th) {
     const shape = new THREE.Shape([
