@@ -335,12 +335,6 @@ export class YBranch2 extends BasePart {
     const t1A = new THREE.Vector3(R_center1A * Math.sin(thetaA), 0, R_center1A * Math.cos(thetaA)).normalize();
     const b1A = new THREE.Vector3(0, 1, 0);
     const n1A = new THREE.Vector3().crossVectors(b1A, t1A).normalize();
-    const F1A = this.createFlangeRect(W1a, H1a, lip, fth);
-    const M1A = new THREE.Matrix4().makeBasis(n1A, b1A, t1A);
-    F1A.quaternion.setFromRotationMatrix(M1A);
-    F1A.position.copy(p1A.clone().add(t1A.clone().multiplyScalar(fth * 0.5)));
-    this.scene.flangeGroup.add(F1A);
-
     // Branch B - negatif Z yönünde
     const W_avgB = (W1b + W2b) / 2;
     const R_midB = RinB + W_avgB / 2;
@@ -371,11 +365,22 @@ export class YBranch2 extends BasePart {
     const t1B = new THREE.Vector3(R_center1B * Math.sin(thetaB), 0, -1 * R_center1B * Math.cos(thetaB)).normalize();
     const b1B = new THREE.Vector3(0, 1, 0);
     const n1B = new THREE.Vector3().crossVectors(b1B, t1B).normalize();
-    const F1B = this.createFlangeRect(W1b, H1b, lip, fth);
-    const M1B = new THREE.Matrix4().makeBasis(n1B, b1B, t1B);
-    F1B.quaternion.setFromRotationMatrix(M1B);
-    F1B.position.copy(p1B.clone().add(t1B.clone().multiplyScalar(fth * 0.5)));
-    this.scene.flangeGroup.add(F1B);
+
+    // Tek birleşik flanş: (W1A + W1B) x H1A, A ve B uçlarının ortasında
+    const p1Combined = p1A.clone().add(p1B).multiplyScalar(0.5);
+    const tCombinedRaw = t1A.clone().add(t1B);
+    const tCombined = tCombinedRaw.lengthSq() > 0 ? tCombinedRaw.normalize() : new THREE.Vector3(1, 0, 0);
+    const bCombined = new THREE.Vector3(0, 1, 0);
+    const nCombinedRaw = new THREE.Vector3().crossVectors(bCombined, tCombined);
+    const nCombined = nCombinedRaw.lengthSq() > 0 ? nCombinedRaw.normalize() : new THREE.Vector3(0, 0, 1);
+
+    const W_combined = W1a + W1b;
+    const H_combined = H1a;
+    const F_combined = this.createFlangeRect(W_combined, H_combined, lip, fth);
+    const M_combined = new THREE.Matrix4().makeBasis(nCombined, bCombined, tCombined);
+    F_combined.quaternion.setFromRotationMatrix(M_combined);
+    F_combined.position.copy(p1Combined.clone().add(tCombined.clone().multiplyScalar(fth * 0.5)));
+    this.scene.flangeGroup.add(F_combined);
   }
 
   addEdges() {
