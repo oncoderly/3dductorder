@@ -77,7 +77,7 @@ export class ParameterPanel {
     group.params.forEach(param => {
       let control;
 
-      if (param.type === 'number') {
+      if (!param.type || param.type === 'number') {
         control = this.createNumberControl(param);
       } else if (param.type === 'checkbox') {
         control = this.createCheckboxControl(param.key, param.label);

@@ -55,6 +55,9 @@ export class YBranch2 extends BasePart {
           params: [
             { key: 'W1B', label: 'Son Genişlik B (W1B)', min: 10, max: 200, step: 1, unit: 'cm', default: 40 },
             { key: 'W2B', label: 'Başlangıç Genişlik B (W2B)', min: 10, max: 200, step: 1, unit: 'cm', default: 30 },
+            // Ortak yükseklikler: B için de göster (H1A/H2A paylaşımlı)
+            { key: 'H1A', label: 'Son Yükseklik (ortak H1)', min: 10, max: 200, step: 1, unit: 'cm', default: 25 },
+            { key: 'H2A', label: 'Başlangıç Yükseklik (ortak H2)', min: 10, max: 200, step: 1, unit: 'cm', default: 20 },
             { key: 'R_inB', label: 'İç Yarıçap B (R_inB)', min: 1, max: 300, step: 1, unit: 'cm', default: 20 },
             { key: 'A2', label: 'Açı B (A2)', min: 10, max: 180, step: 1, unit: '°', default: 90 }
           ]
