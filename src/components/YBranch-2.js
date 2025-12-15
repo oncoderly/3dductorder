@@ -21,9 +21,7 @@ export class YBranch2 extends BasePart {
       R_inA: 20,
       A1: 90,
       W1B: 40,
-      H1B: 25,
       W2B: 30,
-      H2B: 20,
       R_inB: 20,
       A2: 90,
       t: 0.12,
@@ -56,9 +54,7 @@ export class YBranch2 extends BasePart {
           name: 'Branch B Ölçüleri',
           params: [
             { key: 'W1B', label: 'Son Genişlik B (W1B)', min: 10, max: 200, step: 1, unit: 'cm', default: 40 },
-            { key: 'H1B', label: 'Son Yükseklik B (H1B)', min: 10, max: 200, step: 1, unit: 'cm', default: 25 },
             { key: 'W2B', label: 'Başlangıç Genişlik B (W2B)', min: 10, max: 200, step: 1, unit: 'cm', default: 30 },
-            { key: 'H2B', label: 'Başlangıç Yükseklik B (H2B)', min: 10, max: 200, step: 1, unit: 'cm', default: 20 },
             { key: 'R_inB', label: 'İç Yarıçap B (R_inB)', min: 1, max: 300, step: 1, unit: 'cm', default: 20 },
             { key: 'A2', label: 'Açı B (A2)', min: 10, max: 180, step: 1, unit: '°', default: 90 }
           ]
@@ -105,9 +101,9 @@ export class YBranch2 extends BasePart {
     const thetaA = THREE.MathUtils.degToRad(this.params.A1);
 
     const W1b = BasePart.cm(this.params.W1B);
-    const H1b = BasePart.cm(this.params.H1B);
+    const H1b = H1a; // shared height
     const W2b = BasePart.cm(this.params.W2B);
-    const H2b = BasePart.cm(this.params.H2B);
+    const H2b = H2a; // shared height
     const RinB = BasePart.cm(this.params.R_inB);
     const thetaB = THREE.MathUtils.degToRad(this.params.A2);
 
@@ -301,9 +297,9 @@ export class YBranch2 extends BasePart {
     const thetaA = THREE.MathUtils.degToRad(this.params.A1);
 
     const W1b = BasePart.cm(this.params.W1B);
-    const H1b = BasePart.cm(this.params.H1B);
+    const H1b = H1a; // shared height
     const W2b = BasePart.cm(this.params.W2B);
-    const H2b = BasePart.cm(this.params.H2B);
+    const H2b = H2a; // shared height
     const RinB = BasePart.cm(this.params.R_inB);
     const thetaB = THREE.MathUtils.degToRad(this.params.A2);
 
@@ -506,9 +502,9 @@ export class YBranch2 extends BasePart {
 
     // ========== BRANCH B DIMENSIONS ==========
     const W1mB = BasePart.cm(this.params.W1B);
-    const H1mB = BasePart.cm(this.params.H1B);
+    const H1mB = H1mA; // shared height
     const W2mB = BasePart.cm(this.params.W2B);
-    const H2mB = BasePart.cm(this.params.H2B);
+    const H2mB = H2mA; // shared height
     const RinB = BasePart.cm(this.params.R_inB);
     const thetaB = THREE.MathUtils.degToRad(this.params.A2);
 
@@ -536,14 +532,11 @@ export class YBranch2 extends BasePart {
     const p0B_RB = p0B.clone().add(n0B.clone().multiplyScalar(W2mB / 2)).add(b0B.clone().multiplyScalar(-H2mB / 2));
     const p0B_LT = p0B.clone().add(n0B.clone().multiplyScalar(-W2mB / 2)).add(b0B.clone().multiplyScalar(H2mB / 2));
     this.createDimensionLine(p0B_LB, p0B_RB, b0B.clone().negate(), `W2B = ${BasePart.formatDimension(this.params.W2B)} cm`, this.params.colorW2, 'W2B');
-    this.createDimensionLine(p0B_LB, p0B_LT, n0B.clone().negate(), `H2B = ${BasePart.formatDimension(this.params.H2B)} cm`, this.params.colorH2, 'H2B');
-
-    // Branch B bitiş ölçüleri
+    // Branch B bitiş ölçüleri (ortak yükseklik, sadece genişlik gösterimi)
     const p1B_LB = p1B.clone().add(n1B.clone().multiplyScalar(-W1mB / 2)).add(b1B.clone().multiplyScalar(-H1mB / 2));
     const p1B_RB = p1B.clone().add(n1B.clone().multiplyScalar(W1mB / 2)).add(b1B.clone().multiplyScalar(-H1mB / 2));
     const p1B_LT = p1B.clone().add(n1B.clone().multiplyScalar(-W1mB / 2)).add(b1B.clone().multiplyScalar(H1mB / 2));
     this.createDimensionLine(p1B_LB, p1B_RB, b1B.clone().negate(), `W1B = ${BasePart.formatDimension(this.params.W1B)} cm`, this.params.colorW1, 'W1B');
-    this.createDimensionLine(p1B_LB, p1B_LT, n1B.clone().negate(), `H1B = ${BasePart.formatDimension(this.params.H1B)} cm`, this.params.colorH1, 'H1B');
 
     // Branch B R ve A
     const innerArcCenterB = new THREE.Vector3(-centerXB, 0, centerZB);
@@ -624,9 +617,7 @@ export class YBranch2 extends BasePart {
       R_inA: this.params.R_inA,
       A1: this.params.A1,
       W1B: this.params.W1B,
-      H1B: this.params.H1B,
       W2B: this.params.W2B,
-      H2B: this.params.H2B,
       R_inB: this.params.R_inB,
       A2: this.params.A2,
       t: this.params.t
