@@ -190,18 +190,15 @@ export class YBranch2 extends BasePart {
     const lastRingA = elbowA.ringsOuter[elbowA.ringsOuter.length - 1];
     const lastRingB = elbowB.ringsOuter[elbowB.ringsOuter.length - 1];
 
-    // A dalı için MAX Z (en sağdaki kenar) Z=0 olmalı
-    const maxZA = Math.max(...lastRingA.map(v => v.z));
-    // B dalı için MIN Z (en soldaki kenar) Z=0 olmalı
-    const minZB = Math.min(...lastRingB.map(v => v.z));
+    // BİTİŞ YÜZEYLERİNİ HİZALA: Her iki dalın bitiş kenarları ortak noktada buluşmalı
+    // A dalının sağ kenarı (max Z) ve B dalının sol kenarı (min Z) aynı Z'de olmalı
+    const maxZA = Math.max(...lastRingA.map(v => v.z));  // A'nın sağ kenar Z'si
+    const minZB = Math.min(...lastRingB.map(v => v.z));  // B'nin sol kenar Z'si
 
-    const offsetA = 0 - maxZA;  // A'nın sağ kenarını Z=0'a getir
-    const offsetB = 0 - minZB;  // B'nin sol kenarını Z=0'a getir
-
-    console.log('=== Z-EKSENİ HİZALAMA DEBUG ===');
-    console.log('A dalı: maxZ=', maxZA, '→ Z=0 için offset:', offsetA);
-    console.log('B dalı: minZ=', minZB, '→ Z=0 için offset:', offsetB);
-    console.log('W1a:', W1a, 'W1b:', W1b);
+    // Ortak buluşma noktası: Z=0
+    const TARGET_Z = 0;
+    const offsetA = TARGET_Z - maxZA;  // A'nın sağ kenarını Z=0'a getir
+    const offsetB = TARGET_Z - minZB;  // B'nin sol kenarını Z=0'a getir
 
     const shiftRings = (rings, dz) => {
       rings.forEach(r => r.forEach(v => { v.z += dz; }));
@@ -210,6 +207,10 @@ export class YBranch2 extends BasePart {
     shiftRings(elbowA.ringsInner, offsetA);
     shiftRings(elbowB.ringsOuter, offsetB);
     shiftRings(elbowB.ringsInner, offsetB);
+
+    console.log('\n========== Z-EKSENİ KAYDIRMA ==========');
+    console.log('A dalı offsetA:', offsetA.toFixed(4));
+    console.log('B dalı offsetB:', offsetB.toFixed(4));
     if (elbowA.startFrame && elbowA.endFrame) {
       elbowA.startFrame.pos.z += offsetA;
       elbowA.endFrame.pos.z += offsetA;
@@ -220,45 +221,74 @@ export class YBranch2 extends BasePart {
     }
 
     // --- X-EKSENİ HİZALAMA BAŞLANGICI ---
-    // SideBranch-2 mantığı: Her iki dalın bitiş merkez noktalarından hesapla
-    // A dalının bitiş merkezi (endFrame.pos kullan)
-    const endCenterA = elbowA.endFrame.pos.clone();
-    // B dalının bitiş merkezi (endFrame.pos kullan)
-    const endCenterB = elbowB.endFrame.pos.clone();
+    // SABİT REFERANS YAKLAŞIMI: W1 (H1) tarafını (BİTİŞ) sabit tut
+    // Flanş ve bitiş yüzeyi sabit kalmalı, W2 (H2) tarafı (BAŞLANGIÇ) değişebilir
+    // R veya açı değişince sadece başlangıç tarafı hareket eder
 
-    // Birleşik flanşın merkezi: A'nın sağ kenarı (-W1a/2) ile B'nin sol kenarı (+W1b/2) arasındaki orta nokta
-    // A'nın sağ kenarı X koordinatı
-    const endCenterA_rightEdgeX = endCenterA.x + W1a / 2;
-    // B'nin sol kenarı X koordinatı
-    const endCenterB_leftEdgeX = endCenterB.x - W1b / 2;
+    // Ring'lerin GERÇEK köşe pozisyonlarını kullan (frame değil!)
+    const lastRingA_temp = elbowA.ringsOuter[elbowA.ringsOuter.length - 1];
+    const lastRingB_temp = elbowB.ringsOuter[elbowB.ringsOuter.length - 1];
 
-    // Birleşik flanşın X merkezi
-    const combinedFlangeX = (endCenterA_rightEdgeX + endCenterB_leftEdgeX) / 2;
+    // Her dalın bitiş X'ini ayrı hesapla
+    const endMaxXA = Math.max(...lastRingA_temp.map(v => v.x));
+    const endMaxXB = Math.max(...lastRingB_temp.map(v => v.x));
 
-    // X=0 olması için kaydırma miktarı
-    const dx_offset = -combinedFlangeX;
+    // İlk hesaplamada her dalın target pozisyonunu ayrı kaydet
+    if (this.targetEndXA === undefined) {
+      this.targetEndXA = endMaxXA;
+    }
+    if (this.targetEndXB === undefined) {
+      this.targetEndXB = endMaxXB;
+    }
 
-    // Diğer fonksiyonların kullanabilmesi için kaydırma miktarını sakla
-    this.dx_offset = dx_offset;
+    // Her dal kendi target'ına kaydırılacak
+    const dx_offsetA = this.targetEndXA - endMaxXA;
+    const dx_offsetB = this.targetEndXB - endMaxXB;
 
     const shiftRingsX = (rings, dx) => {
         rings.forEach(r => r.forEach(v => { v.x += dx; }));
     };
 
-    if (Math.abs(dx_offset) > 0.0001) { // Sadece anlamlı bir kaydırma varsa uygula
-        shiftRingsX(elbowA.ringsOuter, dx_offset);
-        shiftRingsX(elbowA.ringsInner, dx_offset);
-        shiftRingsX(elbowB.ringsOuter, dx_offset);
-        shiftRingsX(elbowB.ringsInner, dx_offset);
+    console.log('\n========== X-EKSENİ KAYDIRMA (W1 SABİT - AYRI OFFSET) ==========');
+    console.log('A dalı:');
+    console.log('  lastRingA X değerleri:', lastRingA_temp.map(v => v.x.toFixed(4)).join(', '));
+    console.log('  endMaxXA:', endMaxXA.toFixed(4));
+    console.log('  targetEndXA:', this.targetEndXA.toFixed(4));
+    console.log('  dx_offsetA:', dx_offsetA.toFixed(4));
+    console.log('B dalı:');
+    console.log('  lastRingB X değerleri:', lastRingB_temp.map(v => v.x.toFixed(4)).join(', '));
+    console.log('  endMaxXB:', endMaxXB.toFixed(4));
+    console.log('  targetEndXB:', this.targetEndXB.toFixed(4));
+    console.log('  dx_offsetB:', dx_offsetB.toFixed(4));
+
+    // A dalını kaydır
+    if (Math.abs(dx_offsetA) > 0.0001) {
+        shiftRingsX(elbowA.ringsOuter, dx_offsetA);
+        shiftRingsX(elbowA.ringsInner, dx_offsetA);
+        if (elbowA.startFrame) elbowA.startFrame.pos.x += dx_offsetA;
+        if (elbowA.endFrame) elbowA.endFrame.pos.x += dx_offsetA;
+        console.log('✅ A dalı X kaydırması uygulandı');
+    } else {
+        console.log('⏭️  A dalı X kaydırması atlandı (çok küçük)');
     }
-    const shiftFrameX = (frame) => {
-        if (!frame) return;
-        frame.pos.x += dx_offset;
-    };
-    shiftFrameX(elbowA.startFrame);
-    shiftFrameX(elbowA.endFrame);
-    shiftFrameX(elbowB.startFrame);
-    shiftFrameX(elbowB.endFrame);
+
+    // B dalını kaydır
+    if (Math.abs(dx_offsetB) > 0.0001) {
+        shiftRingsX(elbowB.ringsOuter, dx_offsetB);
+        shiftRingsX(elbowB.ringsInner, dx_offsetB);
+        if (elbowB.startFrame) elbowB.startFrame.pos.x += dx_offsetB;
+        if (elbowB.endFrame) elbowB.endFrame.pos.x += dx_offsetB;
+        console.log('✅ B dalı X kaydırması uygulandı');
+    } else {
+        console.log('⏭️  B dalı X kaydırması atlandı (çok küçük)');
+    }
+
+    console.log('\n📍 KAYDIRMADAN SONRA FRAME POZİSYONLARI:');
+    console.log('elbowA.startFrame.pos:', `(${elbowA.startFrame.pos.x.toFixed(4)}, ${elbowA.startFrame.pos.y.toFixed(4)}, ${elbowA.startFrame.pos.z.toFixed(4)})`);
+    console.log('elbowA.endFrame.pos:', `(${elbowA.endFrame.pos.x.toFixed(4)}, ${elbowA.endFrame.pos.y.toFixed(4)}, ${elbowA.endFrame.pos.z.toFixed(4)})`);
+    console.log('elbowB.startFrame.pos:', `(${elbowB.startFrame.pos.x.toFixed(4)}, ${elbowB.startFrame.pos.y.toFixed(4)}, ${elbowB.startFrame.pos.z.toFixed(4)})`);
+    console.log('elbowB.endFrame.pos:', `(${elbowB.endFrame.pos.x.toFixed(4)}, ${elbowB.endFrame.pos.y.toFixed(4)}, ${elbowB.endFrame.pos.z.toFixed(4)})`);
+    console.log('==========================================\n');
     // --- X-EKSENİ HİZALAMA SONU ---
 
     // Build combined geometry
@@ -407,72 +437,52 @@ export class YBranch2 extends BasePart {
     // B dalının bitiş yüzeyi köşeleri (son ring)
     const lastRingB = this.elbow2Rings[this.elbow2Rings.length - 1];
 
-    // A dalının sağ kenarı (maxZ olan köşeler) - SABİT REFERANS
-    const maxZA = Math.max(...lastRingA.map(v => v.z));
-    const rightEdgeCornersA = lastRingA.filter(v => Math.abs(v.z - maxZA) < 0.001);
-    const rightEdgeCenterA = rightEdgeCornersA.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(rightEdgeCornersA.length);
-
-    // B dalının sol kenarı (minZ olan köşeler)
-    const minZB = Math.min(...lastRingB.map(v => v.z));
-    const leftEdgeCornersB = lastRingB.filter(v => Math.abs(v.z - minZB) < 0.001);
-    const leftEdgeCenterB = leftEdgeCornersB.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(leftEdgeCornersB.length);
-
-    console.log('\n========== FLANŞ POZİSYON HESAPLAMA ==========');
-    console.log('📐 GEOMETRİ ÖLÇÜLER:');
-    console.log('  W1A (A genişlik):', (W1a * 100).toFixed(1), 'cm');
-    console.log('  W1B (B genişlik):', (W1b * 100).toFixed(1), 'cm');
-    console.log('  H1A (yükseklik):', (H1a * 100).toFixed(1), 'cm');
-    console.log('  Toplam genişlik:', ((W1a + W1b) * 100).toFixed(1), 'cm');
-
-    console.log('\n🎯 KENAR MERKEZLERİ:');
-    console.log('  A sağ kenar (SABİT):',
-      'X=' + rightEdgeCenterA.x.toFixed(4),
-      'Y=' + rightEdgeCenterA.y.toFixed(4),
-      'Z=' + rightEdgeCenterA.z.toFixed(4));
-    console.log('  B sol kenar:',
-      'X=' + leftEdgeCenterB.x.toFixed(4),
-      'Y=' + leftEdgeCenterB.y.toFixed(4),
-      'Z=' + leftEdgeCenterB.z.toFixed(4));
 
     // Geometrinin gerçek Z sınırlarını bul
     const geomMinZ = Math.min(...lastRingA.map(v => v.z), ...lastRingB.map(v => v.z));
     const geomMaxZ = Math.max(...lastRingA.map(v => v.z), ...lastRingB.map(v => v.z));
     const geomCenterZ = (geomMinZ + geomMaxZ) / 2;
 
-    // Flanş merkezi hesabı - GEOMETRİNİN ORTASINDAN
+    // FLANŞ X POZİSYONU: Bitiş yüzeyinin EN UZAK X'i (maksimum X değeri)
+    // Çünkü açılı bitişte ortalama kullanırsak flanş geometriden ayrışır
+    const allEndPoints = [...lastRingA, ...lastRingB];
+    const endSurfaceMaxX = Math.max(...allEndPoints.map(v => v.x));
+    const endSurfaceCenterY = allEndPoints.reduce((sum, v) => sum + v.y, 0) / allEndPoints.length;
+
+    // Flanş merkezi hesabı - BİTİŞ YÜZEYİNİN MERKEZİNDEN
     const totalWidth = W1a + W1b;
-    const centerCalc = rightEdgeCenterA.clone();
-    centerCalc.z = geomCenterZ; // Z'yi geometrinin merkezine ayarla
+    const centerCalc = new THREE.Vector3(endSurfaceMaxX, endSurfaceCenterY, geomCenterZ);
 
-    console.log('\n📍 FLANŞ MERKEZİ HESABI (DÜZELTİLMİŞ):');
-    console.log('  Geometri Min Z:', geomMinZ.toFixed(4));
-    console.log('  Geometri Max Z:', geomMaxZ.toFixed(4));
-    console.log('  Geometri Merkez Z:', geomCenterZ.toFixed(4), '← FLANŞ BURAYA ORTALANIYOR');
-    console.log('  Flanş merkezi:',
-      'X=' + centerCalc.x.toFixed(4),
-      'Y=' + centerCalc.y.toFixed(4),
-      'Z=' + centerCalc.z.toFixed(4));
-    console.log('\n✅ GEOMETRİ Z SINIRLARI:');
-    console.log('  Min Z:', geomMinZ.toFixed(4));
-    console.log('  Max Z:', geomMaxZ.toFixed(4));
-    console.log('  Genişlik:', (geomMaxZ - geomMinZ).toFixed(4));
+    console.log('\n========== FLANŞ HİZALAMA DEBUG ==========');
+    console.log('📊 BİTİŞ YÜZEYİ ANALİZİ:');
+    console.log('  lastRingA köşe sayısı:', lastRingA.length);
+    console.log('  lastRingB köşe sayısı:', lastRingB.length);
+    console.log('  Toplam köşe:', allEndPoints.length);
 
-    // Flanş sınırları
-    const flangeMinZ = centerCalc.z - totalWidth / 2;
-    const flangeMaxZ = centerCalc.z + totalWidth / 2;
-    console.log('\n📦 FLANŞ Z SINIRLARI:');
-    console.log('  Min Z:', flangeMinZ.toFixed(4));
-    console.log('  Max Z:', flangeMaxZ.toFixed(4));
-    console.log('  Genişlik:', totalWidth.toFixed(4));
+    console.log('\n📍 lastRingA Köşeleri:');
+    lastRingA.forEach((v, i) => {
+      console.log(`  [${i}] X=${v.x.toFixed(4)}, Y=${v.y.toFixed(4)}, Z=${v.z.toFixed(4)}`);
+    });
 
-    console.log('\n⚠️ HATA KONTROLÜ:');
-    const errorMinZ = Math.abs(geomMinZ - flangeMinZ);
-    const errorMaxZ = Math.abs(geomMaxZ - flangeMaxZ);
-    console.log('  Min Z farkı:', errorMinZ.toFixed(6), errorMinZ > 0.001 ? '❌ HATALI!' : '✅');
-    console.log('  Max Z farkı:', errorMaxZ.toFixed(6), errorMaxZ > 0.001 ? '❌ HATALI!' : '✅');
+    console.log('\n📍 lastRingB Köşeleri:');
+    lastRingB.forEach((v, i) => {
+      console.log(`  [${i}] X=${v.x.toFixed(4)}, Y=${v.y.toFixed(4)}, Z=${v.z.toFixed(4)}`);
+    });
 
-    // Normal ve Tangent
-    const nAxisRaw = leftEdgeCenterB.clone().sub(rightEdgeCenterA);
+    console.log('\n🎯 HESAPLANAN MERKEZ:');
+    console.log('  endSurfaceMaxX:', endSurfaceMaxX.toFixed(4));
+    console.log('  endSurfaceCenterY:', endSurfaceCenterY.toFixed(4));
+    console.log('  geomCenterZ:', geomCenterZ.toFixed(4));
+    console.log('  centerCalc:', `(${centerCalc.x.toFixed(4)}, ${centerCalc.y.toFixed(4)}, ${centerCalc.z.toFixed(4)})`);
+
+    console.log('\n📐 GEOMETRİ SINIRLARI:');
+    console.log('  Z: min=' + geomMinZ.toFixed(4) + ', max=' + geomMaxZ.toFixed(4) + ', genişlik=' + (geomMaxZ - geomMinZ).toFixed(4));
+    console.log('  Beklenen genişlik (W1a+W1b):', totalWidth.toFixed(4));
+
+    // Normal ve Tangent - SABİT REFERANS KULLAN
+    const refPointA = new THREE.Vector3(endSurfaceMaxX, 0, geomMinZ);
+    const refPointB = new THREE.Vector3(endSurfaceMaxX, 0, geomMaxZ);
+    const nAxisRaw = refPointB.clone().sub(refPointA);
     const nAxis = nAxisRaw.lengthSq() > 1e-8 ? nAxisRaw.normalize() : new THREE.Vector3(0, 0, 1);
     const bCombined = new THREE.Vector3(0, 1, 0);
     const tCombined = new THREE.Vector3().crossVectors(nAxis, bCombined);
@@ -483,19 +493,31 @@ export class YBranch2 extends BasePart {
     }
 
     console.log('\n🧭 FLANŞ YÖNLENDİRME:');
-    console.log('  Normal (genişlik):', 'X=' + nAxis.x.toFixed(2), 'Y=' + nAxis.y.toFixed(2), 'Z=' + nAxis.z.toFixed(2));
-    console.log('  Tangent (derinlik):', 'X=' + tCombined.x.toFixed(2), 'Y=' + tCombined.y.toFixed(2), 'Z=' + tCombined.z.toFixed(2));
+    console.log('  nAxis:', `(${nAxis.x.toFixed(3)}, ${nAxis.y.toFixed(3)}, ${nAxis.z.toFixed(3)})`);
+    console.log('  tCombined:', `(${tCombined.x.toFixed(3)}, ${tCombined.y.toFixed(3)}, ${tCombined.z.toFixed(3)})`);
 
     const combinedFlange = this.createFlangeRect(W1a + W1b, H1a, lip, fth);
     const M_combined = new THREE.Matrix4().makeBasis(nAxis, bCombined, tCombined);
     combinedFlange.quaternion.setFromRotationMatrix(M_combined);
 
-    const tangentDirection = tCombined.x < 0 ? tCombined.clone().negate() : tCombined.clone();
+    // Flanş pozisyonu: bitiş yüzeyinden fth/2 kadar X+ yönünde
+    // tCombined her zaman cross(nAxis, bCombined) = cross(Z, Y) = -X yönünde
+    // Bu yüzden negatif edip pozitif X yönüne çeviriyoruz
+    const tangentDirection = new THREE.Vector3(-tCombined.x, -tCombined.y, -tCombined.z);
+
+    // Log için değeri kaydet (multiplyScalar mutate ediyor!)
+    const tangentDirForLog = tangentDirection.clone();
+
     const flangePos = centerCalc.clone().add(tangentDirection.multiplyScalar(fth * 0.5));
     combinedFlange.position.copy(flangePos);
 
-    console.log('\n🎯 FLANŞ FİNAL POZİSYON:');
-    console.log('  X=' + flangePos.x.toFixed(4), 'Y=' + flangePos.y.toFixed(4), 'Z=' + flangePos.z.toFixed(4));
+    console.log('\n🎯 FLANŞ FİNAL:');
+    console.log('  tCombined:', `(${tCombined.x.toFixed(3)}, ${tCombined.y.toFixed(3)}, ${tCombined.z.toFixed(3)})`);
+    console.log('  tangentDirection (normalized):', `(${tangentDirForLog.x.toFixed(3)}, ${tangentDirForLog.y.toFixed(3)}, ${tangentDirForLog.z.toFixed(3)})`);
+    console.log('  fth:', fth.toFixed(4));
+    console.log('  centerCalc:', `(${centerCalc.x.toFixed(4)}, ${centerCalc.y.toFixed(4)}, ${centerCalc.z.toFixed(4)})`);
+    console.log('  flangePos:', `(${flangePos.x.toFixed(4)}, ${flangePos.y.toFixed(4)}, ${flangePos.z.toFixed(4)})`);
+    console.log('  Flanş boyutu: W=' + (W1a + W1b).toFixed(4) + ', H=' + H1a.toFixed(4));
     console.log('==========================================\n');
 
     this.scene.flangeGroup.add(combinedFlange);
@@ -549,12 +571,6 @@ export class YBranch2 extends BasePart {
     const p0A = firstRingA.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(firstRingA.length);
     const p1A = lastRingA.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(lastRingA.length);
 
-    console.log('\n========== ÖLÇÜ ÇİZGİLERİ DEBUG (Branch A) ==========');
-    console.log('📍 GERÇEK GEOMETRİ POZİSYONLARI:');
-    console.log('  p0A (başlangıç merkezi):', 'X=' + p0A.x.toFixed(4), 'Y=' + p0A.y.toFixed(4), 'Z=' + p0A.z.toFixed(4));
-    console.log('  p1A (bitiş merkezi):', 'X=' + p1A.x.toFixed(4), 'Y=' + p1A.y.toFixed(4), 'Z=' + p1A.z.toFixed(4));
-    console.log('  firstRingA[0]:', 'X=' + firstRingA[0].x.toFixed(4), 'Z=' + firstRingA[0].z.toFixed(4));
-    console.log('  lastRingA[0]:', 'X=' + lastRingA[0].x.toFixed(4), 'Z=' + lastRingA[0].z.toFixed(4));
 
     // Tangent ve normal vektörlerini gerçek köşelerden hesapla
     const t0A = new THREE.Vector3(0, 0, 1);
