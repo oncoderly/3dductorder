@@ -531,33 +531,43 @@ export class YBranch2 extends BasePart {
       allParams.push(...(definitions.dimensions || []), ...(definitions.material || []), ...(definitions.view || []));
     }
 
-    // ========== BRANCH A DIMENSIONS ==========
-    const W1mA = BasePart.cm(this.params.W1A);
-    const H1mA = BasePart.cm(this.params.H1A);
+    // GERÇEK GEOMETRİ KÖŞE POZİSYONLARINI KULLAN (zaten kaydırılmış)
+    if (!this.elbow1Rings || !this.elbow2Rings || this.elbow1Rings.length === 0 || this.elbow2Rings.length === 0) {
+      console.warn('Geometri henüz oluşturulmamış, ölçüler çizilemedi.');
+      return;
+    }
+
     const W2mA = BasePart.cm(this.params.W2A);
     const H2mA = BasePart.cm(this.params.H2A);
     const RinA = BasePart.cm(this.params.R_inA);
-    const thetaA = THREE.MathUtils.degToRad(this.params.A1);
 
-    // Ortak referans genişlik kullan (buildGeometry ile aynı)
-    const W2mB_temp = BasePart.cm(this.params.W2B);
-    const W_refDim = (W2mA + W2mB_temp) / 2;
-    const R_midA = RinA + W_refDim / 2;
-    const centerXA = -R_midA * Math.cos(thetaA / 2);
-    const centerZA = R_midA * Math.sin(thetaA / 2);
-    const offsetA = this.offsetA || 0;
+    // GERÇEK köşelerden pozisyonları al (X ve Z kaydırmaları uygulanmış)
+    const firstRingA = this.elbow1Rings[0]; // Başlangıç
+    const lastRingA = this.elbow1Rings[this.elbow1Rings.length - 1]; // Bitiş
 
-    const R_center0A = RinA + W2mA / 2;
-    const p0A = new THREE.Vector3(-R_center0A - centerXA, 0, -centerZA + offsetA);
-    const R_center1A = RinA + W1mA / 2;
-    const p1A = new THREE.Vector3(-R_center1A * Math.cos(thetaA) - centerXA, 0, R_center1A * Math.sin(thetaA) - centerZA + offsetA);
+    // Başlangıç ve bitiş merkezlerini hesapla
+    const p0A = firstRingA.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(firstRingA.length);
+    const p1A = lastRingA.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(lastRingA.length);
 
+    console.log('\n========== ÖLÇÜ ÇİZGİLERİ DEBUG (Branch A) ==========');
+    console.log('📍 GERÇEK GEOMETRİ POZİSYONLARI:');
+    console.log('  p0A (başlangıç merkezi):', 'X=' + p0A.x.toFixed(4), 'Y=' + p0A.y.toFixed(4), 'Z=' + p0A.z.toFixed(4));
+    console.log('  p1A (bitiş merkezi):', 'X=' + p1A.x.toFixed(4), 'Y=' + p1A.y.toFixed(4), 'Z=' + p1A.z.toFixed(4));
+    console.log('  firstRingA[0]:', 'X=' + firstRingA[0].x.toFixed(4), 'Z=' + firstRingA[0].z.toFixed(4));
+    console.log('  lastRingA[0]:', 'X=' + lastRingA[0].x.toFixed(4), 'Z=' + lastRingA[0].z.toFixed(4));
+
+    // Tangent ve normal vektörlerini gerçek köşelerden hesapla
     const t0A = new THREE.Vector3(0, 0, 1);
     const b0A = new THREE.Vector3(0, 1, 0);
     const n0A = new THREE.Vector3(1, 0, 0);
-    const t1A = new THREE.Vector3(R_center1A * Math.sin(thetaA), 0, R_center1A * Math.cos(thetaA)).normalize();
+
+    // Bitiş frame için tangent hesapla (son iki ring arasındaki yön)
+    const secondLastRingA = this.elbow1Rings[this.elbow1Rings.length - 2];
+    const secondLastCenterA = secondLastRingA.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(secondLastRingA.length);
+    const t1A = new THREE.Vector3().subVectors(p1A, secondLastCenterA).normalize();
     const b1A = new THREE.Vector3(0, 1, 0);
     const n1A = new THREE.Vector3().crossVectors(b1A, t1A).normalize();
+
 
     // Branch A başlangıç ölçüleri
     const p0A_LB = p0A.clone().add(n0A.clone().multiplyScalar(-W2mA / 2)).add(b0A.clone().multiplyScalar(-H2mA / 2));
@@ -566,16 +576,25 @@ export class YBranch2 extends BasePart {
     this.createDimensionLine(p0A_LB, p0A_RB, b0A.clone().negate(), `W2A = ${BasePart.formatDimension(this.params.W2A)} cm`, this.params.colorW2, 'W2A');
     this.createDimensionLine(p0A_LB, p0A_LT, n0A.clone().negate(), `H2A = ${BasePart.formatDimension(this.params.H2A)} cm`, this.params.colorH2, 'H2A');
 
-    // Branch A bitiş ölçüleri
-    const p1A_LB = p1A.clone().add(n1A.clone().multiplyScalar(-W1mA / 2)).add(b1A.clone().multiplyScalar(-H1mA / 2));
-    const p1A_RB = p1A.clone().add(n1A.clone().multiplyScalar(W1mA / 2)).add(b1A.clone().multiplyScalar(-H1mA / 2));
-    const p1A_LT = p1A.clone().add(n1A.clone().multiplyScalar(-W1mA / 2)).add(b1A.clone().multiplyScalar(H1mA / 2));
+    // Branch A bitiş ölçüleri - GERÇEK köşelerden al
+    const p1A_LB = lastRingA[0]; // Sol alt köşe
+    const p1A_RB = lastRingA[1]; // Sağ alt köşe
+    const p1A_LT = lastRingA[3]; // Sol üst köşe
     this.createDimensionLine(p1A_LB, p1A_RB, b1A.clone().negate(), `W1A = ${BasePart.formatDimension(this.params.W1A)} cm`, this.params.colorW1, 'W1A');
     this.createDimensionLine(p1A_LB, p1A_LT, n1A.clone().negate(), `H1A = ${BasePart.formatDimension(this.params.H1A)} cm`, this.params.colorH1, 'H1A');
 
-    // Branch A R ve A
-    const innerArcCenterA = new THREE.Vector3(-centerXA, 0, -centerZA + offsetA);
-    const innerArcPointA = new THREE.Vector3(-RinA - centerXA, 0, -centerZA + offsetA);
+    // Branch A R çizgisi - GERÇEK geometriden hesapla
+    // İlk ring'in merkezi (başlangıç noktası)
+    const startCenterA = firstRingA.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(firstRingA.length);
+
+    // İlk ring'in iç kenarı (en sol X koordinatı - sol alt ve sol üst köşelerin ortası)
+    const startLeftEdgeA = Math.min(...firstRingA.map(v => v.x));
+    const innerPointsA = firstRingA.filter(v => Math.abs(v.x - startLeftEdgeA) < 0.001);
+    const innerArcPointA = innerPointsA.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(innerPointsA.length);
+
+    // Dirsek yayının merkezi: iç yarıçap üzerindeki noktadan RinA kadar içeride
+    const dirToInnerA = new THREE.Vector3().subVectors(innerArcPointA, startCenterA).normalize();
+    const innerArcCenterA = innerArcPointA.clone().sub(dirToInnerA.clone().multiplyScalar(RinA));
     const headLen = BasePart.cm(this.params.arrowHeadCm);
     const radius = BasePart.cm(this.params.arrowRadiusCm);
     const dirRA = new THREE.Vector3().subVectors(innerArcPointA, innerArcCenterA).normalize();
@@ -599,13 +618,31 @@ export class YBranch2 extends BasePart {
     this.scene.addLabel(`R(iç)A = ${BasePart.formatDimension(this.params.R_inA)} cm`,
       startRA.clone().add(innerArcPointA).multiplyScalar(0.5).add(new THREE.Vector3(0, labelOffsetR, 0)), this.params.colorR, paramDataRA);
 
+    // Açı yayı - GERÇEK geometriden hesapla
     const arcPtsA = [];
     const segs = 48;
-    // Açı yayı için merkez yarıçap (W_refDim kullan)
-    const R_mid_arcA = RinA + W_refDim / 2;
+
+    // Açı yayı: innerArcCenterA merkezli, başlangıç ve bitiş arasında
+    const vecStartA = new THREE.Vector3().subVectors(startCenterA, innerArcCenterA);
+    const vecEndA = new THREE.Vector3().subVectors(p1A, innerArcCenterA);
+    const radiusArcA = vecStartA.length();
+
+    // Başlangıç ve bitiş açıları (atan2 kullanarak)
+    let angleStartA = Math.atan2(vecStartA.z, vecStartA.x);
+    let angleEndA = Math.atan2(vecEndA.z, vecEndA.x);
+
+    // Açı farkını doğru yönde hesapla
+    let angleDiffA = angleEndA - angleStartA;
+    // Açı farkı -180 ile +180 arası olmalı
+    if (angleDiffA > Math.PI) angleDiffA -= 2 * Math.PI;
+    if (angleDiffA < -Math.PI) angleDiffA += 2 * Math.PI;
+
     for (let i = 0; i <= segs; i++) {
-      const a = i / segs * thetaA;
-      arcPtsA.push(new THREE.Vector3(-R_mid_arcA * Math.cos(a) - centerXA, 0, R_mid_arcA * Math.sin(a) - centerZA + offsetA));
+      const t = i / segs;
+      const angle = angleStartA + angleDiffA * t;
+      const x = innerArcCenterA.x + radiusArcA * Math.cos(angle);
+      const z = innerArcCenterA.z + radiusArcA * Math.sin(angle);
+      arcPtsA.push(new THREE.Vector3(x, 0, z));
     }
     const arcLineA = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints(arcPtsA),
@@ -621,52 +658,53 @@ export class YBranch2 extends BasePart {
     this.scene.dimensionGroup.add(arcLineA);
 
     const paramDataA1 = allParams.find(p => p.key === 'A1');
-    const midAngleA = thetaA / 2;
-    const labelOffsetA = -0.1;
-    this.scene.addLabel(`A1 = ${this.params.A1}°`,
-      new THREE.Vector3(-R_mid_arcA * Math.cos(midAngleA) * 0.7 - centerXA, labelOffsetA, R_mid_arcA * Math.sin(midAngleA) * 0.7 - centerZA + offsetA), this.params.colorA, paramDataA1);
+    const labelOffsetA = 0.15;
+    const midAngleA = angleStartA + angleDiffA / 2;
+    const labelPosA = new THREE.Vector3(
+      innerArcCenterA.x + radiusArcA * 0.7 * Math.cos(midAngleA),
+      labelOffsetA,
+      innerArcCenterA.z + radiusArcA * 0.7 * Math.sin(midAngleA)
+    );
+    this.scene.addLabel(`A1 = ${this.params.A1}°`, labelPosA, this.params.colorA, paramDataA1);
 
     // ========== BRANCH B DIMENSIONS ==========
-    const W1mB = BasePart.cm(this.params.W1B);
-    const H1mB = H1mA; // shared height
     const W2mB = BasePart.cm(this.params.W2B);
     const H2mB = H2mA; // shared height
     const RinB = BasePart.cm(this.params.R_inB);
-    const thetaB = THREE.MathUtils.degToRad(this.params.A2);
 
-    // Ortak referans genişlik kullan (buildGeometry ile aynı - W_refDim zaten tanımlı)
-    const R_midB = RinB + W_refDim / 2;
-    const centerXB = -R_midB * Math.cos(thetaB / 2);
-    const centerZB0 = -R_midB * Math.sin(thetaB / 2);
-    const offsetB = this.offsetB || 0;
-    const centerZB = centerZB0 + offsetB;
+    // GERÇEK köşelerden pozisyonları al
+    const firstRingB = this.elbow2Rings[0];
+    const lastRingB = this.elbow2Rings[this.elbow2Rings.length - 1];
 
-    const R_center0B = RinB + W2mB / 2;
-    const p0B = new THREE.Vector3(-R_center0B - centerXB, 0, centerZB);
-    const R_center1B = RinB + W1mB / 2;
-    const p1B = new THREE.Vector3(-R_center1B * Math.cos(thetaB) - centerXB, 0, -R_center1B * Math.sin(thetaB) + centerZB);
+    const p0B = firstRingB.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(firstRingB.length);
+    const p1B = lastRingB.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(lastRingB.length);
 
     const t0B = new THREE.Vector3(0, 0, -1);
     const b0B = new THREE.Vector3(0, 1, 0);
     const n0B = new THREE.Vector3(1, 0, 0);
-    const t1B = new THREE.Vector3(R_center1B * Math.sin(thetaB), 0, -R_center1B * Math.cos(thetaB)).normalize();
     const b1B = new THREE.Vector3(0, 1, 0);
-    const n1B = new THREE.Vector3().crossVectors(b1B, t1B).normalize();
 
     // Branch B başlangıç ölçüleri
     const p0B_LB = p0B.clone().add(n0B.clone().multiplyScalar(-W2mB / 2)).add(b0B.clone().multiplyScalar(-H2mB / 2));
     const p0B_RB = p0B.clone().add(n0B.clone().multiplyScalar(W2mB / 2)).add(b0B.clone().multiplyScalar(-H2mB / 2));
     const p0B_LT = p0B.clone().add(n0B.clone().multiplyScalar(-W2mB / 2)).add(b0B.clone().multiplyScalar(H2mB / 2));
     this.createDimensionLine(p0B_LB, p0B_RB, b0B.clone().negate(), `W2B = ${BasePart.formatDimension(this.params.W2B)} cm`, this.params.colorW2, 'W2B');
-    // Branch B bitiş ölçüleri (ortak yükseklik, sadece genişlik gösterimi)
-    const p1B_LB = p1B.clone().add(n1B.clone().multiplyScalar(-W1mB / 2)).add(b1B.clone().multiplyScalar(-H1mB / 2));
-    const p1B_RB = p1B.clone().add(n1B.clone().multiplyScalar(W1mB / 2)).add(b1B.clone().multiplyScalar(-H1mB / 2));
-    const p1B_LT = p1B.clone().add(n1B.clone().multiplyScalar(-W1mB / 2)).add(b1B.clone().multiplyScalar(H1mB / 2));
+    // Branch B bitiş ölçüleri - GERÇEK köşelerden al
+    const p1B_LB = lastRingB[0]; // Sol alt köşe
+    const p1B_RB = lastRingB[1]; // Sağ alt köşe
+    const p1B_LT = lastRingB[3]; // Sol üst köşe
     this.createDimensionLine(p1B_LB, p1B_RB, b1B.clone().negate(), `W1B = ${BasePart.formatDimension(this.params.W1B)} cm`, this.params.colorW1, 'W1B');
 
-    // Branch B R ve A
-    const innerArcCenterB = new THREE.Vector3(-centerXB, 0, centerZB);
-    const innerArcPointB = new THREE.Vector3(-RinB - centerXB, 0, centerZB);
+    // Branch B R çizgisi - GERÇEK geometriden hesapla
+    const startCenterB = firstRingB.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(firstRingB.length);
+
+    // İlk ring'in iç kenarı (en sol X koordinatı)
+    const startLeftEdgeB = Math.min(...firstRingB.map(v => v.x));
+    const innerPointsB = firstRingB.filter(v => Math.abs(v.x - startLeftEdgeB) < 0.001);
+    const innerArcPointB = innerPointsB.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(innerPointsB.length);
+
+    const dirToInnerB = new THREE.Vector3().subVectors(innerArcPointB, startCenterB).normalize();
+    const innerArcCenterB = innerArcPointB.clone().sub(dirToInnerB.clone().multiplyScalar(RinB));
     const dirRB = new THREE.Vector3().subVectors(innerArcPointB, innerArcCenterB).normalize();
     const startRB = innerArcCenterB.clone().add(dirRB.clone().multiplyScalar(BasePart.cm(this.params.dimOffsetCm)));
 
@@ -687,12 +725,26 @@ export class YBranch2 extends BasePart {
     this.scene.addLabel(`R(iç)B = ${BasePart.formatDimension(this.params.R_inB)} cm`,
       startRB.clone().add(innerArcPointB).multiplyScalar(0.5).add(new THREE.Vector3(0, labelOffsetR, 0)), this.params.colorR, paramDataRB);
 
+    // Açı yayı - GERÇEK geometriden hesapla
     const arcPtsB = [];
-    // Açı yayı için merkez yarıçap (W_refDim kullan)
-    const R_mid_arcB = RinB + W_refDim / 2;
+    const vecStartB = new THREE.Vector3().subVectors(startCenterB, innerArcCenterB);
+    const vecEndB = new THREE.Vector3().subVectors(p1B, innerArcCenterB);
+    const radiusArcB = vecStartB.length();
+
+    let angleStartB = Math.atan2(vecStartB.z, vecStartB.x);
+    let angleEndB = Math.atan2(vecEndB.z, vecEndB.x);
+
+    // Açı farkını doğru yönde hesapla
+    let angleDiffB = angleEndB - angleStartB;
+    if (angleDiffB > Math.PI) angleDiffB -= 2 * Math.PI;
+    if (angleDiffB < -Math.PI) angleDiffB += 2 * Math.PI;
+
     for (let i = 0; i <= segs; i++) {
-      const a = i / segs * thetaB;
-      arcPtsB.push(new THREE.Vector3(-R_mid_arcB * Math.cos(a) - centerXB, 0, -R_mid_arcB * Math.sin(a) + centerZB));
+      const t = i / segs;
+      const angle = angleStartB + angleDiffB * t;
+      const x = innerArcCenterB.x + radiusArcB * Math.cos(angle);
+      const z = innerArcCenterB.z + radiusArcB * Math.sin(angle);
+      arcPtsB.push(new THREE.Vector3(x, 0, z));
     }
     const arcLineB = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints(arcPtsB),
@@ -708,9 +760,13 @@ export class YBranch2 extends BasePart {
     this.scene.dimensionGroup.add(arcLineB);
 
     const paramDataA2 = allParams.find(p => p.key === 'A2');
-    const midAngleB = thetaB / 2;
-    this.scene.addLabel(`A2 = ${this.params.A2}°`,
-      new THREE.Vector3(-R_mid_arcB * Math.cos(midAngleB) * 0.7 - centerXB, labelOffsetA, -R_mid_arcB * Math.sin(midAngleB) * 0.7 + centerZB), this.params.colorA, paramDataA2);
+    const midAngleB = angleStartB + angleDiffB / 2;
+    const labelPosB = new THREE.Vector3(
+      innerArcCenterB.x + radiusArcB * 0.7 * Math.cos(midAngleB),
+      labelOffsetA,
+      innerArcCenterB.z + radiusArcB * 0.7 * Math.sin(midAngleB)
+    );
+    this.scene.addLabel(`A2 = ${this.params.A2}°`, labelPosB, this.params.colorA, paramDataA2);
   }
 
   calculateArea() {
