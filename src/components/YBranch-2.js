@@ -113,14 +113,16 @@ export class YBranch2 extends BasePart {
     const t = BasePart.cm(this.params.t);
     const steps = Math.max(16, Math.floor(this.params.steps));
 
-    const buildElbow = (direction, W1, H1, W2, H2, Rin, theta, centerSign) => {
-      const W_avg = (W1 + W2) / 2;
-      const R_mid = Rin + W_avg / 2;
+    const buildElbow = (direction, W1, H1, W2, H2, Rin, theta, centerSign, W_ref) => {
+      // W_ref: referans genişlik (merkez hesabı için sabit)
+      const R_mid = Rin + W_ref / 2;
       const centerX = -R_mid * Math.cos(theta / 2);
       const centerZ = centerSign * R_mid * Math.sin(theta / 2);
 
       const ringsOuter = [];
       const ringsInner = [];
+      let startFrame = null;
+      let endFrame = null;
       for (let i = 0; i <= steps; i++) {
         const u = i / steps;
         const angle = u * theta;
@@ -150,27 +152,56 @@ export class YBranch2 extends BasePart {
           pathPos.clone().add(normal.clone().multiplyScalar(-Wi / 2)).add(binormal.clone().multiplyScalar(Hi / 2))
         ];
 
+        if (i === 0) {
+          startFrame = {
+            pos: pathPos.clone(),
+            tangent: tangent.clone(),
+            normal: normal.clone(),
+            binormal: binormal.clone(),
+            width: W,
+            height: H
+          };
+        }
+        if (i === steps) {
+          endFrame = {
+            pos: pathPos.clone(),
+            tangent: tangent.clone(),
+            normal: normal.clone(),
+            binormal: binormal.clone(),
+            width: W,
+            height: H
+          };
+        }
+
         ringsOuter.push(outerRing);
         ringsInner.push(innerRing);
       }
 
-      return { ringsOuter, ringsInner, centerX, centerZ };
+      return { ringsOuter, ringsInner, centerX, centerZ, startFrame, endFrame };
     };
 
-    const elbowA = buildElbow(1, W1a, H1a, W2a, H2a, RinA, thetaA, 1);
-    const elbowB = buildElbow(-1, W1b, H1b, W2b, H2b, RinB, thetaB, -1);
+    // Ortak referans genişlik: Her iki dalın başlangıç genişliğinin ortalaması
+    const W_ref = (W2a + W2b) / 2;
 
-    // End plane Z alignment: set end centers to -W1A/2 and +W1B/2
-    const avgEndZ = (ring) => {
-      const r = ring[ring.length - 1];
-      return (r[0].z + r[1].z + r[2].z + r[3].z) / 4;
-    };
-    const endZA = avgEndZ(elbowA.ringsOuter);
-    const endZB = avgEndZ(elbowB.ringsOuter);
-    const targetZA = -W1a / 2;
-    const targetZB = W1b / 2;
-    const offsetA = targetZA - endZA;
-    const offsetB = targetZB - endZB;
+    const elbowA = buildElbow(1, W1a, H1a, W2a, H2a, RinA, thetaA, 1, W_ref);
+    const elbowB = buildElbow(-1, W1b, H1b, W2b, H2b, RinB, thetaB, -1, W_ref);
+
+    // End plane Z alignment: A dalının SAĞ KENARI ve B dalının SOL KENARI Z=0'da buluşmalı
+    const lastRingA = elbowA.ringsOuter[elbowA.ringsOuter.length - 1];
+    const lastRingB = elbowB.ringsOuter[elbowB.ringsOuter.length - 1];
+
+    // A dalı için MAX Z (en sağdaki kenar) Z=0 olmalı
+    const maxZA = Math.max(...lastRingA.map(v => v.z));
+    // B dalı için MIN Z (en soldaki kenar) Z=0 olmalı
+    const minZB = Math.min(...lastRingB.map(v => v.z));
+
+    const offsetA = 0 - maxZA;  // A'nın sağ kenarını Z=0'a getir
+    const offsetB = 0 - minZB;  // B'nin sol kenarını Z=0'a getir
+
+    console.log('=== Z-EKSENİ HİZALAMA DEBUG ===');
+    console.log('A dalı: maxZ=', maxZA, '→ Z=0 için offset:', offsetA);
+    console.log('B dalı: minZ=', minZB, '→ Z=0 için offset:', offsetB);
+    console.log('W1a:', W1a, 'W1b:', W1b);
 
     const shiftRings = (rings, dz) => {
       rings.forEach(r => r.forEach(v => { v.z += dz; }));
@@ -179,6 +210,56 @@ export class YBranch2 extends BasePart {
     shiftRings(elbowA.ringsInner, offsetA);
     shiftRings(elbowB.ringsOuter, offsetB);
     shiftRings(elbowB.ringsInner, offsetB);
+    if (elbowA.startFrame && elbowA.endFrame) {
+      elbowA.startFrame.pos.z += offsetA;
+      elbowA.endFrame.pos.z += offsetA;
+    }
+    if (elbowB.startFrame && elbowB.endFrame) {
+      elbowB.startFrame.pos.z += offsetB;
+      elbowB.endFrame.pos.z += offsetB;
+    }
+
+    // --- X-EKSENİ HİZALAMA BAŞLANGICI ---
+    // SideBranch-2 mantığı: Her iki dalın bitiş merkez noktalarından hesapla
+    // A dalının bitiş merkezi (endFrame.pos kullan)
+    const endCenterA = elbowA.endFrame.pos.clone();
+    // B dalının bitiş merkezi (endFrame.pos kullan)
+    const endCenterB = elbowB.endFrame.pos.clone();
+
+    // Birleşik flanşın merkezi: A'nın sağ kenarı (-W1a/2) ile B'nin sol kenarı (+W1b/2) arasındaki orta nokta
+    // A'nın sağ kenarı X koordinatı
+    const endCenterA_rightEdgeX = endCenterA.x + W1a / 2;
+    // B'nin sol kenarı X koordinatı
+    const endCenterB_leftEdgeX = endCenterB.x - W1b / 2;
+
+    // Birleşik flanşın X merkezi
+    const combinedFlangeX = (endCenterA_rightEdgeX + endCenterB_leftEdgeX) / 2;
+
+    // X=0 olması için kaydırma miktarı
+    const dx_offset = -combinedFlangeX;
+
+    // Diğer fonksiyonların kullanabilmesi için kaydırma miktarını sakla
+    this.dx_offset = dx_offset;
+
+    const shiftRingsX = (rings, dx) => {
+        rings.forEach(r => r.forEach(v => { v.x += dx; }));
+    };
+
+    if (Math.abs(dx_offset) > 0.0001) { // Sadece anlamlı bir kaydırma varsa uygula
+        shiftRingsX(elbowA.ringsOuter, dx_offset);
+        shiftRingsX(elbowA.ringsInner, dx_offset);
+        shiftRingsX(elbowB.ringsOuter, dx_offset);
+        shiftRingsX(elbowB.ringsInner, dx_offset);
+    }
+    const shiftFrameX = (frame) => {
+        if (!frame) return;
+        frame.pos.x += dx_offset;
+    };
+    shiftFrameX(elbowA.startFrame);
+    shiftFrameX(elbowA.endFrame);
+    shiftFrameX(elbowB.startFrame);
+    shiftFrameX(elbowB.endFrame);
+    // --- X-EKSENİ HİZALAMA SONU ---
 
     // Build combined geometry
     const vertices = [];
@@ -260,6 +341,8 @@ export class YBranch2 extends BasePart {
     this.elbow2Rings = elbowB.ringsOuter;
     this.offsetA = offsetA;
     this.offsetB = offsetB;
+    this.elbowAFrames = { start: elbowA.startFrame, end: elbowA.endFrame };
+    this.elbowBFrames = { start: elbowB.startFrame, end: elbowB.endFrame };
   }
 
   addLocalPlane(position, normal, binormal, tangent, labelPrefix, color = '#00bcd4') {
@@ -296,94 +379,126 @@ export class YBranch2 extends BasePart {
     const H1a = BasePart.cm(this.params.H1A);
     const W2a = BasePart.cm(this.params.W2A);
     const H2a = BasePart.cm(this.params.H2A);
-    const RinA = BasePart.cm(this.params.R_inA);
-    const thetaA = THREE.MathUtils.degToRad(this.params.A1);
-
     const W1b = BasePart.cm(this.params.W1B);
-    const H1b = H1a; // shared height
     const W2b = BasePart.cm(this.params.W2B);
-    const H2b = H2a; // shared height
-    const RinB = BasePart.cm(this.params.R_inB);
-    const thetaB = THREE.MathUtils.degToRad(this.params.A2);
-
-    const offsetA = this.offsetA || 0;
-    const offsetB = this.offsetB || 0;
     const lip = BasePart.cm(this.params.flangeLip);
     const fth = BasePart.cm(this.params.flangeThick);
 
-    // Branch A - pozitif Z yönünde
-    const W_avgA = (W1a + W2a) / 2;
-    const R_midA = RinA + W_avgA / 2;
-    const centerXA = -R_midA * Math.cos(thetaA / 2);
-    const centerZA = R_midA * Math.sin(thetaA / 2);
+    const framesA = this.elbowAFrames;
+    const framesB = this.elbowBFrames;
+    if (!framesA || !framesB || !framesA.start || !framesA.end || !framesB.start || !framesB.end) return;
 
-    // Branch A başlangıç flanşı (u=0) - geometrinin ilk halkası ile aynı pozisyonda
-    // Geometride: z = direction * (R_center * sin(0) - centerZ) = 1 * (0 - centerZA) + offsetA
-    const R_center0A = RinA + W2a / 2;
-    const x0A = -R_center0A - centerXA;
-    const z0A = -centerZA + offsetA;
-    const p0A = new THREE.Vector3(x0A, 0, z0A);
-    const t0A = new THREE.Vector3(0, 0, 1);
-    const n0A = new THREE.Vector3(1, 0, 0);
-    const b0A = new THREE.Vector3(0, 1, 0);
-    const F0A = this.createFlangeRect(W2a, H2a, lip, fth);
-    const M0A = new THREE.Matrix4().makeBasis(n0A, b0A, t0A);
-    F0A.quaternion.setFromRotationMatrix(M0A);
-    F0A.position.copy(p0A.clone().add(t0A.clone().multiplyScalar(-fth * 0.5)));
-    this.scene.flangeGroup.add(F0A);
+    const placeFlange = (frame, width, height, flipTangent = false) => {
+      const flange = this.createFlangeRect(width, height, lip, fth);
+      const tAxis = flipTangent ? frame.tangent.clone().negate() : frame.tangent.clone();
+      const basis = new THREE.Matrix4().makeBasis(frame.normal.clone(), frame.binormal.clone(), tAxis.clone());
+      flange.quaternion.setFromRotationMatrix(basis);
+      const pos = frame.pos.clone().add(tAxis.multiplyScalar(flipTangent ? -fth * 0.5 : fth * 0.5));
+      flange.position.copy(pos);
+      this.scene.flangeGroup.add(flange);
+    };
 
-    // Branch A bitiş flanşı (u=1) - offset uygulanmış pozisyonda
-    const R_center1A = RinA + W1a / 2;
-    const p1A = new THREE.Vector3(-R_center1A * Math.cos(thetaA) - centerXA, 0, R_center1A * Math.sin(thetaA) - centerZA + offsetA);
-    const t1A = new THREE.Vector3(R_center1A * Math.sin(thetaA), 0, R_center1A * Math.cos(thetaA)).normalize();
-    const b1A = new THREE.Vector3(0, 1, 0);
-    const n1A = new THREE.Vector3().crossVectors(b1A, t1A).normalize();
-    // Branch B - negatif Z yönünde
-    const W_avgB = (W1b + W2b) / 2;
-    const R_midB = RinB + W_avgB / 2;
-    const centerXB = -R_midB * Math.cos(thetaB / 2);
-    const centerZB = -R_midB * Math.sin(thetaB / 2);
+    // Başlangıç flanşları: dirsekten dışarı bakan ters tangent ile hizala
+    placeFlange(framesA.start, W2a, H2a, true);
+    placeFlange(framesB.start, W2b, H2a, true);
 
-    // Branch B başlangıç flanşı (u=0) - geometrinin ilk halkası ile aynı pozisyonda
-    // Geometride: z = direction * (R_center * sin(0) - centerZ) = -1 * (0 - centerZB) + offsetB
-    // centerZB zaten negatif olduğu için: z = -1 * (0 - (-R_midB*sin)) + offsetB = R_midB*sin + offsetB
-    // Ama buildElbow'da centerZB = -R_midB*sin, yani z = -1*(0 - centerZB) = -centerZB + offsetB
-    const R_center0B = RinB + W2b / 2;
-    const x0B = -R_center0B - centerXB;
-    const z0B = centerZB + offsetB;
-    const p0B = new THREE.Vector3(x0B, 0, z0B);
-    const t0B = new THREE.Vector3(0, 0, -1);
-    const n0B = new THREE.Vector3(1, 0, 0);
-    const b0B = new THREE.Vector3(0, 1, 0);
-    const F0B = this.createFlangeRect(W2b, H2b, lip, fth);
-    const M0B = new THREE.Matrix4().makeBasis(n0B, b0B, t0B);
-    F0B.quaternion.setFromRotationMatrix(M0B);
-    F0B.position.copy(p0B.clone().add(t0B.clone().multiplyScalar(-fth * 0.5)));
-    this.scene.flangeGroup.add(F0B);
+    // A dalının bitiş yüzeyi köşeleri (son ring)
+    const lastRingA = this.elbow1Rings[this.elbow1Rings.length - 1];
+    // B dalının bitiş yüzeyi köşeleri (son ring)
+    const lastRingB = this.elbow2Rings[this.elbow2Rings.length - 1];
 
-    // Branch B bitiş flanşı (u=1) - offset uygulanmış pozisyonda, negatif Z yönünde
-    // direction=-1 için tangent geometride: (R*sin(theta), 0, -1*R*cos(theta))
-    const R_center1B = RinB + W1b / 2;
-    const p1B = new THREE.Vector3(-R_center1B * Math.cos(thetaB) - centerXB, 0, -R_center1B * Math.sin(thetaB) + centerZB + offsetB);
-    const t1B = new THREE.Vector3(R_center1B * Math.sin(thetaB), 0, -1 * R_center1B * Math.cos(thetaB)).normalize();
-    const b1B = new THREE.Vector3(0, 1, 0);
-    const n1B = new THREE.Vector3().crossVectors(b1B, t1B).normalize();
+    // A dalının sağ kenarı (maxZ olan köşeler) - SABİT REFERANS
+    const maxZA = Math.max(...lastRingA.map(v => v.z));
+    const rightEdgeCornersA = lastRingA.filter(v => Math.abs(v.z - maxZA) < 0.001);
+    const rightEdgeCenterA = rightEdgeCornersA.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(rightEdgeCornersA.length);
 
-    // Tek birleşik flanş: (W1A + W1B) x H1A, A ve B uçlarının ortasında
-    const p1Combined = p1A.clone().add(p1B).multiplyScalar(0.5);
-    const tCombinedRaw = t1A.clone().add(t1B);
-    const tCombined = tCombinedRaw.lengthSq() > 0 ? tCombinedRaw.normalize() : new THREE.Vector3(1, 0, 0);
+    // B dalının sol kenarı (minZ olan köşeler)
+    const minZB = Math.min(...lastRingB.map(v => v.z));
+    const leftEdgeCornersB = lastRingB.filter(v => Math.abs(v.z - minZB) < 0.001);
+    const leftEdgeCenterB = leftEdgeCornersB.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(leftEdgeCornersB.length);
+
+    console.log('\n========== FLANŞ POZİSYON HESAPLAMA ==========');
+    console.log('📐 GEOMETRİ ÖLÇÜLER:');
+    console.log('  W1A (A genişlik):', (W1a * 100).toFixed(1), 'cm');
+    console.log('  W1B (B genişlik):', (W1b * 100).toFixed(1), 'cm');
+    console.log('  H1A (yükseklik):', (H1a * 100).toFixed(1), 'cm');
+    console.log('  Toplam genişlik:', ((W1a + W1b) * 100).toFixed(1), 'cm');
+
+    console.log('\n🎯 KENAR MERKEZLERİ:');
+    console.log('  A sağ kenar (SABİT):',
+      'X=' + rightEdgeCenterA.x.toFixed(4),
+      'Y=' + rightEdgeCenterA.y.toFixed(4),
+      'Z=' + rightEdgeCenterA.z.toFixed(4));
+    console.log('  B sol kenar:',
+      'X=' + leftEdgeCenterB.x.toFixed(4),
+      'Y=' + leftEdgeCenterB.y.toFixed(4),
+      'Z=' + leftEdgeCenterB.z.toFixed(4));
+
+    // Geometrinin gerçek Z sınırlarını bul
+    const geomMinZ = Math.min(...lastRingA.map(v => v.z), ...lastRingB.map(v => v.z));
+    const geomMaxZ = Math.max(...lastRingA.map(v => v.z), ...lastRingB.map(v => v.z));
+    const geomCenterZ = (geomMinZ + geomMaxZ) / 2;
+
+    // Flanş merkezi hesabı - GEOMETRİNİN ORTASINDAN
+    const totalWidth = W1a + W1b;
+    const centerCalc = rightEdgeCenterA.clone();
+    centerCalc.z = geomCenterZ; // Z'yi geometrinin merkezine ayarla
+
+    console.log('\n📍 FLANŞ MERKEZİ HESABI (DÜZELTİLMİŞ):');
+    console.log('  Geometri Min Z:', geomMinZ.toFixed(4));
+    console.log('  Geometri Max Z:', geomMaxZ.toFixed(4));
+    console.log('  Geometri Merkez Z:', geomCenterZ.toFixed(4), '← FLANŞ BURAYA ORTALANIYOR');
+    console.log('  Flanş merkezi:',
+      'X=' + centerCalc.x.toFixed(4),
+      'Y=' + centerCalc.y.toFixed(4),
+      'Z=' + centerCalc.z.toFixed(4));
+    console.log('\n✅ GEOMETRİ Z SINIRLARI:');
+    console.log('  Min Z:', geomMinZ.toFixed(4));
+    console.log('  Max Z:', geomMaxZ.toFixed(4));
+    console.log('  Genişlik:', (geomMaxZ - geomMinZ).toFixed(4));
+
+    // Flanş sınırları
+    const flangeMinZ = centerCalc.z - totalWidth / 2;
+    const flangeMaxZ = centerCalc.z + totalWidth / 2;
+    console.log('\n📦 FLANŞ Z SINIRLARI:');
+    console.log('  Min Z:', flangeMinZ.toFixed(4));
+    console.log('  Max Z:', flangeMaxZ.toFixed(4));
+    console.log('  Genişlik:', totalWidth.toFixed(4));
+
+    console.log('\n⚠️ HATA KONTROLÜ:');
+    const errorMinZ = Math.abs(geomMinZ - flangeMinZ);
+    const errorMaxZ = Math.abs(geomMaxZ - flangeMaxZ);
+    console.log('  Min Z farkı:', errorMinZ.toFixed(6), errorMinZ > 0.001 ? '❌ HATALI!' : '✅');
+    console.log('  Max Z farkı:', errorMaxZ.toFixed(6), errorMaxZ > 0.001 ? '❌ HATALI!' : '✅');
+
+    // Normal ve Tangent
+    const nAxisRaw = leftEdgeCenterB.clone().sub(rightEdgeCenterA);
+    const nAxis = nAxisRaw.lengthSq() > 1e-8 ? nAxisRaw.normalize() : new THREE.Vector3(0, 0, 1);
     const bCombined = new THREE.Vector3(0, 1, 0);
-    const nCombinedRaw = new THREE.Vector3().crossVectors(bCombined, tCombined);
-    const nCombined = nCombinedRaw.lengthSq() > 0 ? nCombinedRaw.normalize() : new THREE.Vector3(0, 0, 1);
+    const tCombined = new THREE.Vector3().crossVectors(nAxis, bCombined);
+    if (tCombined.lengthSq() < 1e-8) {
+      tCombined.set(1, 0, 0);
+    } else {
+      tCombined.normalize();
+    }
 
-    const W_combined = W1a + W1b;
-    const H_combined = H1a;
-    const F_combined = this.createFlangeRect(W_combined, H_combined, lip, fth);
-    const M_combined = new THREE.Matrix4().makeBasis(nCombined, bCombined, tCombined);
-    F_combined.quaternion.setFromRotationMatrix(M_combined);
-    F_combined.position.copy(p1Combined.clone().add(tCombined.clone().multiplyScalar(fth * 0.5)));
-    this.scene.flangeGroup.add(F_combined);
+    console.log('\n🧭 FLANŞ YÖNLENDİRME:');
+    console.log('  Normal (genişlik):', 'X=' + nAxis.x.toFixed(2), 'Y=' + nAxis.y.toFixed(2), 'Z=' + nAxis.z.toFixed(2));
+    console.log('  Tangent (derinlik):', 'X=' + tCombined.x.toFixed(2), 'Y=' + tCombined.y.toFixed(2), 'Z=' + tCombined.z.toFixed(2));
+
+    const combinedFlange = this.createFlangeRect(W1a + W1b, H1a, lip, fth);
+    const M_combined = new THREE.Matrix4().makeBasis(nAxis, bCombined, tCombined);
+    combinedFlange.quaternion.setFromRotationMatrix(M_combined);
+
+    const tangentDirection = tCombined.x < 0 ? tCombined.clone().negate() : tCombined.clone();
+    const flangePos = centerCalc.clone().add(tangentDirection.multiplyScalar(fth * 0.5));
+    combinedFlange.position.copy(flangePos);
+
+    console.log('\n🎯 FLANŞ FİNAL POZİSYON:');
+    console.log('  X=' + flangePos.x.toFixed(4), 'Y=' + flangePos.y.toFixed(4), 'Z=' + flangePos.z.toFixed(4));
+    console.log('==========================================\n');
+
+    this.scene.flangeGroup.add(combinedFlange);
   }
 
   addEdges() {
@@ -424,8 +539,10 @@ export class YBranch2 extends BasePart {
     const RinA = BasePart.cm(this.params.R_inA);
     const thetaA = THREE.MathUtils.degToRad(this.params.A1);
 
-    const W_avgA = (W1mA + W2mA) / 2;
-    const R_midA = RinA + W_avgA / 2;
+    // Ortak referans genişlik kullan (buildGeometry ile aynı)
+    const W2mB_temp = BasePart.cm(this.params.W2B);
+    const W_refDim = (W2mA + W2mB_temp) / 2;
+    const R_midA = RinA + W_refDim / 2;
     const centerXA = -R_midA * Math.cos(thetaA / 2);
     const centerZA = R_midA * Math.sin(thetaA / 2);
     const offsetA = this.offsetA || 0;
@@ -484,7 +601,8 @@ export class YBranch2 extends BasePart {
 
     const arcPtsA = [];
     const segs = 48;
-    const R_mid_arcA = RinA + W_avgA / 2;
+    // Açı yayı için merkez yarıçap (W_refDim kullan)
+    const R_mid_arcA = RinA + W_refDim / 2;
     for (let i = 0; i <= segs; i++) {
       const a = i / segs * thetaA;
       arcPtsA.push(new THREE.Vector3(-R_mid_arcA * Math.cos(a) - centerXA, 0, R_mid_arcA * Math.sin(a) - centerZA + offsetA));
@@ -516,8 +634,8 @@ export class YBranch2 extends BasePart {
     const RinB = BasePart.cm(this.params.R_inB);
     const thetaB = THREE.MathUtils.degToRad(this.params.A2);
 
-    const W_avgB = (W1mB + W2mB) / 2;
-    const R_midB = RinB + W_avgB / 2;
+    // Ortak referans genişlik kullan (buildGeometry ile aynı - W_refDim zaten tanımlı)
+    const R_midB = RinB + W_refDim / 2;
     const centerXB = -R_midB * Math.cos(thetaB / 2);
     const centerZB0 = -R_midB * Math.sin(thetaB / 2);
     const offsetB = this.offsetB || 0;
@@ -570,7 +688,8 @@ export class YBranch2 extends BasePart {
       startRB.clone().add(innerArcPointB).multiplyScalar(0.5).add(new THREE.Vector3(0, labelOffsetR, 0)), this.params.colorR, paramDataRB);
 
     const arcPtsB = [];
-    const R_mid_arcB = RinB + W_avgB / 2;
+    // Açı yayı için merkez yarıçap (W_refDim kullan)
+    const R_mid_arcB = RinB + W_refDim / 2;
     for (let i = 0; i <= segs; i++) {
       const a = i / segs * thetaB;
       arcPtsB.push(new THREE.Vector3(-R_mid_arcB * Math.cos(a) - centerXB, 0, -R_mid_arcB * Math.sin(a) + centerZB));
