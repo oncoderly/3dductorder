@@ -404,14 +404,9 @@ export class Reduksiyon extends BasePart {
     const s2 = p2.clone().add(n.clone().multiplyScalar(gap));
     const e2 = p2.clone().add(n.clone().multiplyScalar(targetOff));
 
-    const mat = this.materials.createDimensionLineMaterial(color, this.params.dimAlwaysOnTop);
-
-    const L1 = new THREE.Line(new THREE.BufferGeometry().setFromPoints([s1, e1]), mat);
-    const L2 = new THREE.Line(new THREE.BufferGeometry().setFromPoints([s2, e2]), mat);
-    L1.renderOrder = L2.renderOrder = this.params.dimAlwaysOnTop ? 999 : 0;
-
-    // rotatedDimensionGroup'a ekle
-    this.rotatedDimensionGroup.add(L1, L2);
+    // rotatedDimensionGroup'a kalın çizgiler ekle
+    this.addDimensionSegment(s1, e1, color, this.rotatedDimensionGroup, this.params.dimAlwaysOnTop);
+    this.addDimensionSegment(s2, e2, color, this.rotatedDimensionGroup, this.params.dimAlwaysOnTop);
 
     const head = BasePart.cm(this.params.arrowHeadCm);
     const rad = BasePart.cm(this.params.arrowRadiusCm);
@@ -460,9 +455,8 @@ export class Reduksiyon extends BasePart {
   }
 
   createArrowForDimension(p1, p2, color, head, rad) {
-    const mat = this.materials.createDimensionLineMaterial(color, this.params.dimAlwaysOnTop);
-    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([p1, p2]), mat);
-    line.renderOrder = this.params.dimAlwaysOnTop ? 999 : 0;
+    // Kalın çizgi gövdesi rotatedDimensionGroup'a ekle
+    this.addDimensionSegment(p1, p2, color, this.rotatedDimensionGroup, this.params.dimAlwaysOnTop);
 
     const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
 

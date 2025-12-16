@@ -22,6 +22,7 @@ export class YBranch2 extends BasePart {
       A1: 90,
       W1B: 40,
       W2B: 30,
+      H2B: 20,
       R_inB: 20,
       A2: 90,
       t: 0.12,
@@ -55,9 +56,8 @@ export class YBranch2 extends BasePart {
           params: [
             { key: 'W1B', label: 'Son Genişlik B (W1B)', min: 10, max: 200, step: 1, unit: 'cm', default: 40 },
             { key: 'W2B', label: 'Başlangıç Genişlik B (W2B)', min: 10, max: 200, step: 1, unit: 'cm', default: 30 },
-            // Ortak yükseklikler: B için de göster (H1A/H2A paylaşımlı)
             { key: 'H1A', label: 'Son Yükseklik (ortak H1)', min: 10, max: 200, step: 1, unit: 'cm', default: 25 },
-            { key: 'H2A', label: 'Başlangıç Yükseklik (ortak H2)', min: 10, max: 200, step: 1, unit: 'cm', default: 20 },
+            { key: 'H2B', label: 'Başlangıç Yükseklik B (H2B)', min: 10, max: 200, step: 1, unit: 'cm', default: 20 },
             { key: 'R_inB', label: 'İç Yarıçap B (R_inB)', min: 1, max: 300, step: 1, unit: 'cm', default: 20 },
             { key: 'A2', label: 'Açı B (A2)', min: 10, max: 180, step: 1, unit: '°', default: 90 }
           ]
@@ -106,7 +106,7 @@ export class YBranch2 extends BasePart {
     const W1b = BasePart.cm(this.params.W1B);
     const H1b = H1a; // shared height
     const W2b = BasePart.cm(this.params.W2B);
-    const H2b = H2a; // shared height
+    const H2b = BasePart.cm(this.params.H2B);
     const RinB = BasePart.cm(this.params.R_inB);
     const thetaB = THREE.MathUtils.degToRad(this.params.A2);
 
@@ -208,9 +208,6 @@ export class YBranch2 extends BasePart {
     shiftRings(elbowB.ringsOuter, offsetB);
     shiftRings(elbowB.ringsInner, offsetB);
 
-    console.log('\n========== Z-EKSENİ KAYDIRMA ==========');
-    console.log('A dalı offsetA:', offsetA.toFixed(4));
-    console.log('B dalı offsetB:', offsetB.toFixed(4));
     if (elbowA.startFrame && elbowA.endFrame) {
       elbowA.startFrame.pos.z += offsetA;
       elbowA.endFrame.pos.z += offsetA;
@@ -249,27 +246,12 @@ export class YBranch2 extends BasePart {
         rings.forEach(r => r.forEach(v => { v.x += dx; }));
     };
 
-    console.log('\n========== X-EKSENİ KAYDIRMA (W1 SABİT - AYRI OFFSET) ==========');
-    console.log('A dalı:');
-    console.log('  lastRingA X değerleri:', lastRingA_temp.map(v => v.x.toFixed(4)).join(', '));
-    console.log('  endMaxXA:', endMaxXA.toFixed(4));
-    console.log('  targetEndXA:', this.targetEndXA.toFixed(4));
-    console.log('  dx_offsetA:', dx_offsetA.toFixed(4));
-    console.log('B dalı:');
-    console.log('  lastRingB X değerleri:', lastRingB_temp.map(v => v.x.toFixed(4)).join(', '));
-    console.log('  endMaxXB:', endMaxXB.toFixed(4));
-    console.log('  targetEndXB:', this.targetEndXB.toFixed(4));
-    console.log('  dx_offsetB:', dx_offsetB.toFixed(4));
-
     // A dalını kaydır
     if (Math.abs(dx_offsetA) > 0.0001) {
         shiftRingsX(elbowA.ringsOuter, dx_offsetA);
         shiftRingsX(elbowA.ringsInner, dx_offsetA);
         if (elbowA.startFrame) elbowA.startFrame.pos.x += dx_offsetA;
         if (elbowA.endFrame) elbowA.endFrame.pos.x += dx_offsetA;
-        console.log('✅ A dalı X kaydırması uygulandı');
-    } else {
-        console.log('⏭️  A dalı X kaydırması atlandı (çok küçük)');
     }
 
     // B dalını kaydır
@@ -278,18 +260,77 @@ export class YBranch2 extends BasePart {
         shiftRingsX(elbowB.ringsInner, dx_offsetB);
         if (elbowB.startFrame) elbowB.startFrame.pos.x += dx_offsetB;
         if (elbowB.endFrame) elbowB.endFrame.pos.x += dx_offsetB;
-        console.log('✅ B dalı X kaydırması uygulandı');
-    } else {
-        console.log('⏭️  B dalı X kaydırması atlandı (çok küçük)');
+    }
+    // --- X-EKSENİ HİZALAMA SONU ---
+
+    // --- BİTİŞ YÜZEYİNİ DİKEY HALE GETİR (SADECE X EKSENİNDE) ---
+    // Problem: Açı 90° değilse, bitiş yüzeyinin X koordinatları farklı oluyor
+    // Çözüm: Sadece X koordinatlarını düzelt, Z'yi değiştirme (rotation yok!)
+    const lastRingA_tilt = elbowA.ringsOuter[elbowA.ringsOuter.length - 1];
+    const lastRingB_tilt = elbowB.ringsOuter[elbowB.ringsOuter.length - 1];
+
+    console.log(`\n🔧 BİTİŞ YÜZEYİ X DÜZELTMESİ:`);
+
+    // Branch A için X düzeltmesi
+    const minXA = Math.min(...lastRingA_tilt.map(v => v.x));
+    const maxXA = Math.max(...lastRingA_tilt.map(v => v.x));
+    const xRangeA = maxXA - minXA;
+
+    console.log(`  Branch A: X aralığı = ${xRangeA.toFixed(4)} (min=${minXA.toFixed(4)}, max=${maxXA.toFixed(4)})`);
+
+    if (xRangeA > 0.001) {
+      // Tüm köşeleri maxX pozisyonuna getir (sadece X'i değiştir, Z sabit kalsın!)
+      console.log(`  ⚠️ Branch A X variation detected! Setting all X to ${maxXA.toFixed(4)}`);
+
+      const xCorrection = maxXA - minXA;
+
+      // Her ring için X düzeltmesi yap
+      // Ama sadece bitiş ring'ini DEĞİL, TÜM ring'leri orantılı düzelt
+      elbowA.ringsOuter.forEach((ring, ringIndex) => {
+        const ratio = ringIndex / (elbowA.ringsOuter.length - 1);
+        ring.forEach((v) => {
+          // Son ring'e yaklaştıkça daha fazla düzelt
+          v.x += xCorrection * ratio;
+        });
+      });
+      elbowA.ringsInner.forEach((ring, ringIndex) => {
+        const ratio = ringIndex / (elbowA.ringsInner.length - 1);
+        ring.forEach((v) => {
+          v.x += xCorrection * ratio;
+        });
+      });
+
+      console.log(`  ✅ Branch A X correction applied!`);
     }
 
-    console.log('\n📍 KAYDIRMADAN SONRA FRAME POZİSYONLARI:');
-    console.log('elbowA.startFrame.pos:', `(${elbowA.startFrame.pos.x.toFixed(4)}, ${elbowA.startFrame.pos.y.toFixed(4)}, ${elbowA.startFrame.pos.z.toFixed(4)})`);
-    console.log('elbowA.endFrame.pos:', `(${elbowA.endFrame.pos.x.toFixed(4)}, ${elbowA.endFrame.pos.y.toFixed(4)}, ${elbowA.endFrame.pos.z.toFixed(4)})`);
-    console.log('elbowB.startFrame.pos:', `(${elbowB.startFrame.pos.x.toFixed(4)}, ${elbowB.startFrame.pos.y.toFixed(4)}, ${elbowB.startFrame.pos.z.toFixed(4)})`);
-    console.log('elbowB.endFrame.pos:', `(${elbowB.endFrame.pos.x.toFixed(4)}, ${elbowB.endFrame.pos.y.toFixed(4)}, ${elbowB.endFrame.pos.z.toFixed(4)})`);
-    console.log('==========================================\n');
-    // --- X-EKSENİ HİZALAMA SONU ---
+    // Branch B için X düzeltmesi
+    const minXB = Math.min(...lastRingB_tilt.map(v => v.x));
+    const maxXB = Math.max(...lastRingB_tilt.map(v => v.x));
+    const xRangeB = maxXB - minXB;
+
+    console.log(`  Branch B: X aralığı = ${xRangeB.toFixed(4)} (min=${minXB.toFixed(4)}, max=${maxXB.toFixed(4)})`);
+
+    if (xRangeB > 0.001) {
+      console.log(`  ⚠️ Branch B X variation detected! Setting all X to ${maxXB.toFixed(4)}`);
+
+      const xCorrection = maxXB - minXB;
+
+      elbowB.ringsOuter.forEach((ring, ringIndex) => {
+        const ratio = ringIndex / (elbowB.ringsOuter.length - 1);
+        ring.forEach((v) => {
+          v.x += xCorrection * ratio;
+        });
+      });
+      elbowB.ringsInner.forEach((ring, ringIndex) => {
+        const ratio = ringIndex / (elbowB.ringsInner.length - 1);
+        ring.forEach((v) => {
+          v.x += xCorrection * ratio;
+        });
+      });
+
+      console.log(`  ✅ Branch B X correction applied!`);
+    }
+    // --- BİTİŞ YÜZEYİ X DÜZELTMESİ SONU ---
 
     // Build combined geometry
     const vertices = [];
@@ -411,6 +452,7 @@ export class YBranch2 extends BasePart {
     const H2a = BasePart.cm(this.params.H2A);
     const W1b = BasePart.cm(this.params.W1B);
     const W2b = BasePart.cm(this.params.W2B);
+    const H2b = BasePart.cm(this.params.H2B);
     const lip = BasePart.cm(this.params.flangeLip);
     const fth = BasePart.cm(this.params.flangeThick);
 
@@ -430,7 +472,7 @@ export class YBranch2 extends BasePart {
 
     // Başlangıç flanşları: dirsekten dışarı bakan ters tangent ile hizala
     placeFlange(framesA.start, W2a, H2a, true);
-    placeFlange(framesB.start, W2b, H2a, true);
+    placeFlange(framesB.start, W2b, H2b, true);
 
     // A dalının bitiş yüzeyi köşeleri (son ring)
     const lastRingA = this.elbow1Rings[this.elbow1Rings.length - 1];
@@ -453,33 +495,17 @@ export class YBranch2 extends BasePart {
     const totalWidth = W1a + W1b;
     const centerCalc = new THREE.Vector3(endSurfaceMaxX, endSurfaceCenterY, geomCenterZ);
 
-    console.log('\n========== FLANŞ HİZALAMA DEBUG ==========');
-    console.log('📊 BİTİŞ YÜZEYİ ANALİZİ:');
-    console.log('  lastRingA köşe sayısı:', lastRingA.length);
-    console.log('  lastRingB köşe sayısı:', lastRingB.length);
-    console.log('  Toplam köşe:', allEndPoints.length);
-
-    console.log('\n📍 lastRingA Köşeleri:');
+    console.log('\n========== W1 BİTİŞ KÖŞE POZİSYONLARI (A1/A2 için) ==========');
+    console.log('lastRingA köşeleri:');
     lastRingA.forEach((v, i) => {
-      console.log(`  [${i}] X=${v.x.toFixed(4)}, Y=${v.y.toFixed(4)}, Z=${v.z.toFixed(4)}`);
+      console.log(`  A[${i}]: X=${v.x.toFixed(4)}, Z=${v.z.toFixed(4)}`);
     });
-
-    console.log('\n📍 lastRingB Köşeleri:');
+    console.log('lastRingB köşeleri:');
     lastRingB.forEach((v, i) => {
-      console.log(`  [${i}] X=${v.x.toFixed(4)}, Y=${v.y.toFixed(4)}, Z=${v.z.toFixed(4)}`);
+      console.log(`  B[${i}]: X=${v.x.toFixed(4)}, Z=${v.z.toFixed(4)}`);
     });
 
-    console.log('\n🎯 HESAPLANAN MERKEZ:');
-    console.log('  endSurfaceMaxX:', endSurfaceMaxX.toFixed(4));
-    console.log('  endSurfaceCenterY:', endSurfaceCenterY.toFixed(4));
-    console.log('  geomCenterZ:', geomCenterZ.toFixed(4));
-    console.log('  centerCalc:', `(${centerCalc.x.toFixed(4)}, ${centerCalc.y.toFixed(4)}, ${centerCalc.z.toFixed(4)})`);
-
-    console.log('\n📐 GEOMETRİ SINIRLARI:');
-    console.log('  Z: min=' + geomMinZ.toFixed(4) + ', max=' + geomMaxZ.toFixed(4) + ', genişlik=' + (geomMaxZ - geomMinZ).toFixed(4));
-    console.log('  Beklenen genişlik (W1a+W1b):', totalWidth.toFixed(4));
-
-    // Normal ve Tangent - SABİT REFERANS KULLAN
+    // Normal ve Tangent - SABİT REFERANS KULLAN (geometri sınırlarından türet)
     const refPointA = new THREE.Vector3(endSurfaceMaxX, 0, geomMinZ);
     const refPointB = new THREE.Vector3(endSurfaceMaxX, 0, geomMaxZ);
     const nAxisRaw = refPointB.clone().sub(refPointA);
@@ -561,6 +587,7 @@ export class YBranch2 extends BasePart {
 
     const W2mA = BasePart.cm(this.params.W2A);
     const H2mA = BasePart.cm(this.params.H2A);
+    const H2mB = BasePart.cm(this.params.H2B);
     const RinA = BasePart.cm(this.params.R_inA);
 
     // GERÇEK köşelerden pozisyonları al (X ve Z kaydırmaları uygulanmış)
@@ -616,11 +643,7 @@ export class YBranch2 extends BasePart {
     const dirRA = new THREE.Vector3().subVectors(innerArcPointA, innerArcCenterA).normalize();
     const startRA = innerArcCenterA.clone().add(dirRA.clone().multiplyScalar(BasePart.cm(this.params.dimOffsetCm)));
 
-    const lineMatA = this.materials.createDimensionLineMaterial(this.params.colorR, this.params.dimAlwaysOnTop);
-    const geoRA = new THREE.BufferGeometry().setFromPoints([startRA, innerArcPointA]);
-    const lineRA = new THREE.Line(geoRA, lineMatA);
-    lineRA.renderOrder = this.params.dimAlwaysOnTop ? 999 : 0;
-    this.scene.dimensionGroup.add(lineRA);
+    this.addDimensionSegment(startRA, innerArcPointA, this.params.colorR, this.scene.dimensionGroup, this.params.dimAlwaysOnTop);
 
     const arrowMatA = this.materials.createDimensionArrowMaterial(this.params.colorR, this.params.dimAlwaysOnTop);
     const coneA = new THREE.Mesh(new THREE.ConeGeometry(radius, headLen, 12), arrowMatA);
@@ -685,7 +708,7 @@ export class YBranch2 extends BasePart {
 
     // ========== BRANCH B DIMENSIONS ==========
     const W2mB = BasePart.cm(this.params.W2B);
-    const H2mB = H2mA; // shared height
+    // B kolu yüksekliği artık bağımsız
     const RinB = BasePart.cm(this.params.R_inB);
 
     // GERÇEK köşelerden pozisyonları al
@@ -705,6 +728,7 @@ export class YBranch2 extends BasePart {
     const p0B_RB = p0B.clone().add(n0B.clone().multiplyScalar(W2mB / 2)).add(b0B.clone().multiplyScalar(-H2mB / 2));
     const p0B_LT = p0B.clone().add(n0B.clone().multiplyScalar(-W2mB / 2)).add(b0B.clone().multiplyScalar(H2mB / 2));
     this.createDimensionLine(p0B_LB, p0B_RB, b0B.clone().negate(), `W2B = ${BasePart.formatDimension(this.params.W2B)} cm`, this.params.colorW2, 'W2B');
+    this.createDimensionLine(p0B_LB, p0B_LT, n0B.clone().negate(), `H2B = ${BasePart.formatDimension(this.params.H2B)} cm`, this.params.colorH2, 'H2B');
     // Branch B bitiş ölçüleri - GERÇEK köşelerden al
     const p1B_LB = lastRingB[0]; // Sol alt köşe
     const p1B_RB = lastRingB[1]; // Sağ alt köşe
@@ -724,11 +748,7 @@ export class YBranch2 extends BasePart {
     const dirRB = new THREE.Vector3().subVectors(innerArcPointB, innerArcCenterB).normalize();
     const startRB = innerArcCenterB.clone().add(dirRB.clone().multiplyScalar(BasePart.cm(this.params.dimOffsetCm)));
 
-    const lineMatB = this.materials.createDimensionLineMaterial(this.params.colorR, this.params.dimAlwaysOnTop);
-    const geoRB = new THREE.BufferGeometry().setFromPoints([startRB, innerArcPointB]);
-    const lineRB = new THREE.Line(geoRB, lineMatB);
-    lineRB.renderOrder = this.params.dimAlwaysOnTop ? 999 : 0;
-    this.scene.dimensionGroup.add(lineRB);
+    this.addDimensionSegment(startRB, innerArcPointB, this.params.colorR, this.scene.dimensionGroup, this.params.dimAlwaysOnTop);
 
     const arrowMatB = this.materials.createDimensionArrowMaterial(this.params.colorR, this.params.dimAlwaysOnTop);
     const coneB = new THREE.Mesh(new THREE.ConeGeometry(radius, headLen, 12), arrowMatB);
@@ -817,6 +837,7 @@ export class YBranch2 extends BasePart {
       A1: this.params.A1,
       W1B: this.params.W1B,
       W2B: this.params.W2B,
+      H2B: this.params.H2B,
       R_inB: this.params.R_inB,
       A2: this.params.A2,
       t: this.params.t

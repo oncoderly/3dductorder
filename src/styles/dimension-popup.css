@@ -4,7 +4,9 @@
 .dimension-popup {
   position: fixed !important;
   z-index: 99999 !important;
-  background: linear-gradient(135deg, #2c2c3e 0%, #1a1a2e 100%);
+  background: linear-gradient(135deg, rgba(44, 44, 62, 0.96) 0%, rgba(26, 26, 46, 0.94) 100%);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   padding: 2px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
@@ -38,7 +40,11 @@
 .dimension-popup-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 /* Sol İkon (Mavi Daire) */
@@ -100,17 +106,42 @@
   box-shadow: 0 4px 12px rgba(0, 200, 83, 0.5);
 }
 
+.dimension-popup-btn.step1 {
+  width: 44px;
+  height: 44px;
+  font-size: 14px;
+  border-radius: 10px;
+}
+
+.dimension-popup-btn.minus1 {
+  background: linear-gradient(135deg, #ff9f43 0%, #ff7043 100%);
+  color: #fff;
+}
+
+.dimension-popup-btn.minus1:hover {
+  box-shadow: 0 4px 12px rgba(255, 112, 67, 0.45);
+}
+
+.dimension-popup-btn.plus1 {
+  background: linear-gradient(135deg, #4dd0e1 0%, #29b6f6 100%);
+  color: #fff;
+}
+
+.dimension-popup-btn.plus1:hover {
+  box-shadow: 0 4px 12px rgba(41, 182, 246, 0.45);
+}
+
 /* Slider */
 .dimension-popup-slider {
   flex: 1;
-  height: 8px;
+  height: 10px;
   -webkit-appearance: none;
   appearance: none;
-  background: linear-gradient(90deg, #3a3a4e 0%, #4a4a5e 100%);
-  border-radius: 4px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.15) 100%);
+  border-radius: 6px;
   outline: none;
   cursor: pointer;
-  min-width: 100px;
+  min-width: 120px;
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
 }
@@ -166,6 +197,7 @@
   font-weight: 700;
   flex-shrink: 0;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 0 10px;
 }
 
 /* Birim (cm) */
@@ -185,7 +217,8 @@
   }
 
   .dimension-popup-controls {
-    gap: 6px;
+    gap: 8px;
+    padding: 4px;
   }
 
   .dimension-popup-icon {
@@ -198,6 +231,12 @@
     width: 44px;
     height: 44px;
     font-size: 14px;
+  }
+
+  .dimension-popup-btn.step1 {
+    width: 40px;
+    height: 40px;
+    font-size: 13px;
   }
 
   .dimension-popup-value {
@@ -219,7 +258,8 @@
   }
 
   .dimension-popup-controls {
-    gap: 4px;
+    gap: 6px;
+    padding: 3px;
   }
 
   .dimension-popup-icon {
@@ -232,6 +272,12 @@
     width: 40px;
     height: 40px;
     font-size: 13px;
+  }
+
+  .dimension-popup-btn.step1 {
+    width: 36px;
+    height: 36px;
+    font-size: 12px;
   }
 
   .dimension-popup-value {

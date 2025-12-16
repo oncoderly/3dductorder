@@ -25,10 +25,12 @@ export class DimensionPopup {
     this.popup.style.zIndex = '999999';
 
     // CSS yüklenmemişse inline style ile tüm stilleri uygula
-    this.popup.style.background = 'linear-gradient(135deg, #2c2c3e 0%, #1a1a2e 100%)';
+    this.popup.style.background = 'linear-gradient(135deg, rgba(44,44,62,0.96) 0%, rgba(26,26,46,0.94) 100%)';
+    this.popup.style.backdropFilter = 'blur(12px)';
+    this.popup.style.border = '1px solid rgba(255,255,255,0.08)';
     this.popup.style.borderRadius = '16px';
     this.popup.style.padding = '16px';
-    this.popup.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.6)';
+    this.popup.style.boxShadow = '0 12px 36px rgba(0, 0, 0, 0.55)';
     this.popup.style.minWidth = '320px';
     this.popup.style.maxWidth = '90vw';
 
@@ -49,7 +51,11 @@ export class DimensionPopup {
     controls.className = 'dimension-popup-controls';
     controls.style.display = 'flex';
     controls.style.alignItems = 'center';
-    controls.style.gap = '8px';
+    controls.style.gap = '10px';
+    controls.style.padding = '4px';
+    controls.style.background = 'rgba(255,255,255,0.03)';
+    controls.style.borderRadius = '12px';
+    controls.style.border = '1px solid rgba(255,255,255,0.06)';
 
     // -5 Butonu (kırmızı)
     this.minusBtn = document.createElement('button');
@@ -70,6 +76,23 @@ export class DimensionPopup {
     });
     controls.appendChild(this.minusBtn);
 
+    // -1 Butonu (turuncu)
+    this.minusOneBtn = document.createElement('button');
+    this.minusOneBtn.className = 'dimension-popup-btn step1 minus1';
+    this.minusOneBtn.textContent = '-1';
+    this.minusOneBtn.style.width = '44px';
+    this.minusOneBtn.style.height = '44px';
+    this.minusOneBtn.style.border = 'none';
+    this.minusOneBtn.style.borderRadius = '10px';
+    this.minusOneBtn.style.fontSize = '14px';
+    this.minusOneBtn.style.fontWeight = '700';
+    this.minusOneBtn.style.cursor = 'pointer';
+    this.minusOneBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.adjustValue(-1);
+    });
+    controls.appendChild(this.minusOneBtn);
+
     // Slider
     this.slider = document.createElement('input');
     this.slider.type = 'range';
@@ -78,10 +101,10 @@ export class DimensionPopup {
     this.slider.max = '300';
     this.slider.step = '1';
     this.slider.style.flex = '1';
-    this.slider.style.height = '8px';
-    this.slider.style.background = 'linear-gradient(90deg, #3a3a4e 0%, #4a4a5e 100%)';
-    this.slider.style.borderRadius = '4px';
-    this.slider.style.minWidth = '100px';
+    this.slider.style.height = '10px';
+    this.slider.style.background = 'linear-gradient(90deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.15) 100%)';
+    this.slider.style.borderRadius = '6px';
+    this.slider.style.minWidth = '120px';
     this.slider.addEventListener('input', (e) => {
       e.stopPropagation();
       this.updateValue(parseFloat(e.target.value));
@@ -102,7 +125,25 @@ export class DimensionPopup {
     this.valueDisplay.style.justifyContent = 'center';
     this.valueDisplay.style.fontSize = '18px';
     this.valueDisplay.style.fontWeight = '700';
+    this.valueDisplay.style.padding = '0 10px';
     controls.appendChild(this.valueDisplay);
+
+    // +1 Butonu (mavi)
+    this.plusOneBtn = document.createElement('button');
+    this.plusOneBtn.className = 'dimension-popup-btn step1 plus1';
+    this.plusOneBtn.textContent = '+1';
+    this.plusOneBtn.style.width = '44px';
+    this.plusOneBtn.style.height = '44px';
+    this.plusOneBtn.style.border = 'none';
+    this.plusOneBtn.style.borderRadius = '10px';
+    this.plusOneBtn.style.fontSize = '14px';
+    this.plusOneBtn.style.fontWeight = '700';
+    this.plusOneBtn.style.cursor = 'pointer';
+    this.plusOneBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.adjustValue(+1);
+    });
+    controls.appendChild(this.plusOneBtn);
 
     // +5 Butonu (yeşil)
     this.plusBtn = document.createElement('button');
@@ -195,6 +236,7 @@ export class DimensionPopup {
     if (paramData.max !== undefined) {
       this.slider.max = paramData.max;
     }
+    this.slider.step = paramData.step !== undefined ? paramData.step : '1';
 
     // Görünür yap
     this.popup.style.display = 'block';

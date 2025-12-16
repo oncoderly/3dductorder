@@ -257,6 +257,16 @@ export class Scene3D {
 
     this.renderer.setSize(width, height, false);
     this.labelRenderer.setSize(width, height);
+
+    // Kalın Line2 materyalleri için çözünürlüğü güncelle
+    if (this.materials && this.materials.updateLineMaterialResolution) {
+      this.dimensionGroup.traverse((child) => {
+        const mats = child.material
+          ? (Array.isArray(child.material) ? child.material : [child.material])
+          : [];
+        mats.forEach(mat => this.materials.updateLineMaterialResolution(this.renderer, mat));
+      });
+    }
   }
 
   startAnimation() {

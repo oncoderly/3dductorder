@@ -1,5 +1,6 @@
 // Material Library - Ortak malzemeler
 import * as THREE from 'three';
+import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 
 export class Materials {
   constructor() {
@@ -39,12 +40,17 @@ export class Materials {
     });
 
     // Dimension çizgileri (default)
-    this.materials.dimensionLine = new THREE.LineBasicMaterial({
+    this.materials.dimensionLine = new LineMaterial({
       color: 0x207aff,
+      linewidth: 3,      // Ekranda ~3px kalınlık
+      worldUnits: false,
       depthTest: false,
       depthWrite: false,
       transparent: true
     });
+
+    // Varsayılan çözünürlüğü güncelle (renderer yoksa pencere boyutunu kullan)
+    this.updateLineMaterialResolution();
   }
 
   // Metal malzeme ayarları
@@ -56,12 +62,17 @@ export class Materials {
 
   // Yeni dimension line oluştur (renkli)
   createDimensionLineMaterial(color, alwaysOnTop = true) {
-    return new THREE.LineBasicMaterial({
+    const mat = new LineMaterial({
       color: new THREE.Color(color),
+      linewidth: 3,           // Ekranda ~3px kalınlık
+      worldUnits: false,
       depthTest: !alwaysOnTop,
       depthWrite: !alwaysOnTop,
-      transparent: alwaysOnTop
+      transparent: true
     });
+
+    this.updateLineMaterialResolution(null, mat);
+    return mat;
   }
 
   // Yeni dimension arrow (cone) malzemesi
@@ -72,6 +83,32 @@ export class Materials {
       depthWrite: !alwaysOnTop,
       transparent: alwaysOnTop
     });
+  }
+
+  // LineMaterial çözünürlüğünü renderer (veya pencere) boyutuna göre ayarla
+  updateLineMaterialResolution(renderer = null, material = null) {
+    let width = window.innerWidth || 1;
+    let height = window.innerHeight || 1;
+
+    if (renderer && renderer.getSize) {
+      const size = new THREE.Vector2();
+      renderer.getSize(size);
+      const ratio = renderer.getPixelRatio ? renderer.getPixelRatio() : 1;
+      width = size.x * ratio;
+      height = size.y * ratio;
+    }
+
+    const apply = (mat) => {
+      if (mat && mat.resolution) {
+        mat.resolution.set(width, height);
+      }
+    };
+
+    if (material) {
+      apply(material);
+    } else {
+      apply(this.materials.dimensionLine);
+    }
   }
 
   // Tüm malzemeleri temizle

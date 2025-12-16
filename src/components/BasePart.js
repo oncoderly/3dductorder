@@ -1,5 +1,7 @@
 // BasePart - Tüm parçaların base class'ı
 import * as THREE from 'three';
+import { Line2 } from 'three/addons/lines/Line2.js';
+import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 
 export class BasePart {
   constructor(scene, materials) {
@@ -162,6 +164,22 @@ export class BasePart {
     this.updateAreaDisplay();
   }
 
+  // Kalın dimension çizgisi eklemek için helper (Line2 kullanır)
+  addDimensionSegment(p1, p2, color, targetGroup = this.scene.dimensionGroup, alwaysOnTop = this.params.dimAlwaysOnTop) {
+    const mat = this.materials.createDimensionLineMaterial(color, alwaysOnTop);
+    this.materials.updateLineMaterialResolution(this.scene?.renderer, mat);
+
+    const geom = new LineGeometry();
+    geom.setPositions([p1.x, p1.y, p1.z, p2.x, p2.y, p2.z]);
+
+    const line = new Line2(geom, mat);
+    if (line.computeLineDistances) line.computeLineDistances();
+    line.renderOrder = alwaysOnTop ? 999 : 0;
+
+    targetGroup.add(line);
+    return line;
+  }
+
   // Ortak ölçülendirme fonksiyonları
   createDimensionLine(p1, p2, offsetDir, label, color, paramKey = null) {
     const n = offsetDir.clone().normalize();
@@ -175,13 +193,8 @@ export class BasePart {
     const s2 = p2.clone().add(n.clone().multiplyScalar(gap));
     const e2 = p2.clone().add(n.clone().multiplyScalar(targetOff));
 
-    const mat = this.materials.createDimensionLineMaterial(color, this.params.dimAlwaysOnTop);
-
-    const L1 = new THREE.Line(new THREE.BufferGeometry().setFromPoints([s1, e1]), mat);
-    const L2 = new THREE.Line(new THREE.BufferGeometry().setFromPoints([s2, e2]), mat);
-    L1.renderOrder = L2.renderOrder = this.params.dimAlwaysOnTop ? 999 : 0;
-
-    this.scene.dimensionGroup.add(L1, L2);
+    const L1 = this.addDimensionSegment(s1, e1, color, this.scene.dimensionGroup, this.params.dimAlwaysOnTop);
+    const L2 = this.addDimensionSegment(s2, e2, color, this.scene.dimensionGroup, this.params.dimAlwaysOnTop);
 
     const head = BasePart.cm(this.params.arrowHeadCm);
     const rad = BasePart.cm(this.params.arrowRadiusCm);
@@ -228,9 +241,8 @@ export class BasePart {
   }
 
   createArrow(p1, p2, color, head, rad) {
-    const mat = this.materials.createDimensionLineMaterial(color, this.params.dimAlwaysOnTop);
-    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([p1, p2]), mat);
-    line.renderOrder = this.params.dimAlwaysOnTop ? 999 : 0;
+    // Kalın çizgi gövdesi
+    const line = this.addDimensionSegment(p1, p2, color, this.scene.dimensionGroup, this.params.dimAlwaysOnTop);
 
     const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
 
@@ -259,28 +271,22 @@ export class BasePart {
   // Helper to add local coordinate axes (tangent, normal, binormal)
   addLocalAxes(position, tangent, normal, binormal, labelPrefix, axisLengthCm = 10) {
     const axisLength = BasePart.cm(axisLengthCm);
-    const axisMatX = this.materials.createDimensionLineMaterial('#ff0000', this.params.dimAlwaysOnTop); // Red for Normal (local X)
-    const axisMatY = this.materials.createDimensionLineMaterial('#00ff00', this.params.dimAlwaysOnTop); // Green for Binormal (local Y)
-    const axisMatZ = this.materials.createDimensionLineMaterial('#0000ff', this.params.dimAlwaysOnTop); // Blue for Tangent (local Z)
 
     const p = position.clone();
 
     // Normal (Local X)
     const normalEnd = p.clone().add(normal.clone().multiplyScalar(axisLength));
-    const normalLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([p, normalEnd]), axisMatX);
-    this.scene.dimensionGroup.add(normalLine);
+    this.addDimensionSegment(p, normalEnd, '#ff0000');
     this.scene.addLabel(`${labelPrefix}_N`, normalEnd, '#ff0000');
 
     // Binormal (Local Y)
     const binormalEnd = p.clone().add(binormal.clone().multiplyScalar(axisLength));
-    const binormalLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([p, binormalEnd]), axisMatY);
-    this.scene.dimensionGroup.add(binormalLine);
+    this.addDimensionSegment(p, binormalEnd, '#00ff00');
     this.scene.addLabel(`${labelPrefix}_B`, binormalEnd, '#00ff00');
 
     // Tangent (Local Z)
     const tangentEnd = p.clone().add(tangent.clone().multiplyScalar(axisLength));
-    const tangentLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([p, tangentEnd]), axisMatZ);
-    this.scene.dimensionGroup.add(tangentLine);
+    this.addDimensionSegment(p, tangentEnd, '#0000ff');
     this.scene.addLabel(`${labelPrefix}_T`, tangentEnd, '#0000ff');
   }
 

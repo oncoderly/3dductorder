@@ -55,6 +55,9 @@ class App {
     // Scene ve Materials oluştur
     this.scene = new Scene3D(canvas);
     this.materials = new Materials();
+    // Scene'deki renderer boyutunu LineMaterial'lara aktar
+    this.scene.materials = this.materials;
+    this.materials.updateLineMaterialResolution(this.scene.renderer);
 
     // Dimension Popup oluştur (canvas wrapper'ı kullan)
     const viewerContainer = document.querySelector('.canvas-wrapper') || document.body;

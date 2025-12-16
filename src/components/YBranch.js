@@ -393,11 +393,7 @@ export class YBranch extends BasePart {
     const dirR = new THREE.Vector3().subVectors(innerArcPoint, innerArcCenter).normalize();
     const startR = innerArcCenter.clone().add(dirR.clone().multiplyScalar(BasePart.cm(this.params.dimOffsetCm)));
 
-    const lineMat = this.materials.createDimensionLineMaterial(this.params.colorR, this.params.dimAlwaysOnTop);
-    const geoR = new THREE.BufferGeometry().setFromPoints([startR, innerArcPoint]);
-    const lineR = new THREE.Line(geoR, lineMat);
-    lineR.renderOrder = this.params.dimAlwaysOnTop ? 999 : 0;
-    this.scene.dimensionGroup.add(lineR);
+    this.addDimensionSegment(startR, innerArcPoint, this.params.colorR, this.scene.dimensionGroup, this.params.dimAlwaysOnTop);
 
     const arrowMat = this.materials.createDimensionArrowMaterial(this.params.colorR, this.params.dimAlwaysOnTop);
     const cone = new THREE.Mesh(new THREE.ConeGeometry(radius, headLen, 12), arrowMat);
