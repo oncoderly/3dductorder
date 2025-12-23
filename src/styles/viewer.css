@@ -408,6 +408,26 @@ html, body {
   container-name: params-panel;
 }
 
+.params-panel-handle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  height: 14px;
+  cursor: ns-resize;
+  touch-action: none;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.params-panel-handle::before {
+  content: '';
+  width: 42px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(76, 195, 255, 0.7);
+  box-shadow: 0 0 6px rgba(76, 195, 255, 0.5);
+}
+
 .params-panel::before {
   content: '';
   position: absolute;
@@ -1190,6 +1210,10 @@ html, body {
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
   }
 
+  .params-panel-handle {
+    display: flex;
+  }
+
   .params-panel.open {
     transform: translateY(0);
   }
@@ -1281,6 +1305,15 @@ html, body {
   .params-panel {
     height: 50vh;
     max-height: 50vh;
+  }
+
+  .params-panel-handle {
+    height: 12px;
+  }
+
+  .params-panel-handle::before {
+    width: 36px;
+    height: 3px;
   }
 
   .params-panel.open {

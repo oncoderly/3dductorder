@@ -93,21 +93,47 @@ class App {
   setupMobileToggle() {
     const toggleBtn = document.getElementById('mobile-toggle');
     const paramsPanel = document.querySelector('.params-panel');
+    const viewerPanel = document.querySelector('.viewer-panel');
+    const header = document.querySelector('.app-header');
+    const resizeHandle = document.getElementById('params-panel-handle');
 
     if (!toggleBtn || !paramsPanel) return;
+
+    let panelHeightVh = 50;
+    const minPanelVh = 30;
+    const maxPanelVh = 85;
+
+    const updateMobileLayout = () => {
+      if (window.innerWidth > 768) {
+        if (viewerPanel) viewerPanel.style.height = '';
+        paramsPanel.style.height = '';
+        paramsPanel.style.maxHeight = '';
+        return;
+      }
+
+      paramsPanel.style.height = `${panelHeightVh}vh`;
+      paramsPanel.style.maxHeight = `${panelHeightVh}vh`;
+
+      if (!viewerPanel) return;
+
+      const headerHeight = header ? header.getBoundingClientRect().height : 0;
+      const panelHeightPx = window.innerHeight * (panelHeightVh / 100);
+      const isOpen = paramsPanel.classList.contains('open');
+      const viewerHeightPx = isOpen
+        ? Math.max(120, window.innerHeight - headerHeight - panelHeightPx)
+        : Math.max(120, window.innerHeight - headerHeight);
+
+      viewerPanel.style.height = `${viewerHeightPx}px`;
+    };
 
     // Mobilde ilk açılışta panel açık olsun
     if (window.innerWidth <= 768) {
       setTimeout(() => {
         paramsPanel.classList.add('open');
-        const viewerPanel = document.querySelector('.viewer-panel');
         const icon = toggleBtn.querySelector('.toggle-icon');
 
         // Viewer'ı küçült
-        if (viewerPanel) {
-          viewerPanel.style.height = 'calc(50vh - 40px)';
-        }
-
+        updateMobileLayout();
         if (icon) {
           icon.style.transform = 'rotate(180deg)';
         }
@@ -116,27 +142,64 @@ class App {
 
     toggleBtn.addEventListener('click', () => {
       paramsPanel.classList.toggle('open');
-      const viewerPanel = document.querySelector('.viewer-panel');
       const icon = toggleBtn.querySelector('.toggle-icon');
 
       if (paramsPanel.classList.contains('open')) {
         // Panel açık - viewer'ı küçült
-        if (viewerPanel) {
-          viewerPanel.style.height = 'calc(50vh - 40px)';
-        }
+        updateMobileLayout();
         if (icon) {
           icon.style.transform = 'rotate(180deg)';
         }
       } else {
         // Panel kapalı - viewer'ı büyüt
-        if (viewerPanel) {
-          viewerPanel.style.height = 'calc(100vh - 80px)';
-        }
+        updateMobileLayout();
         if (icon) {
           icon.style.transform = 'rotate(0deg)';
         }
       }
     });
+
+    if (resizeHandle) {
+      let isResizing = false;
+
+      const onPointerMove = (e) => {
+        if (!isResizing || window.innerWidth > 768) return;
+        const clientY = e.clientY;
+        const heightPx = window.innerHeight - clientY;
+        const nextVh = (heightPx / window.innerHeight) * 100;
+        panelHeightVh = Math.max(minPanelVh, Math.min(maxPanelVh, nextVh));
+        updateMobileLayout();
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+      };
+
+      const onPointerUp = () => {
+        if (!isResizing) return;
+        isResizing = false;
+        if (resizeHandlePointerId !== null) {
+          resizeHandle.releasePointerCapture?.(resizeHandlePointerId);
+        }
+        resizeHandlePointerId = null;
+        document.body.style.userSelect = '';
+      };
+
+      let resizeHandlePointerId = null;
+
+      resizeHandle.addEventListener('pointerdown', (e) => {
+        if (window.innerWidth > 768) return;
+        if (!paramsPanel.classList.contains('open')) return;
+        isResizing = true;
+        resizeHandlePointerId = e.pointerId;
+        resizeHandle.setPointerCapture?.(e.pointerId);
+        document.body.style.userSelect = 'none';
+        onPointerMove(e);
+      }, { passive: false });
+
+      window.addEventListener('pointermove', onPointerMove, { passive: false });
+      window.addEventListener('pointerup', onPointerUp);
+      window.addEventListener('pointercancel', onPointerUp);
+    }
 
     // Pencere boyutu değişince kontrol et
     window.addEventListener('resize', () => {
@@ -147,6 +210,7 @@ class App {
           icon.style.transform = 'rotate(0deg)';
         }
       }
+      updateMobileLayout();
     });
   }
 
