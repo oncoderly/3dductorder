@@ -597,6 +597,63 @@ export class YBranch2 extends BasePart {
       return;
     }
 
+    const circleCenterXZ = (p1, p2, p3) => {
+      const x1 = p1.x; const z1 = p1.z;
+      const x2 = p2.x; const z2 = p2.z;
+      const x3 = p3.x; const z3 = p3.z;
+      const d = 2 * (x1 * (z2 - z3) + x2 * (z3 - z1) + x3 * (z1 - z2));
+      if (Math.abs(d) < 1e-8) return null;
+      const x1sq = x1 * x1 + z1 * z1;
+      const x2sq = x2 * x2 + z2 * z2;
+      const x3sq = x3 * x3 + z3 * z3;
+      const ux = (x1sq * (z2 - z3) + x2sq * (z3 - z1) + x3sq * (z1 - z2)) / d;
+      const uz = (x1sq * (x3 - x2) + x2sq * (x1 - x3) + x3sq * (x2 - x1)) / d;
+      return new THREE.Vector3(ux, p1.y, uz);
+    };
+
+    const getRingSideMid = (ring, sideIndex) => {
+      if (sideIndex === 0) {
+        return ring[0].clone().add(ring[3]).multiplyScalar(0.5);
+      }
+      return ring[1].clone().add(ring[2]).multiplyScalar(0.5);
+    };
+
+    const pickInnerArcData = (rings, Rin, startCenter) => {
+      const midIndex = Math.floor(rings.length / 2);
+      const pointIndex = Math.max(1, Math.floor(rings.length * 0.25));
+      const side0 = {
+        start: getRingSideMid(rings[0], 0),
+        mid: getRingSideMid(rings[midIndex], 0),
+        end: getRingSideMid(rings[rings.length - 1], 0),
+        point: getRingSideMid(rings[pointIndex], 0)
+      };
+      const side1 = {
+        start: getRingSideMid(rings[0], 1),
+        mid: getRingSideMid(rings[midIndex], 1),
+        end: getRingSideMid(rings[rings.length - 1], 1),
+        point: getRingSideMid(rings[pointIndex], 1)
+      };
+
+      const center0 = circleCenterXZ(side0.start, side0.mid, side0.end);
+      const center1 = circleCenterXZ(side1.start, side1.mid, side1.end);
+      const radius0 = center0 ? center0.distanceTo(side0.mid) : Number.POSITIVE_INFINITY;
+      const radius1 = center1 ? center1.distanceTo(side1.mid) : Number.POSITIVE_INFINITY;
+
+      let center = center0;
+      let point = side0.point;
+      if (Math.abs(radius1 - Rin) < Math.abs(radius0 - Rin)) {
+        center = center1;
+        point = side1.point;
+      }
+
+      if (!center) {
+        const dir = new THREE.Vector3().subVectors(point, startCenter).normalize();
+        center = point.clone().sub(dir.clone().multiplyScalar(Rin));
+      }
+
+      return { center, point };
+    };
+
     const W2mA = BasePart.cm(this.params.W2A);
     const H2mA = BasePart.cm(this.params.H2A);
     const H2mB = BasePart.cm(this.params.H2B);
@@ -645,13 +702,11 @@ export class YBranch2 extends BasePart {
     const startCenterA = firstRingA.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(firstRingA.length);
 
     // İlk ring'in iç kenarı (en sol X koordinatı - sol alt ve sol üst köşelerin ortası)
-    const startLeftEdgeA = Math.min(...firstRingA.map(v => v.x));
-    const innerPointsA = firstRingA.filter(v => Math.abs(v.x - startLeftEdgeA) < 0.001);
-    const innerArcPointA = innerPointsA.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(innerPointsA.length);
+    const arcA = pickInnerArcData(this.elbow1Rings, RinA, startCenterA);
+    const innerArcCenterA = arcA.center;
+    const innerArcPointA = arcA.point;
 
     // Dirsek yayının merkezi: iç yarıçap üzerindeki noktadan RinA kadar içeride
-    const dirToInnerA = new THREE.Vector3().subVectors(innerArcPointA, startCenterA).normalize();
-    const innerArcCenterA = innerArcPointA.clone().sub(dirToInnerA.clone().multiplyScalar(RinA));
     const headLen = BasePart.cm(this.params.arrowHeadCm);
     const radius = BasePart.cm(this.params.arrowRadiusCm);
     const dirRA = new THREE.Vector3().subVectors(innerArcPointA, innerArcCenterA).normalize();
@@ -755,12 +810,10 @@ export class YBranch2 extends BasePart {
     const startCenterB = firstRingB.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(firstRingB.length);
 
     // İlk ring'in iç kenarı (en sol X koordinatı)
-    const startLeftEdgeB = Math.min(...firstRingB.map(v => v.x));
-    const innerPointsB = firstRingB.filter(v => Math.abs(v.x - startLeftEdgeB) < 0.001);
-    const innerArcPointB = innerPointsB.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(innerPointsB.length);
+    const arcB = pickInnerArcData(this.elbow2Rings, RinB, startCenterB);
+    const innerArcCenterB = arcB.center;
+    const innerArcPointB = arcB.point;
 
-    const dirToInnerB = new THREE.Vector3().subVectors(innerArcPointB, startCenterB).normalize();
-    const innerArcCenterB = innerArcPointB.clone().sub(dirToInnerB.clone().multiplyScalar(RinB));
     const dirRB = new THREE.Vector3().subVectors(innerArcPointB, innerArcCenterB).normalize();
     const startRB = innerArcCenterB.clone().add(dirRB.clone().multiplyScalar(BasePart.cm(this.params.dimOffsetCm)));
 
