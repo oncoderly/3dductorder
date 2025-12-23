@@ -113,11 +113,13 @@ export class YBranch2 extends BasePart {
     const t = BasePart.cm(this.params.t);
     const steps = Math.max(16, Math.floor(this.params.steps));
 
-    const buildElbow = (direction, W1, H1, W2, H2, Rin, theta, centerSign, W_ref) => {
-      // W_ref: referans genişlik (merkez hesabı için sabit)
-      const R_mid = Rin + W_ref / 2;
-      const centerX = -R_mid * Math.cos(theta / 2);
-      const centerZ = centerSign * R_mid * Math.sin(theta / 2);
+    const buildElbow = (direction, W1, H1, W2, H2, Rin, theta) => {
+      // Anchor the W1 end so angle changes rotate the W2 side.
+      const angleEnd = Math.PI / 2;
+      const angleStart = angleEnd - theta;
+      const R_end = Rin + W1 / 2;
+      const centerX = -R_end * Math.cos(angleEnd);
+      const centerZ = R_end * Math.sin(angleEnd);
 
       const ringsOuter = [];
       const ringsInner = [];
@@ -125,7 +127,7 @@ export class YBranch2 extends BasePart {
       let endFrame = null;
       for (let i = 0; i <= steps; i++) {
         const u = i / steps;
-        const angle = u * theta;
+        const angle = angleStart + u * theta;
         const W = W2 + (W1 - W2) * u;
         const H = H2 + (H1 - H2) * u;
         const R_center = Rin + W / 2;
@@ -180,11 +182,9 @@ export class YBranch2 extends BasePart {
       return { ringsOuter, ringsInner, centerX, centerZ, startFrame, endFrame };
     };
 
-    // Ortak referans genişlik: Her iki dalın başlangıç genişliğinin ortalaması
-    const W_ref = (W2a + W2b) / 2;
 
-    const elbowA = buildElbow(1, W1a, H1a, W2a, H2a, RinA, thetaA, 1, W_ref);
-    const elbowB = buildElbow(-1, W1b, H1b, W2b, H2b, RinB, thetaB, -1, W_ref);
+    const elbowA = buildElbow(1, W1a, H1a, W2a, H2a, RinA, thetaA);
+    const elbowB = buildElbow(-1, W1b, H1b, W2b, H2b, RinB, thetaB);
 
     // End plane Z alignment: A dalının SAĞ KENARI ve B dalının SOL KENARI Z=0'da buluşmalı
     const lastRingA = elbowA.ringsOuter[elbowA.ringsOuter.length - 1];
@@ -278,7 +278,7 @@ export class YBranch2 extends BasePart {
 
     console.log(`  Branch A: X aralığı = ${xRangeA.toFixed(4)} (min=${minXA.toFixed(4)}, max=${maxXA.toFixed(4)})`);
 
-    if (xRangeA > 0.001) {
+    if (false && xRangeA > 0.001) {
       // Tüm köşeleri maxX pozisyonuna getir (sadece X'i değiştir, Z sabit kalsın!)
       console.log(`  ⚠️ Branch A X variation detected! Setting all X to ${maxXA.toFixed(4)}`);
 
@@ -310,7 +310,7 @@ export class YBranch2 extends BasePart {
 
     console.log(`  Branch B: X aralığı = ${xRangeB.toFixed(4)} (min=${minXB.toFixed(4)}, max=${maxXB.toFixed(4)})`);
 
-    if (xRangeB > 0.001) {
+    if (false && xRangeB > 0.001) {
       console.log(`  ⚠️ Branch B X variation detected! Setting all X to ${maxXB.toFixed(4)}`);
 
       const xCorrection = maxXB - minXB;
@@ -381,24 +381,11 @@ export class YBranch2 extends BasePart {
     this.scene.geometryGroup.add(mesh);
 
     // Optional local planes at A start corners
-    if (this.params.showLocalAxes) {
-      const R_center0A = RinA + W2a / 2;
-      const W_avgA = (W1a + W2a) / 2;
-      const R_midA = RinA + W_avgA / 2;
-      const centerXA = -R_midA * Math.cos(thetaA / 2);
-      const centerZA = R_midA * Math.sin(thetaA / 2) + offsetA;
-      const p0 = new THREE.Vector3(-R_center0A - centerXA, 0, -centerZA);
-      const n0 = new THREE.Vector3(1, 0, 0);
-      const b0 = new THREE.Vector3(0, 1, 0);
-      const t0 = new THREE.Vector3(0, 0, 1);
-      const halfW = W2a / 2;
-      const halfH = H2a / 2;
-      const corners = [
-        p0.clone().add(n0.clone().multiplyScalar(-halfW)).add(b0.clone().multiplyScalar(-halfH)),
-        p0.clone().add(n0.clone().multiplyScalar(halfW)).add(b0.clone().multiplyScalar(-halfH)),
-        p0.clone().add(n0.clone().multiplyScalar(halfW)).add(b0.clone().multiplyScalar(halfH)),
-        p0.clone().add(n0.clone().multiplyScalar(-halfW)).add(b0.clone().multiplyScalar(halfH))
-      ];
+    if (this.params.showLocalAxes && elbowA.startFrame && elbowA.ringsOuter.length > 0) {
+      const n0 = elbowA.startFrame.normal.clone();
+      const b0 = elbowA.startFrame.binormal.clone();
+      const t0 = elbowA.startFrame.tangent.clone();
+      const corners = elbowA.ringsOuter[0];
       corners.forEach((corner, idx) => {
         const label = `FlangeBase_C${idx + 1}`;
         this.addLocalPlane(corner, n0, b0, t0, label, '#00bcd4');
@@ -460,19 +447,44 @@ export class YBranch2 extends BasePart {
     const framesB = this.elbowBFrames;
     if (!framesA || !framesB || !framesA.start || !framesA.end || !framesB.start || !framesB.end) return;
 
-    const placeFlange = (frame, width, height, flipTangent = false) => {
+    const getRingFrame = (ring, tangentHint) => {
+      const xAxis = new THREE.Vector3().subVectors(ring[1], ring[0]).normalize();
+      const yAxis = new THREE.Vector3().subVectors(ring[3], ring[0]).normalize();
+      let zAxis = new THREE.Vector3().crossVectors(xAxis, yAxis).normalize();
+      if (tangentHint && zAxis.dot(tangentHint) < 0) {
+        xAxis.negate();
+        zAxis = new THREE.Vector3().crossVectors(xAxis, yAxis).normalize();
+      }
+      const center = ring.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(ring.length);
+      return { nAxis: xAxis, bAxis: yAxis, tAxis: zAxis, pos: center };
+    };
+
+    const placeFlange = (frame, width, height, flipTangent = false, ring = null) => {
       const flange = this.createFlangeRect(width, height, lip, fth);
-      const tAxis = flipTangent ? frame.tangent.clone().negate() : frame.tangent.clone();
-      const basis = new THREE.Matrix4().makeBasis(frame.normal.clone(), frame.binormal.clone(), tAxis.clone());
+      const tHint = flipTangent ? frame.tangent.clone().negate() : frame.tangent.clone();
+      let nAxis = frame.normal.clone();
+      let bAxis = frame.binormal.clone();
+      let tAxis = tHint.clone();
+      let pos = frame.pos.clone();
+
+      if (ring && ring.length >= 4) {
+        const ringFrame = getRingFrame(ring, tHint);
+        nAxis = ringFrame.nAxis;
+        bAxis = ringFrame.bAxis;
+        tAxis = ringFrame.tAxis;
+        pos = ringFrame.pos;
+      }
+
+      const basis = new THREE.Matrix4().makeBasis(nAxis, bAxis, tAxis.clone());
       flange.quaternion.setFromRotationMatrix(basis);
-      const pos = frame.pos.clone().add(tAxis.multiplyScalar(flipTangent ? -fth * 0.5 : fth * 0.5));
-      flange.position.copy(pos);
+      const flangePos = pos.clone().add(tAxis.multiplyScalar(flipTangent ? -fth * 0.5 : fth * 0.5));
+      flange.position.copy(flangePos);
       this.scene.flangeGroup.add(flange);
     };
 
     // Başlangıç flanşları: dirsekten dışarı bakan ters tangent ile hizala
-    placeFlange(framesA.start, W2a, H2a, true);
-    placeFlange(framesB.start, W2b, H2b, true);
+    placeFlange(framesA.start, W2a, H2a, true, this.elbow1Rings[0]);
+    placeFlange(framesB.start, W2b, H2b, true, this.elbow2Rings[0]);
 
     // A dalının bitiş yüzeyi köşeleri (son ring)
     const lastRingA = this.elbow1Rings[this.elbow1Rings.length - 1];
@@ -600,9 +612,11 @@ export class YBranch2 extends BasePart {
 
 
     // Tangent ve normal vektörlerini gerçek köşelerden hesapla
-    const t0A = new THREE.Vector3(0, 0, 1);
+    const secondRingA = this.elbow1Rings[1];
+    const secondCenterA = secondRingA.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(secondRingA.length);
+    const t0A = new THREE.Vector3().subVectors(secondCenterA, p0A).normalize();
     const b0A = new THREE.Vector3(0, 1, 0);
-    const n0A = new THREE.Vector3(1, 0, 0);
+    const n0A = new THREE.Vector3().crossVectors(b0A, t0A).normalize();
 
     // Bitiş frame için tangent hesapla (son iki ring arasındaki yön)
     const secondLastRingA = this.elbow1Rings[this.elbow1Rings.length - 2];
@@ -718,9 +732,11 @@ export class YBranch2 extends BasePart {
     const p0B = firstRingB.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(firstRingB.length);
     const p1B = lastRingB.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(lastRingB.length);
 
-    const t0B = new THREE.Vector3(0, 0, -1);
+    const secondRingB = this.elbow2Rings[1];
+    const secondCenterB = secondRingB.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(secondRingB.length);
+    const t0B = new THREE.Vector3().subVectors(secondCenterB, p0B).normalize();
     const b0B = new THREE.Vector3(0, 1, 0);
-    const n0B = new THREE.Vector3(1, 0, 0);
+    const n0B = new THREE.Vector3().crossVectors(b0B, t0B).normalize();
     const b1B = new THREE.Vector3(0, 1, 0);
 
     // Branch B başlangıç ölçüleri
