@@ -18,6 +18,12 @@ export class Scene3D {
     // Dimension popup referansı (dışarıdan set edilecek)
     this.dimensionPopup = null;
     this.currentPart = null;
+    this.dimensionLabels = [];
+    this.labelLayoutEnabled = true;
+    this.labelLayoutBoostFrames = 0;
+    this.labelLayoutPendingFrames = 0;
+    this.labelLayoutCooldownFrames = 0;
+    this.lastCameraMatrix = new THREE.Matrix4();
 
     this.setupRenderer();
     this.setupScene();
@@ -273,6 +279,21 @@ export class Scene3D {
     const animate = () => {
       requestAnimationFrame(animate);
       this.controls.update();
+      this.camera.updateMatrixWorld();
+      if (!this.lastCameraMatrix.equals(this.camera.matrixWorld)) {
+        this.labelLayoutBoostFrames = 1;
+        this.labelLayoutPendingFrames = 1;
+        this.labelLayoutCooldownFrames = 2;
+        this.lastCameraMatrix.copy(this.camera.matrixWorld);
+      }
+      if (this.labelLayoutEnabled) {
+        if (this.labelLayoutCooldownFrames > 0) {
+          this.labelLayoutCooldownFrames--;
+        } else if (this.labelLayoutPendingFrames > 0) {
+          this.updateLabelLayout();
+          this.labelLayoutPendingFrames--;
+        }
+      }
       this.renderer.render(this.scene, this.camera);
       this.labelRenderer.render(this.scene, this.camera);
     };
@@ -324,6 +345,7 @@ export class Scene3D {
   clearLabels() {
     // Sadece dimension label'ları temizle, axis label'ları kalıcı
     this.canvas.parentElement.querySelectorAll('.label:not(.axis-label)').forEach(el => el.remove());
+    this.dimensionLabels = [];
   }
 
   // Label Management
@@ -409,8 +431,100 @@ export class Scene3D {
 
     const label = new CSS2DObject(div);
     label.position.copy(position);
+    label.userData.basePosition = position.clone();
     this.dimensionGroup.add(label);
+    this.dimensionLabels.push(label);
+    this.labelLayoutBoostFrames = Math.max(this.labelLayoutBoostFrames, 8);
     return label;
+  }
+
+  updateLabelLayout() {
+    if (!this.dimensionLabels || this.dimensionLabels.length < 2) return;
+
+    const width = this.canvas.clientWidth;
+    const height = this.canvas.clientHeight;
+    if (!width || !height) return;
+
+    const cameraDir = new THREE.Vector3();
+    this.camera.getWorldDirection(cameraDir);
+    const right = new THREE.Vector3().crossVectors(cameraDir, this.camera.up).normalize();
+    const up = new THREE.Vector3().crossVectors(right, cameraDir).normalize();
+    const tanFov = Math.tan(THREE.MathUtils.degToRad(this.camera.fov * 0.5));
+    const aspect = this.camera.aspect;
+
+    const items = [];
+    for (const label of this.dimensionLabels) {
+      if (!label.element || !label.userData.basePosition) continue;
+      const w = label.element.offsetWidth;
+      const h = label.element.offsetHeight;
+      if (w === 0 || h === 0) continue;
+
+      const base = label.userData.basePosition.clone();
+      const ndc = base.clone().project(this.camera);
+      if (ndc.z < -1 || ndc.z > 1) continue;
+
+      const sx = (ndc.x * 0.5 + 0.5) * width;
+      const sy = (-ndc.y * 0.5 + 0.5) * height;
+      items.push({ label, base, sx, sy, w, h, offset: new THREE.Vector2(0, 0) });
+    }
+
+    if (items.length < 2) return;
+
+    const boost = this.labelLayoutBoostFrames > 0;
+    const padding = boost ? 10 : 8;
+    const maxOffset = boost ? 160 : 120;
+    const iterations = boost ? 16 : 10;
+    const pushFactor = boost ? 0.7 : 0.6;
+
+    for (let iter = 0; iter < iterations; iter++) {
+      let moved = false;
+      for (let i = 0; i < items.length; i++) {
+        for (let j = i + 1; j < items.length; j++) {
+          const a = items[i];
+          const b = items[j];
+          const ax = a.sx + a.offset.x;
+          const ay = a.sy + a.offset.y;
+          const bx = b.sx + b.offset.x;
+          const by = b.sy + b.offset.y;
+          const overlapX = (a.w + b.w) * 0.5 + padding - Math.abs(ax - bx);
+          const overlapY = (a.h + b.h) * 0.5 + padding - Math.abs(ay - by);
+
+          if (overlapX > 0 && overlapY > 0) {
+            if (overlapY <= overlapX) {
+              const push = overlapY * pushFactor;
+              const dir = ay < by ? -1 : 1;
+              a.offset.y += dir * -push;
+              b.offset.y += dir * push;
+            } else {
+              const push = overlapX * pushFactor;
+              const dir = ax < bx ? -1 : 1;
+              a.offset.x += dir * -push;
+              b.offset.x += dir * push;
+            }
+            moved = true;
+          }
+        }
+      }
+      if (!moved) break;
+    }
+
+    for (const item of items) {
+      item.offset.x = Math.max(-maxOffset, Math.min(maxOffset, item.offset.x));
+      item.offset.y = Math.max(-maxOffset, Math.min(maxOffset, item.offset.y));
+
+      const depth = cameraDir.dot(new THREE.Vector3().subVectors(item.base, this.camera.position));
+      if (depth <= 0) continue;
+      const worldPerPixelY = (2 * depth * tanFov) / height;
+      const worldPerPixelX = worldPerPixelY * aspect;
+      const offsetWorld = right.clone()
+        .multiplyScalar(item.offset.x * worldPerPixelX)
+        .add(up.clone().multiplyScalar(-item.offset.y * worldPerPixelY));
+      item.label.position.copy(item.base.clone().add(offsetWorld));
+    }
+
+    if (this.labelLayoutBoostFrames > 0) {
+      this.labelLayoutBoostFrames--;
+    }
   }
 
   addAxisLabel(text, position, color = null) {
