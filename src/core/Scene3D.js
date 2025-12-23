@@ -355,76 +355,172 @@ export class Scene3D {
     div.textContent = text;
     if (color) div.style.color = color;
 
-    // Debug log
-    if (paramData) {
-      console.log('📍 Label created:', text, 'paramData:', paramData, 'popup:', !!this.dimensionPopup, 'part:', !!this.currentPart);
-    }
-
-    // Eğer paramData varsa (dimension label), tıklanabilir yap
     if (paramData && this.dimensionPopup && this.currentPart) {
       div.style.cursor = 'pointer';
       div.style.userSelect = 'none';
       div.style.touchAction = 'manipulation';
       div.classList.add('dimension-label');
 
-      // Mobil ve desktop için birleşik event handler
+      const forwardTarget = this.renderer?.domElement || this.canvas;
+      const captureTouch = (touch) => {
+        if (!touch) return null;
+        return {
+          identifier: touch.identifier,
+          clientX: touch.clientX,
+          clientY: touch.clientY,
+          pageX: touch.pageX,
+          pageY: touch.pageY,
+          screenX: touch.screenX,
+          screenY: touch.screenY
+        };
+      };
+      const forwardPointerEvent = (type, touch, pointerId) => {
+        if (!forwardTarget || !touch || !window.PointerEvent) return false;
+        const id = pointerId ?? touch.identifier ?? 1;
+        const init = {
+          pointerId: id,
+          pointerType: 'touch',
+          isPrimary: true,
+          bubbles: true,
+          cancelable: true,
+          clientX: touch.clientX,
+          clientY: touch.clientY,
+          pageX: touch.pageX,
+          pageY: touch.pageY,
+          screenX: touch.screenX,
+          screenY: touch.screenY,
+          button: 0,
+          buttons: type === 'pointerup' ? 0 : 1
+        };
+        forwardTarget.dispatchEvent(new PointerEvent(type, init));
+        return true;
+      };
+      const forwardTouchEvent = (type, touch, pointerId) => {
+        if (!forwardTarget || !touch || typeof TouchEvent === 'undefined' || typeof Touch === 'undefined') return false;
+        try {
+          const id = pointerId ?? touch.identifier ?? 1;
+          const t = new Touch({
+            identifier: id,
+            target: forwardTarget,
+            clientX: touch.clientX,
+            clientY: touch.clientY,
+            pageX: touch.pageX,
+            pageY: touch.pageY,
+            screenX: touch.screenX,
+            screenY: touch.screenY
+          });
+          const isEnd = type === 'touchend' || type === 'touchcancel';
+          const evt = new TouchEvent(type, {
+            touches: isEnd ? [] : [t],
+            targetTouches: isEnd ? [] : [t],
+            changedTouches: [t],
+            bubbles: true,
+            cancelable: true
+          });
+          forwardTarget.dispatchEvent(evt);
+          return true;
+        } catch (err) {
+          return false;
+        }
+      };
+      const mapPointerToTouch = (type) => {
+        if (type === 'pointerdown') return 'touchstart';
+        if (type === 'pointermove') return 'touchmove';
+        return 'touchend';
+      };
+      const forwardToControls = (type, touch, pointerId) => {
+        if (forwardPointerEvent(type, touch, pointerId)) return;
+        forwardTouchEvent(mapPointerToTouch(type), touch, pointerId);
+      };
+
       let touchStartTime = 0;
       let touchMoved = false;
       let touchStartPos = { x: 0, y: 0 };
-      let isProcessing = false;
+      let lastTouch = null;
+      let forwarding = false;
+      let forwardId = null;
+      let suppressClick = false;
 
-      // Touch start - başlangıç zamanını kaydet
       div.addEventListener('touchstart', (e) => {
         touchStartTime = Date.now();
         touchMoved = false;
-        isProcessing = false;
-        if (e.touches[0]) {
+        forwarding = false;
+        forwardId = null;
+        suppressClick = false;
+        const touch = e.touches[0];
+        lastTouch = captureTouch(touch);
+        if (touch) {
           touchStartPos = {
-            x: e.touches[0].clientX,
-            y: e.touches[0].clientY
+            x: touch.clientX,
+            y: touch.clientY
           };
         }
-        console.log('🟢 touchstart on label:', text);
       }, { passive: true });
 
-      // Touch move - hareket algıla
       div.addEventListener('touchmove', (e) => {
-        if (e.touches[0]) {
-          const deltaX = Math.abs(e.touches[0].clientX - touchStartPos.x);
-          const deltaY = Math.abs(e.touches[0].clientY - touchStartPos.y);
-          if (deltaX > 10 || deltaY > 10) {
-            touchMoved = true;
-            console.log('🔵 touchmove detected - moved:', deltaX, deltaY);
+        const touch = e.touches[0];
+        if (!touch) return;
+        lastTouch = captureTouch(touch);
+        const deltaX = Math.abs(touch.clientX - touchStartPos.x);
+        const deltaY = Math.abs(touch.clientY - touchStartPos.y);
+        if (deltaX > 10 || deltaY > 10) {
+          touchMoved = true;
+          suppressClick = true;
+          if (!forwarding) {
+            forwarding = true;
+            forwardId = touch.identifier ?? 1;
+            forwardToControls('pointerdown', lastTouch, forwardId);
+          }
+          forwardToControls('pointermove', lastTouch, forwardId);
+          if (e.cancelable) {
+            e.preventDefault();
           }
         }
-      }, { passive: true });
+      }, { passive: false });
 
-      // Touch end - PASSIVE bırakıyoruz, click event'e güveniyoruz
       div.addEventListener('touchend', (e) => {
         const touchDuration = Date.now() - touchStartTime;
-        console.log('🟡 touchend on label:', text, 'duration:', touchDuration, 'moved:', touchMoved);
-
-        // Sadece bilgi için - asıl işlem click'te
-        if (!touchMoved && touchDuration < 500) {
-          isProcessing = true;
-          console.log('✅ Valid tap detected, waiting for click event...');
+        const endTouch = captureTouch(e.changedTouches[0]) || lastTouch;
+        if (forwarding && endTouch) {
+          forwardToControls('pointerup', endTouch, forwardId);
+        } else if (!touchMoved && touchDuration < 350) {
+          suppressClick = true;
+          const eventData = {
+            clientX: touchStartPos.x,
+            clientY: touchStartPos.y
+          };
+          this.dimensionPopup.show(paramData, this.currentPart, eventData);
         }
-      }, { passive: true });
+        forwarding = false;
+        forwardId = null;
+        if (suppressClick && e.cancelable) {
+          e.preventDefault();
+        }
+      }, { passive: false });
 
-      // Click event - Hem mobil hem desktop için
+      div.addEventListener('touchcancel', (e) => {
+        const endTouch = captureTouch(e.changedTouches[0]) || lastTouch;
+        if (forwarding && endTouch) {
+          forwardToControls('pointerup', endTouch, forwardId);
+        }
+        forwarding = false;
+        forwardId = null;
+      }, { passive: false });
+
       div.addEventListener('click', (e) => {
-        console.log('🔴 click event triggered on label:', text, 'pointerType:', e.pointerType);
+        if (suppressClick) {
+          suppressClick = false;
+          return;
+        }
 
         e.preventDefault();
         e.stopPropagation();
 
-        // Touch pozisyonunu al
         const eventData = {
           clientX: e.clientX || touchStartPos.x,
           clientY: e.clientY || touchStartPos.y
         };
 
-        console.log('📍 Opening popup at:', eventData);
         this.dimensionPopup.show(paramData, this.currentPart, eventData);
       }, false);
     }
