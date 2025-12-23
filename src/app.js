@@ -384,8 +384,8 @@ class App {
       // Order button
       const buttonContainer = document.querySelector('.canvas-wrapper');
       if (buttonContainer) {
-        this.orderButton = new OrderButton(buttonContainer, () => {
-          this.handleAddToCart();
+        this.orderButton = new OrderButton(buttonContainer, (quantity) => {
+          this.handleAddToCart(quantity);
         });
 
         // Badge'leri güncelle (async)
