@@ -776,6 +776,12 @@ html, body {
   font-size: 10px !important;
 }
 
+@media (max-width: 768px) {
+  .label {
+    font-size: 9.8px;
+  }
+}
+
 /* Eksen Etiketleri (X, Y, Z) */
 .axis-label {
   font-weight: 700;
