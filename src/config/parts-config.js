@@ -48,29 +48,11 @@ export const PARTS_CONFIG = {
     description: 'Tek yükseklik ölçülü redüksiyon',
     component: 'Yaka'
   },
-  'duz-pantolon': {
-    name: 'Düz Pantolon',
-    icon: '🔀',
-    description: 'Düz pantolon side branch (taper prizma)',
-    component: 'DuzPantolon'
-  },
-  'side-branch': {
-    name: 'Side Branch',
-    icon: '🔱',
-    description: 'Dirsek + Taper Prizma birleşik parça (pozisyon ayarlanabilir)',
-    component: 'SideBranch'
-  },
   'side-branch-2': {
     name: 'Side Branch 2',
     icon: '🔷',
     description: 'Redüksiyonlu Dirsek (Side Branch 2)',
     component: 'SideBranch2'
-  },
-  'y-branch': {
-    name: 'Y-Branch',
-    icon: '🔱',
-    description: 'İki kollu simetrik Y dallanma (çift dirsek)',
-    component: 'YBranch'
   },
   'y-branch-2': {
     name: 'Y-Branch 2',

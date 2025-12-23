@@ -20,7 +20,7 @@ export class Reduksiyon extends BasePart {
       H1: 80,         // Bitiş yükseklik
       W2: 60,         // Başlangıç genişlik
       H2: 40,         // Başlangıç yükseklik
-      L: 120,         // Uzunluk
+      L: 40,          // Uzunluk
       t: 0.12,        // Sac kalınlığı
 
       // Geometri
@@ -562,25 +562,23 @@ export class Reduksiyon extends BasePart {
       'L'
     );
 
-    // Yüz etiketleri - yüzeye yapışık 3D mesh etiketler
+    // Yüz etiketleri - eğimli yüzeylere yapışık 3D mesh etiketler
     if (this.params.showSideLabels) {
-      const mid = new THREE.Vector3(0, 0, 0);
-      const widthCm = 30; // Etiket genişliği (cm cinsinden)
+      const widthCm = 15; // Etiket genişliği (cm cinsinden)
 
-      // Ortalama boyutları kullan
-      const Wavg = (W1 + W2) / 2;
-      const Havg = (H1 + H2) / 2;
+      const right0 = p0.clone().add(n.clone().multiplyScalar(W2 / 2));
+      const right1 = p1.clone().add(n.clone().multiplyScalar(W1 / 2));
+      const left0 = p0.clone().add(n.clone().multiplyScalar(-W2 / 2));
+      const left1 = p1.clone().add(n.clone().multiplyScalar(-W1 / 2));
+      const top0 = p0.clone().add(b.clone().multiplyScalar(H2 / 2));
+      const top1 = p1.clone().add(b.clone().multiplyScalar(H1 / 2));
+      const bottom0 = p0.clone().add(b.clone().multiplyScalar(-H2 / 2));
+      const bottom1 = p1.clone().add(b.clone().multiplyScalar(-H1 / 2));
 
-      const faceLabels = [
-        { text: 'SAĞ', base: mid.clone().add(n.clone().multiplyScalar(Wavg/2)), normal: n.clone() },
-        { text: 'SOL', base: mid.clone().add(n.clone().multiplyScalar(-Wavg/2)), normal: n.clone().negate() },
-        { text: 'ÜST', base: mid.clone().add(b.clone().multiplyScalar(Havg/2)), normal: b.clone() },
-        { text: 'ALT', base: mid.clone().add(b.clone().multiplyScalar(-Havg/2)), normal: b.clone().negate() }
-      ];
-
-      faceLabels.forEach(label => {
-        this.addFaceTag(label.text, label.base, label.normal, widthCm, '#ff6');
-      });
+      this.addSlopedFaceTag('SAĞ', right0, right1, b, n, widthCm, '#ff6');
+      this.addSlopedFaceTag('SOL', left0, left1, b, n.clone().negate(), widthCm, '#ff6');
+      this.addSlopedFaceTag('ÜST', top0, top1, n, b, widthCm, '#ff6');
+      this.addSlopedFaceTag('ALT', bottom0, bottom1, n, b.clone().negate(), widthCm, '#ff6');
     }
   }
 
@@ -678,63 +676,43 @@ export class Reduksiyon extends BasePart {
     return mesh;
   }
 
-  // Eğimli yüz etiketi ekle - center, başlangıç ve bitiş noktalarına göre
-  addSlopedFaceTag(text, center, p0, p1, widthCm, color) {
+  // Eğimli yüz etiketi ekle - yüzey eksenlerine göre
+  addSlopedFaceTag(text, p0, p1, edgeDir, expectedNormal, widthCm, color) {
     const mesh = this.makeTextPlane(text, widthCm, color);
 
-    // Merkez nokta - etiket pozisyonu (parametre olarak geldi)
-    const mid = center.clone();
+    const vLen = new THREE.Vector3().subVectors(p1, p0);
+    if (vLen.lengthSq() < 1e-8) return mesh;
+    vLen.normalize();
 
-    // Z ekseni (uzunluk ekseni)
-    const tz = new THREE.Vector3(0, 0, 1);
+    const vEdge = edgeDir.clone().normalize();
+    let normal = new THREE.Vector3().crossVectors(vLen, vEdge).normalize();
+    if (expectedNormal && normal.dot(expectedNormal) < 0) {
+      normal.negate();
+    }
 
-    // Yüzey üzerinde iki vektör oluştur
-    const v1 = new THREE.Vector3().subVectors(p1, p0); // Başlangıçtan bitişe
-    const v2 = tz.clone(); // Z ekseni boyunca
-
-    // Yüzey normali - iki vektörün cross product'u
-    const normal = new THREE.Vector3().crossVectors(v1, v2).normalize();
-
-    // Yüzey teğeti (Z ekseni boyunca)
-    const tangentZ = tz.clone();
-
-    // Yüzey teğeti (eğim yönünde)
-    const tangentSlope = v1.clone().normalize();
-
-    // Koordinat sistemi oluştur: normal (dışarı), tangentZ (yukarı), tangentSlope (sağa)
-    const matrix = new THREE.Matrix4();
-    matrix.makeBasis(
-      new THREE.Vector3().crossVectors(tangentZ, normal).normalize(), // right (x)
-      tangentZ.clone(), // up (y)
-      normal.clone()    // forward (z)
-    );
-
+    const tangentY = vLen.clone();
+    const tangentX = new THREE.Vector3().crossVectors(tangentY, normal).normalize();
+    const matrix = new THREE.Matrix4().makeBasis(tangentX, tangentY, normal);
     mesh.quaternion.setFromRotationMatrix(matrix);
-
-    // 90 derece daha döndür (Z ekseni etrafında)
-    const additionalRotation = new THREE.Quaternion().setFromAxisAngle(
-      new THREE.Vector3(0, 0, 1),
-      Math.PI / 2
-    );
-    mesh.quaternion.premultiply(additionalRotation);
 
     // Etiket yüksekliğini hesapla (mesh döndürüldükten sonra)
     const W = BasePart.cm(widthCm);
     const aspect = mesh.geometry.parameters.width / mesh.geometry.parameters.height;
     const H = W / aspect;
 
-    // Eğim açısını hesapla - v1'in XY düzlemi ile açısı
-    const v1XY = new THREE.Vector2(v1.x, v1.y).length();
-    const v1Z = Math.abs(v1.z);
-    const slopeAngle = Math.atan2(v1XY, v1Z);
+    // Eğim açısını hesapla - vLen'in XY düzlemi ile açısı
+    const vLenXY = new THREE.Vector2(vLen.x, vLen.y).length();
+    const vLenZ = Math.abs(vLen.z);
+    const slopeAngle = Math.atan2(vLenXY, vLenZ);
 
     // Normal offset - etiketi tamamen dışarıda tut
     // Eğimli yüzeylerde etiketin yüksekliğinin tamamını kullan
     const baseOffset = H * 0.7; // Etiket yüksekliğinin çoğu
     const slopeExtra = H * Math.sin(slopeAngle) * 1.2; // Eğime göre ekstra
-    const normalOffset = baseOffset + slopeExtra;
+    const normalOffset = (baseOffset + slopeExtra) * 0.2;
 
     // Pozisyonu ayarla - normal yönünde offset ekle
+    const mid = p0.clone().add(p1).multiplyScalar(0.5);
     mesh.position.copy(mid.clone().add(normal.clone().multiplyScalar(normalOffset)));
 
     // Rotated dimension group'a ekle

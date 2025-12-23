@@ -19,15 +19,15 @@ export class KaredenYuvarlaga extends BasePart {
       W1: 100,        // Kare genişlik
       H1: 80,         // Kare yükseklik
       Phi: 60,        // Daire çapı
-      L: 120,         // Uzunluk
+      L: 40,          // Uzunluk
       t: 0.12,        // Sac kalınlığı
 
       // Geometri
       steps: 120,     // Yol segmenti
-      edgeSegs: 12,   // Halka noktası (N)
+      edgeSegs: 200,  // Halka noktası (N)
 
       // Ofset modları
-      modeW: 'flatRight',  // 'flatLeft', 'central', 'flatRight', 'value'
+      modeW: 'central',    // 'flatLeft', 'central', 'flatRight', 'value'
       modeH: 'central',    // 'flatBottom', 'central', 'flatTop', 'value'
       offWcm: 0,           // Manuel ofset genişlik (cm)
       offHcm: 0,           // Manuel ofset yükseklik (cm)
@@ -64,7 +64,7 @@ export class KaredenYuvarlaga extends BasePart {
           name: 'Geometri',
           params: [
             { key: 'steps', label: 'Yol Segmenti (steps)', type: 'number', min: 8, max: 400, step: 1 },
-            { key: 'edgeSegs', label: 'Halka Noktası (N)', type: 'number', min: 8, max: 96, step: 1 }
+            { key: 'edgeSegs', label: 'Halka Noktası (N)', type: 'number', min: 8, max: 400, step: 1 }
           ]
         },
         {
@@ -473,23 +473,169 @@ export class KaredenYuvarlaga extends BasePart {
       'L'
     );
 
-    // Yüz etiketleri
-    if (this.params.showSideLabels) {
-      const mid = new THREE.Vector3(this.calculateCX(0.25), this.calculateCY(0.25), 0);
-      const ox = W1 * 0.25;
-      const oy = H1 * 0.25;
+    // Yüz etiketleri - eğimli yüzeylere yapışık 3D mesh etiketler
+    if (this.params.showSideLabels && this.Rout && this.Rout.length > 2) {
+      const midIdx = Math.floor(this.params.steps / 2);
+      const ringMid = this.Rout[midIdx];
+      if (ringMid && ringMid.length) {
+        const pickIndex = (axis, dir) => {
+          let bestIdx = 0;
+          let bestVal = dir === 'max' ? -Infinity : Infinity;
+          for (let i = 0; i < ringMid.length; i++) {
+            const v = axis === 'x' ? ringMid[i].x : ringMid[i].y;
+            if ((dir === 'max' && v > bestVal) || (dir === 'min' && v < bestVal)) {
+              bestVal = v;
+              bestIdx = i;
+            }
+          }
+          return bestIdx;
+        };
 
-      const labels = [
-        { text: 'SAĞ', pos: mid.clone().add(n.clone().multiplyScalar(ox)) },
-        { text: 'SOL', pos: mid.clone().add(n.clone().multiplyScalar(-ox)) },
-        { text: 'ÜST', pos: mid.clone().add(b.clone().multiplyScalar(oy)) },
-        { text: 'ALT', pos: mid.clone().add(b.clone().multiplyScalar(-oy)) }
-      ];
+        const rightIdx = pickIndex('x', 'max');
+        const leftIdx = pickIndex('x', 'min');
+        const topIdx = pickIndex('y', 'max');
+        const bottomIdx = pickIndex('y', 'min');
+        const widthCm = 15; // Etiket genişliği (cm cinsinden)
 
-      labels.forEach(lbl => {
-        const label = this.scene.addLabel(lbl.text, lbl.pos, '#6cf');
-      });
+        this.addSurfaceLabel('SAĞ', rightIdx, widthCm, '#ff6');
+        this.addSurfaceLabel('SOL', leftIdx, widthCm, '#ff6');
+        this.addSurfaceLabel('ÜST', topIdx, widthCm, '#ff6');
+        this.addSurfaceLabel('ALT', bottomIdx, widthCm, '#ff6');
+      }
     }
+  }
+
+  // Canvas kullanarak 3D metin düzlemi oluştur (yüzeye yapışık etiket için)
+  makeTextPlane(text, widthCm, color = '#ff6') {
+    const pad = 20;
+    const font = 64;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Metin boyutunu ölç
+    ctx.font = `700 ${font}px system-ui`;
+    const textWidth = ctx.measureText(text).width;
+    const textHeight = font * 1.4;
+
+    canvas.width = Math.ceil(textWidth) + pad * 2;
+    canvas.height = Math.ceil(textHeight) + pad * 2;
+
+    // Yeniden font ayarla (canvas boyutu değişti)
+    ctx.font = `700 ${font}px system-ui`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Yuvarlatılmış arka plan
+    const r = 16;
+    const w = canvas.width;
+    const h = canvas.height;
+
+    ctx.fillStyle = 'rgba(18, 24, 34, 0.9)';
+    ctx.beginPath();
+    ctx.moveTo(r, 0);
+    ctx.lineTo(w - r, 0);
+    ctx.quadraticCurveTo(w, 0, w, r);
+    ctx.lineTo(w, h - r);
+    ctx.quadraticCurveTo(w, h, w - r, h);
+    ctx.lineTo(r, h);
+    ctx.quadraticCurveTo(0, h, 0, h - r);
+    ctx.lineTo(0, r);
+    ctx.quadraticCurveTo(0, 0, r, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // Kenarlık
+    ctx.strokeStyle = 'rgba(57, 65, 79, 0.9)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Metin
+    ctx.fillStyle = color;
+    ctx.fillText(text, w / 2, h / 2);
+
+    // Texture oluştur
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.anisotropy = 4;
+
+    // Plane geometrisi
+    const aspect = w / h;
+    const W = BasePart.cm(widthCm);
+    const H = W / aspect;
+
+    const geometry = new THREE.PlaneGeometry(W, H);
+    const material = new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+      depthTest: true,
+      depthWrite: true
+    });
+
+    return new THREE.Mesh(geometry, material);
+  }
+
+  // Eğimli yüzey etiketi ekle - halka üzerinden yüzeye yapışık
+  addSurfaceLabel(text, ringIndex, widthCm, color) {
+    const mesh = this.makeTextPlane(text, widthCm, color);
+    if (!this.Rout || this.Rout.length < 3) return mesh;
+
+    const midIdx = Math.floor(this.params.steps / 2);
+    const prevIdx = Math.max(0, midIdx - 1);
+    const nextIdx = Math.min(this.params.steps, midIdx + 1);
+    const ringMid = this.Rout[midIdx];
+    const ringPrev = this.Rout[prevIdx];
+    const ringNext = this.Rout[nextIdx];
+    if (!ringMid || !ringPrev || !ringNext) return mesh;
+
+    const N = ringMid.length;
+    const idx = ((ringIndex % N) + N) % N;
+
+    const pPrev = ringPrev[idx];
+    const pNext = ringNext[idx];
+    const pMid = ringMid[idx];
+
+    const tLen = new THREE.Vector3().subVectors(pNext, pPrev);
+    if (tLen.lengthSq() < 1e-8) return mesh;
+    tLen.normalize();
+
+    const pA = ringMid[(idx - 1 + N) % N];
+    const pB = ringMid[(idx + 1) % N];
+    const tRing = new THREE.Vector3().subVectors(pB, pA);
+    if (tRing.lengthSq() < 1e-8) return mesh;
+    tRing.normalize();
+
+    let normal = new THREE.Vector3().crossVectors(tLen, tRing).normalize();
+    const center = new THREE.Vector3();
+    for (const p of ringMid) center.add(p);
+    center.multiplyScalar(1 / N);
+    const radial = new THREE.Vector3().subVectors(pMid, center);
+    if (radial.lengthSq() > 1e-8 && normal.dot(radial) < 0) {
+      normal.negate();
+    }
+
+    const tangentX = new THREE.Vector3().crossVectors(tLen, normal).normalize();
+    const matrix = new THREE.Matrix4().makeBasis(tangentX, tLen, normal);
+    mesh.quaternion.setFromRotationMatrix(matrix);
+
+    // Etiket yüksekliğini hesapla (mesh döndürüldükten sonra)
+    const W = BasePart.cm(widthCm);
+    const aspect = mesh.geometry.parameters.width / mesh.geometry.parameters.height;
+    const H = W / aspect;
+
+    // Eğim açısını hesapla - tLen'in XY düzlemi ile açısı
+    const tLenXY = new THREE.Vector2(tLen.x, tLen.y).length();
+    const tLenZ = Math.abs(tLen.z);
+    const slopeAngle = Math.atan2(tLenXY, tLenZ);
+
+    // Normal offset - etiketi yüzeye yaklaştır
+    const baseOffset = H * 0.7;
+    const slopeExtra = H * Math.sin(slopeAngle) * 1.2;
+    const normalOffset = (baseOffset + slopeExtra) * 0.2;
+
+    mesh.position.copy(pMid.clone().add(normal.clone().multiplyScalar(normalOffset)));
+    this.scene.dimensionGroup.add(mesh);
+    return mesh;
   }
 
   calculateArea() {
