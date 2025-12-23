@@ -241,7 +241,7 @@ class App {
     if (!hud) return;
 
     hud.innerHTML = `
-      <div class="hud-line">Sol tık: döndür • Sağ tık: kaydır • Tekerlek: zoom</div>
+      <div class="hud-line" id="hud-help"></div>
       <div class="hud-line" id="hud-info"></div>
     `;
   }
@@ -340,19 +340,23 @@ class App {
   }
 
   updateHUD() {
+    const hudHelp = document.getElementById('hud-help');
     const hudInfo = document.getElementById('hud-info');
     if (!hudInfo || !this.currentPart) return;
 
-    const dims = this.currentPart.getDimensions();
-    const dimsText = Object.entries(dims)
-      .map(([key, value]) => {
-        // Tam sayıysa ondalık gösterme, değilse 1 ondalık
-        const formattedValue = Number.isInteger(value) ? value : value.toFixed(1);
-        return `${key}: ${formattedValue} cm`;
-      })
-      .join(' • ');
+    if (hudHelp) {
+      hudHelp.textContent = window.innerWidth <= 768
+        ? '1 parmak: dondur - 2 parmak: kaydir/zoom'
+        : 'Sol tik: dondur - Sag tik: kaydir - Tekerlek: zoom';
+    }
 
-    hudInfo.textContent = dimsText;
+    const areaData = this.currentPart.calculateArea();
+    const outer = areaData.outer || 0;
+    const kFactor = this.currentPart.params?.kFactor ?? 1;
+    const wastePercent = this.currentPart.params?.wastePercent ?? 0;
+    const sheet = outer * kFactor;
+
+    hudInfo.textContent = `Alan: ${sheet.toFixed(3)} m2 - Atik: %${wastePercent.toFixed(1)}`;
   }
 
   // Export için (sipariş sistemi ile entegrasyon)
