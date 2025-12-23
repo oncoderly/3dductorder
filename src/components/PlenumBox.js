@@ -419,8 +419,8 @@ export class PlenumBox extends BasePart {
   }
 
   createArrowForDimension(p1, p2, color, head, rad) {
-    // Kalın çizgi gövdesi rotatedDimensionGroup'a ekle
-    this.addDimensionSegment(p1, p2, color, this.rotatedDimensionGroup, this.params.dimAlwaysOnTop);
+    // Kalın çizgiyi çiz ve aynı grupla konileri ekle
+    const line = this.addDimensionSegment(p1, p2, color, this.rotatedDimensionGroup, this.params.dimAlwaysOnTop);
 
     const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
 
