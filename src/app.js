@@ -8,6 +8,7 @@ import { EsParcasi } from './components/EsParcasi.js';
 import { PlenumBox } from './components/PlenumBox.js';
 import { KaredenYuvarlaga } from './components/KaredenYuvarlaga.js';
 import { Reduksiyon } from './components/Reduksiyon.js';
+import { Yaka } from './components/yaka.js';
 import { DuzPantolon } from './components/DuzPantolon.js';
 import { SideBranch } from './components/SideBranch.js';
 import { SideBranch2 } from './components/sidebranch-2.js';
@@ -281,6 +282,9 @@ class App {
           break;
         case 'reduksiyon':
           this.currentPart = new Reduksiyon(this.scene, this.materials);
+          break;
+        case 'yaka':
+          this.currentPart = new Yaka(this.scene, this.materials);
           break;
         case 'duz-pantolon':
           this.currentPart = new DuzPantolon(this.scene, this.materials);

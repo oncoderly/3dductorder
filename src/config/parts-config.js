@@ -42,6 +42,12 @@ export const PARTS_CONFIG = {
     description: 'Taper prizma redüksiyon',
     component: 'Reduksiyon'
   },
+  'yaka': {
+    name: 'Yaka',
+    icon: '📐',
+    description: 'Tek yükseklik ölçülü redüksiyon',
+    component: 'Yaka'
+  },
   'duz-pantolon': {
     name: 'Düz Pantolon',
     icon: '🔀',
