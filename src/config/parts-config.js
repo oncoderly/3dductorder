@@ -6,6 +6,12 @@ export const PARTS_CONFIG = {
     description: 'Dikdörtgen kesitli düz hava kanalı',
     component: 'DuzKanal'
   },
+  'kortapa': {
+    name: 'Kortapa',
+    icon: '[]',
+    description: 'Tek ucu kapali duz kanal',
+    component: 'Kortapa'
+  },
   'reduksiyon-dirsek': {
     name: 'Redüksiyonlu Dirsek',
     icon: '🔄',

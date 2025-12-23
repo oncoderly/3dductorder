@@ -2,6 +2,7 @@
 import { Scene3D } from './core/Scene3D.js';
 import { Materials } from './core/Materials.js';
 import { DuzKanal } from './components/DuzKanal.js';
+import { Kortapa } from './components/kortapa.js';
 import { ReduksiyonDirsek } from './components/ReduksiyonDirsek.js';
 import { Dirsek } from './components/Dirsek.js';
 import { EsParcasi } from './components/EsParcasi.js';
@@ -261,6 +262,9 @@ class App {
       switch (partKey) {
         case 'duz-kanal':
           this.currentPart = new DuzKanal(this.scene, this.materials);
+          break;
+        case 'kortapa':
+          this.currentPart = new Kortapa(this.scene, this.materials);
           break;
         case 'reduksiyon-dirsek':
           this.currentPart = new ReduksiyonDirsek(this.scene, this.materials);
