@@ -9,6 +9,7 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   padding: 2px;
+  box-sizing: border-box;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
   min-width: 320px;
   max-width: 90vw;
@@ -253,37 +254,50 @@
 /* Küçük mobil cihazlar */
 @media (max-width: 480px) {
   .dimension-popup {
-    min-width: 260px;
-    padding: 2px;
+    min-width: 0 !important;
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    padding: 2px !important;
   }
 
   .dimension-popup-controls {
-    gap: 6px;
-    padding: 3px;
+    gap: 4px !important;
+    padding: 3px !important;
+    flex-wrap: wrap;
+    justify-content: center;
   }
 
   .dimension-popup-icon {
-    width: 28px;
-    height: 28px;
-    font-size: 14px;
-  }
-
-  .dimension-popup-btn {
-    width: 40px;
-    height: 40px;
-    font-size: 13px;
-  }
-
-  .dimension-popup-btn.step1 {
-    width: 36px;
-    height: 36px;
+    width: 24px;
+    height: 24px;
     font-size: 12px;
   }
 
+  .dimension-popup-btn {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 12px !important;
+  }
+
+  .dimension-popup-btn.step1 {
+    width: 30px !important;
+    height: 30px !important;
+    font-size: 11px !important;
+  }
+
   .dimension-popup-value {
-    min-width: 40px;
-    height: 40px;
-    font-size: 15px;
+    min-width: 36px !important;
+    height: 34px !important;
+    font-size: 14px !important;
+    padding: 0 6px !important;
+  }
+
+  .dimension-popup-slider {
+    min-width: 60px !important;
+  }
+
+  .dimension-popup-unit {
+    font-size: 12px !important;
   }
 }
 

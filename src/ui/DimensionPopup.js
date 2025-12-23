@@ -265,40 +265,47 @@ export class DimensionPopup {
   }
 
   positionPopup(clickEvent) {
+    const popupRect = this.popup.getBoundingClientRect();
+    const viewport = window.visualViewport;
+    const viewportWidth = viewport ? viewport.width : window.innerWidth;
+    const viewportHeight = viewport ? viewport.height : window.innerHeight;
+    const viewportLeft = viewport ? viewport.offsetLeft : 0;
+    const viewportTop = viewport ? viewport.offsetTop : 0;
+    const padding = 12;
+
     if (!clickEvent) {
       // Event yoksa ekranın ortasına yerleştir
-      this.popup.style.left = '50%';
-      this.popup.style.top = '50%';
-      // Merkezleme için margin-left ve margin-top kullan (transform yerine)
-      const popupRect = this.popup.getBoundingClientRect();
-      this.popup.style.marginLeft = `${-popupRect.width / 2}px`;
-      this.popup.style.marginTop = `${-popupRect.height / 2}px`;
+      let x = viewportLeft + (viewportWidth - popupRect.width) / 2;
+      let y = viewportTop + (viewportHeight - popupRect.height) / 2;
+      x = Math.max(viewportLeft + padding, Math.min(x, viewportLeft + viewportWidth - popupRect.width - padding));
+      y = Math.max(viewportTop + padding, Math.min(y, viewportTop + viewportHeight - popupRect.height - padding));
+      this.popup.style.marginLeft = '0';
+      this.popup.style.marginTop = '0';
+      this.popup.style.left = `${x}px`;
+      this.popup.style.top = `${y}px`;
       console.log('📍 Popup centered (no event)');
       return;
     }
 
-    const rect = this.container.getBoundingClientRect();
-    const popupRect = this.popup.getBoundingClientRect();
-
     console.log('📍 Position calculation:', {
-      container: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
       popup: { width: popupRect.width, height: popupRect.height },
       click: { x: clickEvent.clientX, y: clickEvent.clientY }
     });
 
     // Tıklanan pozisyon (viewport koordinatları)
-    let x = clickEvent.clientX - rect.left;
-    let y = clickEvent.clientY - rect.top;
+    let x = clickEvent.clientX;
+    let y = clickEvent.clientY;
 
     // Popup'ı merkezle
     x -= popupRect.width / 2;
     y -= popupRect.height / 2;
 
     // Ekran sınırlarını kontrol et
-    const padding = 20;
-    x = Math.max(padding, Math.min(x, rect.width - popupRect.width - padding));
-    y = Math.max(padding, Math.min(y, rect.height - popupRect.height - padding));
+    x = Math.max(viewportLeft + padding, Math.min(x, viewportLeft + viewportWidth - popupRect.width - padding));
+    y = Math.max(viewportTop + padding, Math.min(y, viewportTop + viewportHeight - popupRect.height - padding));
 
+    this.popup.style.marginLeft = '0';
+    this.popup.style.marginTop = '0';
     this.popup.style.left = `${x}px`;
     this.popup.style.top = `${y}px`;
     // transform'u 'none' yapma - CSS'teki scale ile çakışıyor
