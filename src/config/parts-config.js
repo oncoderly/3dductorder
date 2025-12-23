@@ -12,6 +12,12 @@ export const PARTS_CONFIG = {
     description: 'Redüksiyonlu çeyrek dirsek',
     component: 'ReduksiyonDirsek'
   },
+  'dirsek': {
+    name: 'Dirsek',
+    icon: '🔄',
+    description: 'Eş kesitli çeyrek dirsek',
+    component: 'Dirsek'
+  },
   'es-parcasi': {
     name: 'ES Parçası',
     icon: '⚡',

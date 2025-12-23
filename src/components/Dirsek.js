@@ -1,0 +1,380 @@
+// Dirsek Component
+import * as THREE from 'three';
+import { BasePart } from './BasePart.js';
+
+export class Dirsek extends BasePart {
+  constructor(scene, materials) {
+    super(scene, materials);
+    this.initParams();
+  }
+
+  initParams() {
+    super.initDefaultParams();
+
+    this.params = {
+      ...this.params,
+      W1: 40,
+      H1: 25,
+      t: 0.12,
+      R_in: 20,
+      A: 90,
+      steps: 100,
+      colorW1: '#007bff',
+      colorH1: '#ffd400',
+      colorR: '#ff1744',
+      colorA: '#7e57c2'
+    };
+  }
+
+  getParameterDefinitions() {
+    const common = this.getCommonParameterDefinitions();
+
+    return {
+      dimensions: [
+        { key: 'W1', label: 'Genişlik (W1)', min: 10, max: 200, step: 1, unit: 'cm', default: 40 },
+        { key: 'H1', label: 'Yükseklik (H1)', min: 10, max: 200, step: 1, unit: 'cm', default: 25 },
+        { key: 't', label: 'Sac Kalınlığı', min: 0.02, max: 1.0, step: 0.01, unit: 'cm', default: 0.12 },
+        { key: 'R_in', label: 'İç Yarıçap', min: 1, max: 300, step: 1, unit: 'cm', default: 20 },
+        { key: 'A', label: 'Açı', min: 10, max: 180, step: 1, unit: '°', default: 90 },
+        { key: 'steps', label: 'Segment Sayısı', min: 16, max: 400, step: 1, unit: '', default: 100 }
+      ],
+      colors: [
+        { key: 'colorW1', label: 'W1 Rengi', default: '#007bff' },
+        { key: 'colorH1', label: 'H1 Rengi', default: '#ffd400' },
+        { key: 'colorR', label: 'R Rengi', default: '#ff1744' },
+        { key: 'colorA', label: 'Açı Rengi', default: '#7e57c2' }
+      ],
+      // Ortak parametreler (BasePart'tan)
+      ...common
+    };
+  }
+
+  buildGeometry() {
+    const W1 = BasePart.cm(this.params.W1);
+    const H1 = BasePart.cm(this.params.H1);
+    const W2 = W1;
+    const H2 = H1;
+    const t = BasePart.cm(this.params.t);
+    const Rin = BasePart.cm(this.params.R_in);
+    const theta = THREE.MathUtils.degToRad(this.params.A);
+
+    const steps = Math.max(16, Math.floor(this.params.steps));
+
+    // İç yay sabit Rin yarıçapında
+    // Path orta hatta (Rin + W/2) - değişken yarıçaplı
+    // Geometri merkezi hesabı için ortalama yarıçap
+    const W_avg = (W1 + W2) / 2;
+    const R_mid = Rin + W_avg / 2;
+    const centerX = -R_mid * (Math.cos(theta / 2));
+    const centerZ = R_mid * (Math.sin(theta / 2));
+
+    // Outer ve inner rings
+    const ringsOuter = [];
+    const ringsInner = [];
+
+    for (let i = 0; i <= steps; i++) {
+      const u = i / steps;
+      const angle = u * theta;
+
+      // Boyut interpolasyonu
+      const W = W2 + (W1 - W2) * u;
+      const H = H2 + (H1 - H2) * u;
+
+      // Path pozisyonu - orta hatta (Rin + W/2 yarıçapında - DEĞİŞKEN)
+      const R_center = Rin + W / 2;
+      const x = -R_center * Math.cos(angle) - centerX;
+      const z = R_center * Math.sin(angle) - centerZ;
+      const pathPos = new THREE.Vector3(x, 0, z);
+
+      // Tangent, normal, binormal
+      const tangent = new THREE.Vector3(R_center * Math.sin(angle), 0, R_center * Math.cos(angle)).normalize();
+      const binormal = new THREE.Vector3(0, 1, 0);
+      const normal = new THREE.Vector3().crossVectors(binormal, tangent).normalize();
+      const Wi = Math.max(W - 2 * t, 0.001);
+      const Hi = Math.max(H - 2 * t, 0.001);
+
+      // Dikdörtgen köşeleri - path ortada, kesit her iki yöne W/2 uzanır
+      const outerRing = [
+        pathPos.clone().add(normal.clone().multiplyScalar(-W / 2)).add(binormal.clone().multiplyScalar(-H / 2)),  // iç-alt
+        pathPos.clone().add(normal.clone().multiplyScalar(W / 2)).add(binormal.clone().multiplyScalar(-H / 2)),   // dış-alt
+        pathPos.clone().add(normal.clone().multiplyScalar(W / 2)).add(binormal.clone().multiplyScalar(H / 2)),    // dış-üst
+        pathPos.clone().add(normal.clone().multiplyScalar(-W / 2)).add(binormal.clone().multiplyScalar(H / 2))    // iç-üst
+      ];
+
+      const innerRing = [
+        pathPos.clone().add(normal.clone().multiplyScalar(-Wi / 2)).add(binormal.clone().multiplyScalar(-Hi / 2)),  // iç-alt
+        pathPos.clone().add(normal.clone().multiplyScalar(Wi / 2)).add(binormal.clone().multiplyScalar(-Hi / 2)),   // dış-alt
+        pathPos.clone().add(normal.clone().multiplyScalar(Wi / 2)).add(binormal.clone().multiplyScalar(Hi / 2)),    // dış-üst
+        pathPos.clone().add(normal.clone().multiplyScalar(-Wi / 2)).add(binormal.clone().multiplyScalar(Hi / 2))    // iç-üst
+      ];
+
+      ringsOuter.push(outerRing);
+      ringsInner.push(innerRing);
+    }
+
+    // Vertex ve index dizileri
+    const vertices = [];
+    const indices = [];
+    const N = 4;
+
+    const pushRing = (ring) => {
+      for (const v of ring) {
+        vertices.push(v.x, v.y, v.z);
+      }
+    };
+
+    // Dış halkalar
+    for (let i = 0; i <= steps; i++) pushRing(ringsOuter[i]);
+
+    // İç halkalar
+    const innerBase = vertices.length / 3;
+    for (let i = 0; i <= steps; i++) pushRing(ringsInner[i]);
+
+    const quad = (a, b, c, d) => {
+      indices.push(a, b, c, a, c, d);
+    };
+
+    // Dış yüzeyler
+    for (let i = 0; i < steps; i++) {
+      const b0 = i * N;
+      const b1 = (i + 1) * N;
+      for (let k = 0; k < N; k++) {
+        const a = b0 + k;
+        const b = b0 + (k + 1) % N;
+        const c = b1 + (k + 1) % N;
+        const d = b1 + k;
+        quad(a, b, c, d);
+      }
+    }
+
+    // İç yüzeyler
+    for (let i = 0; i < steps; i++) {
+      const b0 = innerBase + i * N;
+      const b1 = innerBase + (i + 1) * N;
+      for (let k = 0; k < N; k++) {
+        const a = b0 + k;
+        const b = b0 + (k + 1) % N;
+        const c = b1 + (k + 1) % N;
+        const d = b1 + k;
+        quad(d, c, b, a);
+      }
+    }
+
+    // Geometry oluştur
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+
+    const mesh = new THREE.Mesh(geometry, this.materials.get('metal'));
+    this.scene.geometryGroup.add(mesh);
+
+    this.mainGeometry = geometry;
+    this.ringsOuter = ringsOuter;
+  }
+
+  buildFlange() {
+    const W1 = BasePart.cm(this.params.W1);
+    const H1 = BasePart.cm(this.params.H1);
+    const W2 = W1;
+    const H2 = H1;
+    const lip = BasePart.cm(this.params.flangeLip);
+    const fth = BasePart.cm(this.params.flangeThick);
+    const Rin = BasePart.cm(this.params.R_in);
+    const theta = THREE.MathUtils.degToRad(this.params.A);
+
+    // buildGeometry ile aynı merkez hesabı
+    const W_avg = (W1 + W2) / 2;
+    const R_mid = Rin + W_avg / 2;
+    const centerX = -R_mid * (Math.cos(theta / 2));
+    const centerZ = R_mid * (Math.sin(theta / 2));
+
+    // Başlangıç flanşı (u=0) - orta hatta, her iki yöne W2/2 uzanır
+    const R_center0 = Rin + W2 / 2;
+    const p0 = new THREE.Vector3(-R_center0 - centerX, 0, 0 - centerZ);
+    const t0 = new THREE.Vector3(0, 0, 1);
+    const n0 = new THREE.Vector3(1, 0, 0);
+    const b0 = new THREE.Vector3(0, 1, 0);
+
+    const F0 = this.createFlangeRect(W2, H2, lip, fth);
+    const M0 = new THREE.Matrix4().makeBasis(n0, b0, t0);
+    F0.quaternion.setFromRotationMatrix(M0);
+    F0.position.copy(p0.clone().add(t0.clone().multiplyScalar(-fth * 0.5)));
+    this.scene.flangeGroup.add(F0);
+
+    // Bitiş flanşı (u=1) - orta hatta, her iki yöne W1/2 uzanır
+    const R_center1 = Rin + W1 / 2;
+    const p1 = new THREE.Vector3(-R_center1 * Math.cos(theta) - centerX, 0, R_center1 * Math.sin(theta) - centerZ);
+    const t1 = new THREE.Vector3(R_center1 * Math.sin(theta), 0, R_center1 * Math.cos(theta)).normalize();
+    const b1 = new THREE.Vector3(0, 1, 0);
+    const n1 = new THREE.Vector3().crossVectors(b1, t1).normalize();
+
+    const F1 = this.createFlangeRect(W1, H1, lip, fth);
+    const M1 = new THREE.Matrix4().makeBasis(n1, b1, t1);
+    F1.quaternion.setFromRotationMatrix(M1);
+    F1.position.copy(p1.clone().add(t1.clone().multiplyScalar(fth * 0.5)));
+    this.scene.flangeGroup.add(F1);
+  }
+
+  addEdges() {
+    // Çeyrek daire boyunca segment çizgilerini ekle
+    if (!this.ringsOuter || this.ringsOuter.length === 0) return;
+
+    const segments = [];
+
+    // 1. Halkalar arası uzunlamasına çizgiler (dönüş çizgileri - 4 çizgi)
+    for (let i = 0; i < this.ringsOuter.length - 1; i++) {
+      const ring0 = this.ringsOuter[i];
+      const ring1 = this.ringsOuter[i + 1];
+      for (let k = 0; k < 4; k++) {
+        segments.push(ring0[k], ring1[k]);
+      }
+    }
+
+    // 2. Başlangıç ağız kenarı (ilk halka)
+    const firstRing = this.ringsOuter[0];
+    for (let k = 0; k < 4; k++) {
+      segments.push(firstRing[k], firstRing[(k + 1) % 4]);
+    }
+
+    // 3. Bitiş ağız kenarı (son halka)
+    const lastRing = this.ringsOuter[this.ringsOuter.length - 1];
+    for (let k = 0; k < 4; k++) {
+      segments.push(lastRing[k], lastRing[(k + 1) % 4]);
+    }
+
+    const geometry = new THREE.BufferGeometry().setFromPoints(segments);
+    const lines = new THREE.LineSegments(geometry, this.materials.get('edge'));
+    this.scene.geometryGroup.add(lines);
+  }
+
+  drawDimensions() {
+    const W1m = BasePart.cm(this.params.W1);
+    const H1m = BasePart.cm(this.params.H1);
+    const Rin = BasePart.cm(this.params.R_in);
+    const theta = THREE.MathUtils.degToRad(this.params.A);
+
+    // buildGeometry ile aynı merkez hesabı
+    const W_avg = W1m;
+    const R_mid = Rin + W_avg / 2;
+    const centerX = -R_mid * (Math.cos(theta / 2));
+    const centerZ = R_mid * (Math.sin(theta / 2));
+
+    // Bitiş noktası (u=1) - orta hatta
+    const R_center1 = Rin + W1m / 2;
+    const p1 = new THREE.Vector3(-R_center1 * Math.cos(theta) - centerX, 0, R_center1 * Math.sin(theta) - centerZ);
+
+    // Bitiş frame (u=1)
+    const t1 = new THREE.Vector3(R_center1 * Math.sin(theta), 0, R_center1 * Math.cos(theta)).normalize();
+    const b1 = new THREE.Vector3(0, 1, 0);
+    const n1 = new THREE.Vector3().crossVectors(b1, t1).normalize();
+
+    // Bitiş ağız W1, H1 ölçüleri - orta hatta, her iki yöne uzanır
+    const p1_LB = p1.clone().add(n1.clone().multiplyScalar(-W1m / 2)).add(b1.clone().multiplyScalar(-H1m / 2));  // iç-alt
+    const p1_RB = p1.clone().add(n1.clone().multiplyScalar(W1m / 2)).add(b1.clone().multiplyScalar(-H1m / 2));   // dış-alt
+    const p1_LT = p1.clone().add(n1.clone().multiplyScalar(-W1m / 2)).add(b1.clone().multiplyScalar(H1m / 2));   // iç-üst
+
+    // W1: alt kenar boyunca, uzatma aşağı
+    this.createDimensionLine(p1_LB, p1_RB, b1.clone().negate(), `W1 = ${BasePart.formatDimension(this.params.W1)} cm`, this.params.colorW1, 'W1');
+
+    // H1: iç kenar boyunca, uzatma içe
+    this.createDimensionLine(p1_LB, p1_LT, n1.clone().negate(), `H1 = ${BasePart.formatDimension(this.params.H1)} cm`, this.params.colorH1, 'H1');
+
+    // R(iç) yarıçapı gösterimi - gerçek iç yay üzerinde
+    // İç yay merkezi Rin yarıçapında olmalı
+    const innerArcCenter = new THREE.Vector3(0 - centerX, 0, 0 - centerZ);
+
+    // İç yay başlangıç noktası: başlangıç ağzının iç kenarı
+    const innerArcPoint = new THREE.Vector3(-Rin - centerX, 0, 0 - centerZ);
+
+    const headLen = BasePart.cm(this.params.arrowHeadCm);
+    const radius = BasePart.cm(this.params.arrowRadiusCm);
+    const dirR = new THREE.Vector3().subVectors(innerArcPoint, innerArcCenter).normalize();
+    const startR = innerArcCenter.clone().add(dirR.clone().multiplyScalar(BasePart.cm(this.params.dimOffsetCm)));
+
+    this.addDimensionSegment(startR, innerArcPoint, this.params.colorR, this.scene.dimensionGroup, this.params.dimAlwaysOnTop);
+
+    const arrowMat = this.materials.createDimensionArrowMaterial(this.params.colorR, this.params.dimAlwaysOnTop);
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(radius, headLen, 12), arrowMat);
+    cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dirR);
+    cone.position.copy(innerArcPoint);
+    cone.renderOrder = this.params.dimAlwaysOnTop ? 999 : 0;
+    this.scene.dimensionGroup.add(cone);
+
+   // R_in ve A parametreleri için paramData bul
+    const definitions = this.getParameterDefinitions();
+    const allParams = [
+      ...(definitions.dimensions || []),
+      ...(definitions.material || []),
+      ...(definitions.view || [])
+    ];
+    const paramDataR = allParams.find(p => p.key === 'R_in');
+    const paramDataA = allParams.find(p => p.key === 'A');
+
+    // R(iç) etiketi - iç yay üzerinde, biraz dışa kaydırılmış
+    const labelOffsetR = 0.15; // R etiketi için offset
+    this.scene.addLabel(`R(iç) = ${BasePart.formatDimension(this.params.R_in)} cm`,
+      startR.clone().add(innerArcPoint).multiplyScalar(0.5).add(new THREE.Vector3(0, labelOffsetR, 0)), this.params.colorR, paramDataR);
+
+    // Açı yayı - orta hat üzerinde (merkez çizgisi)
+    const arcPts = [];
+    const segs = 48;
+    const R_mid_arc = Rin + W_avg / 2; // Orta hat yarıçapı
+    for (let i = 0; i <= segs; i++) {
+      const a = i / segs * theta;
+      arcPts.push(new THREE.Vector3(-R_mid_arc * Math.cos(a) - centerX, 0, R_mid_arc * Math.sin(a) - centerZ));
+    }
+    const arcLine = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(arcPts),
+      new THREE.LineDashedMaterial({
+        color: new THREE.Color(this.params.colorA),
+        dashSize: 0.06,
+        gapSize: 0.04,
+        depthTest: !this.params.dimAlwaysOnTop
+      })
+    );
+    arcLine.computeLineDistances();
+    arcLine.renderOrder = this.params.dimAlwaysOnTop ? 999 : 0;
+    this.scene.dimensionGroup.add(arcLine);
+
+    // Açı etiketi - orta hat üzerinde, merkeze daha yakın
+    const midAngle = theta / 2;
+    const labelOffsetA = -0.1; // A etiketi için offset (aşağı)
+    this.scene.addLabel(`A = ${this.params.A}°`,
+    new THREE.Vector3(-R_mid_arc * Math.cos(midAngle) * 0.7 - centerX, labelOffsetA, R_mid_arc * Math.sin(midAngle) * 0.7 - centerZ), this.params.colorA, paramDataA);
+  }
+
+  calculateArea() {
+    if (!this.ringsOuter) return { outer: 0 };
+
+    const steps = this.ringsOuter.length - 1;
+    let outerArea = 0;
+
+    for (let i = 0; i < steps; i++) {
+      const r0 = this.ringsOuter[i];
+      const r1 = this.ringsOuter[i + 1];
+
+      for (let k = 0; k < 4; k++) {
+        const v00 = r0[k];
+        const v01 = r0[(k + 1) % 4];
+        const v11 = r1[(k + 1) % 4];
+        const v10 = r1[k];
+
+        outerArea += this.triangleArea(v00, v01, v11);
+        outerArea += this.triangleArea(v00, v11, v10);
+      }
+    }
+
+    return { outer: outerArea };
+  }
+
+  getDimensions() {
+    return {
+      W1: this.params.W1,
+      H1: this.params.H1,
+      R: this.params.R_in,
+      A: this.params.A,
+      t: this.params.t
+    };
+  }
+}

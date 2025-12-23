@@ -3,6 +3,7 @@ import { Scene3D } from './core/Scene3D.js';
 import { Materials } from './core/Materials.js';
 import { DuzKanal } from './components/DuzKanal.js';
 import { ReduksiyonDirsek } from './components/ReduksiyonDirsek.js';
+import { Dirsek } from './components/Dirsek.js';
 import { EsParcasi } from './components/EsParcasi.js';
 import { PlenumBox } from './components/PlenumBox.js';
 import { KaredenYuvarlaga } from './components/KaredenYuvarlaga.js';
@@ -201,6 +202,9 @@ class App {
           break;
         case 'reduksiyon-dirsek':
           this.currentPart = new ReduksiyonDirsek(this.scene, this.materials);
+          break;
+        case 'dirsek':
+          this.currentPart = new Dirsek(this.scene, this.materials);
           break;
         case 'es-parcasi':
           this.currentPart = new EsParcasi(this.scene, this.materials);
