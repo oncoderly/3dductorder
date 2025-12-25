@@ -61,6 +61,7 @@ export class PlenumBox extends BasePart {
         top: { count: 0, ports: [] }
       }
     };
+    this.lastPhi = this.params.Phi;
   }
 
   getParameterDefinitions() {
@@ -118,7 +119,34 @@ export class PlenumBox extends BasePart {
     face.count = count;
   }
 
+  syncPortsWithPhi() {
+    const currentPhi = Number(this.params.Phi);
+    if (!Number.isFinite(currentPhi)) return;
+
+    const lastPhi = Number(this.lastPhi);
+    if (!Number.isFinite(lastPhi)) {
+      this.lastPhi = currentPhi;
+      return;
+    }
+    if (currentPhi === lastPhi) return;
+
+    const faces = this.params.faces || {};
+    Object.keys(faces).forEach((key) => {
+      const face = faces[key];
+      if (!face || !Array.isArray(face.ports)) return;
+      face.ports.forEach((port) => {
+        const diam = Number(port.diam);
+        if (!Number.isFinite(diam) || Math.abs(diam - lastPhi) < 1e-6) {
+          port.diam = currentPhi;
+        }
+      });
+    });
+
+    this.lastPhi = currentPhi;
+  }
+
   buildGeometry() {
+    this.syncPortsWithPhi();
     // Rotated grupları her rebuild'de yeniden oluştur
     this.setupRotatedGroups();
 
@@ -232,7 +260,7 @@ export class PlenumBox extends BasePart {
 
     this.mainGeometry = geometry;
     this.ringsOuter = ringsOuter;
-    this.backPlane = back.geometry;
+    this.backPlaneMesh = back;
   }
 
   buildFlange() {
@@ -360,12 +388,12 @@ export class PlenumBox extends BasePart {
       this.rotatedGeometryGroup.add(edges1);
     }
 
-    if (this.backPlane) {
+    if (this.backPlaneMesh) {
       const edges2 = new THREE.LineSegments(
-        new THREE.EdgesGeometry(this.backPlane),
+        new THREE.EdgesGeometry(this.backPlaneMesh.geometry),
         this.materials.get('edge')
       );
-      this.rotatedGeometryGroup.add(edges2);
+      this.backPlaneMesh.add(edges2);
     }
   }
 

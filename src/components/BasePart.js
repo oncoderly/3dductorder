@@ -371,8 +371,13 @@ export class BasePart {
     return new THREE.Vector3(x, y, z);
   }
 
-  // Ölçü değerini formatla - tam sayıya yuvarla
+  // Format dimension for labels, trim trailing zeros.
   static formatDimension(value) {
-    return Math.round(value).toString();
+    if (!Number.isFinite(value)) return '';
+    const rounded = Math.round(value * 100) / 100;
+    const text = rounded.toFixed(2)
+      .replace(/\.0+$/, '')
+      .replace(/(\.\d*[1-9])0+$/, '$1');
+    return text === '-0' ? '0' : text;
   }
 }

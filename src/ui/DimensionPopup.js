@@ -8,6 +8,8 @@ export class DimensionPopup {
     this.isVisible = false;
     this.currentParam = null;
     this.currentPart = null;
+    this.stepDelta = 1;
+    this.valueDecimals = 0;
 
     this.createPopup();
     this.attachBackdropListener();
@@ -89,7 +91,7 @@ export class DimensionPopup {
     this.minusOneBtn.style.cursor = 'pointer';
     this.minusOneBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.adjustValue(-1);
+      this.adjustValue(-this.stepDelta);
     });
     controls.appendChild(this.minusOneBtn);
 
@@ -141,7 +143,7 @@ export class DimensionPopup {
     this.plusOneBtn.style.cursor = 'pointer';
     this.plusOneBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.adjustValue(+1);
+      this.adjustValue(this.stepDelta);
     });
     controls.appendChild(this.plusOneBtn);
 
@@ -221,13 +223,27 @@ export class DimensionPopup {
     this.currentPart = part;
     this.isVisible = true;
 
+    const isPlenumBox = part && part.constructor && part.constructor.name === 'PlenumBox';
+    const stepDelta = isPlenumBox ? 0.5 : 1;
+    this.stepDelta = stepDelta;
+    this.minusOneBtn.textContent = `-${stepDelta}`;
+    this.plusOneBtn.textContent = `+${stepDelta}`;
+    let stepForDisplay = stepDelta;
+    if (paramData.step != null) {
+      const parsedStep = Number(paramData.step);
+      if (Number.isFinite(parsedStep)) {
+        stepForDisplay = Math.min(stepDelta, parsedStep);
+      }
+    }
+    this.valueDecimals = this.getStepDecimals(stepForDisplay);
+
     // Header'ı güncelle
     this.header.textContent = paramData.label;
 
     // Slider ve değeri güncelle
     const currentValue = part.params[paramData.key];
     this.slider.value = currentValue;
-    this.valueDisplay.textContent = Math.round(currentValue).toString();
+    this.valueDisplay.textContent = this.formatDisplayValue(currentValue);
 
     // Min/max değerlerini ayarla (parametre tanımından)
     if (paramData.min !== undefined) {
@@ -325,7 +341,13 @@ export class DimensionPopup {
   }
 
   adjustValue(delta) {
-    const currentValue = parseFloat(this.slider.value);
+    const baseValue = this.currentPart && this.currentParam
+      ? Number(this.currentPart.params[this.currentParam.key])
+      : Number.NaN;
+    const sliderValue = parseFloat(this.slider.value);
+    const currentValue = Number.isFinite(baseValue)
+      ? baseValue
+      : (Number.isFinite(sliderValue) ? sliderValue : parseFloat(this.slider.min));
     const newValue = Math.max(
       parseFloat(this.slider.min),
       Math.min(parseFloat(this.slider.max), currentValue + delta)
@@ -337,7 +359,7 @@ export class DimensionPopup {
 
   updateValue(value) {
     // Değer display'i güncelle
-    this.valueDisplay.textContent = Math.round(value).toString();
+    this.valueDisplay.textContent = this.formatDisplayValue(value);
 
     // Part parametresini güncelle
     if (this.currentPart && this.currentParam) {
@@ -351,6 +373,23 @@ export class DimensionPopup {
         this.onUpdate(this.currentParam.key, value);
       }
     }
+  }
+
+  getStepDecimals(step) {
+    const stepValue = Number(step);
+    if (!Number.isFinite(stepValue)) return 0;
+    const text = stepValue.toString();
+    const dotIndex = text.indexOf('.');
+    if (dotIndex === -1) return 0;
+    return Math.min(4, text.length - dotIndex - 1);
+  }
+
+  formatDisplayValue(value) {
+    if (this.valueDecimals <= 0) {
+      return Math.round(value).toString();
+    }
+    const rounded = Number(value).toFixed(this.valueDecimals);
+    return rounded.replace(/\.0+$/, '');
   }
 
   destroy() {
