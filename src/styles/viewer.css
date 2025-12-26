@@ -2131,3 +2131,154 @@ html, body {
   margin-right: 6px;
   font-size: 14px;
 }
+
+/* ========================================
+   Manşon Yönetimi Bölümü Stilleri
+   ======================================== */
+
+.manson-management-section .param-section-content {
+  padding: 0 6px 6px 6px;
+}
+
+.manson-face-row {
+  background: rgba(30, 41, 59, 0.3);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 6px;
+  margin-bottom: 4px;
+  overflow: hidden;
+}
+
+.manson-face-row:last-child {
+  margin-bottom: 0;
+}
+
+.manson-face-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  background: rgba(99, 102, 241, 0.1);
+  border-bottom: 1px solid rgba(99, 102, 241, 0.15);
+}
+
+.manson-face-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #e0e7ee;
+}
+
+.manson-count-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.manson-count-input {
+  width: 40px;
+  height: 24px;
+  background: #1a2332;
+  border: 1px solid #374151;
+  border-radius: 4px;
+  color: #f0f4f8;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  padding: 0 4px;
+}
+
+.manson-count-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.manson-count-label {
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+.manson-ports-container {
+  padding: 0;
+}
+
+.manson-ports-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 8px;
+}
+
+.manson-port-item {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 4px;
+  padding: 3px 6px;
+}
+
+.manson-port-label {
+  font-size: 10px;
+  color: #34d399;
+  font-weight: 600;
+}
+
+.manson-port-input {
+  width: 45px;
+  height: 22px;
+  background: #0f1419;
+  border: 1px solid #374151;
+  border-radius: 3px;
+  color: #f0f4f8;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  padding: 0 2px;
+}
+
+.manson-port-input:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+/* Theme Modern için Manşon Yönetimi */
+.params-panel.theme-modern .manson-face-row {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.params-panel.theme-modern .manson-face-header {
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.params-panel.theme-modern .manson-face-label {
+  color: #ffffff;
+}
+
+.params-panel.theme-modern .manson-count-input {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.params-panel.theme-modern .manson-count-input:focus {
+  border-color: rgba(99, 102, 241, 0.6);
+}
+
+.params-panel.theme-modern .manson-port-item {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.params-panel.theme-modern .manson-port-input {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.params-panel.theme-modern .manson-port-input:focus {
+  border-color: rgba(16, 185, 129, 0.6);
+}

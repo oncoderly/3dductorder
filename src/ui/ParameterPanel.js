@@ -348,65 +348,126 @@ export class ParameterPanel {
   }
 
   renderFacesSection(faces) {
+    // Ana "Manşon Yönetimi" bölümü
+    const mainSection = document.createElement('div');
+    mainSection.className = 'param-section manson-management-section';
+
+    const mainHeader = document.createElement('h3');
+    mainHeader.className = 'param-section-title';
+    mainHeader.textContent = '🔘 Manşon Yönetimi';
+
+    mainHeader.addEventListener('click', () => {
+      mainSection.classList.toggle('collapsed');
+    });
+
+    mainSection.appendChild(mainHeader);
+
+    const mainContent = document.createElement('div');
+    mainContent.className = 'param-section-content';
+
+    // Her yüz için satır oluştur
     faces.forEach(face => {
-      const section = document.createElement('div');
-      section.className = 'param-section face-section collapsed';
-      section.dataset.faceKey = face.key;
+      const faceRow = document.createElement('div');
+      faceRow.className = 'manson-face-row';
+      faceRow.dataset.faceKey = face.key;
 
-      const header = document.createElement('h3');
-      header.className = 'param-section-title';
-      header.textContent = face.label;
+      // Yüz adı ve adet kontrolü aynı satırda
+      const faceHeader = document.createElement('div');
+      faceHeader.className = 'manson-face-header';
 
-      // Accordion click handler
-      header.addEventListener('click', () => {
-        section.classList.toggle('collapsed');
-      });
+      const faceLabel = document.createElement('span');
+      faceLabel.className = 'manson-face-label';
+      faceLabel.textContent = face.label;
 
-      section.appendChild(header);
-
-      const content = document.createElement('div');
-      content.className = 'param-section-content';
-
-      // Adet kontrolü
-      const countControl = document.createElement('div');
-      countControl.className = 'param-control';
-
-      const countLabel = document.createElement('label');
-      countLabel.className = 'param-label';
-      countLabel.textContent = 'Adet';
+      const countWrapper = document.createElement('div');
+      countWrapper.className = 'manson-count-wrapper';
 
       const countInput = document.createElement('input');
       countInput.type = 'number';
-      countInput.className = 'param-input';
+      countInput.className = 'manson-count-input';
       countInput.min = 0;
       countInput.max = 20;
       countInput.step = 1;
       countInput.value = this.part.params.faces[face.key].count || 0;
 
+      const countLabel = document.createElement('span');
+      countLabel.className = 'manson-count-label';
+      countLabel.textContent = 'adet';
+
       countInput.addEventListener('input', (e) => {
         const count = parseInt(e.target.value) || 0;
         this.part.ensureFacePorts(face.key, count);
-        this.renderFacePortsInputs(face.key, section);
+        this.renderMansonPortsInputs(face.key, faceRow);
         this.onUpdate();
       });
 
-      countControl.appendChild(countLabel);
-      countControl.appendChild(countInput);
-      content.appendChild(countControl);
+      countWrapper.appendChild(countInput);
+      countWrapper.appendChild(countLabel);
+
+      faceHeader.appendChild(faceLabel);
+      faceHeader.appendChild(countWrapper);
+      faceRow.appendChild(faceHeader);
 
       // Çaplar container
       const portsContainer = document.createElement('div');
-      portsContainer.className = 'face-ports-container';
+      portsContainer.className = 'manson-ports-container';
       portsContainer.dataset.faceKey = face.key;
-      content.appendChild(portsContainer);
+      faceRow.appendChild(portsContainer);
 
-      section.appendChild(content);
+      mainContent.appendChild(faceRow);
 
       // İlk render için çapları göster
-      this.renderFacePortsInputs(face.key, section);
-
-      this.container.appendChild(section);
+      this.renderMansonPortsInputs(face.key, faceRow);
     });
+
+    mainSection.appendChild(mainContent);
+    this.container.appendChild(mainSection);
+  }
+
+  renderMansonPortsInputs(faceKey, faceRow) {
+    const portsContainer = faceRow.querySelector(`.manson-ports-container[data-face-key="${faceKey}"]`);
+    if (!portsContainer) return;
+
+    portsContainer.innerHTML = '';
+
+    const face = this.part.params.faces[faceKey];
+    if (!face || !face.ports || face.ports.length === 0) {
+      return; // Boşsa hiçbir şey gösterme
+    }
+
+    // Çaplar için yatay grid
+    const portsGrid = document.createElement('div');
+    portsGrid.className = 'manson-ports-grid';
+
+    face.ports.forEach((port, index) => {
+      const portItem = document.createElement('div');
+      portItem.className = 'manson-port-item';
+
+      const portInput = document.createElement('input');
+      portInput.type = 'number';
+      portInput.className = 'manson-port-input';
+      portInput.min = 1;
+      portInput.max = 400;
+      portInput.step = 1;
+      portInput.value = port.diam;
+      portInput.title = `${index + 1}. Manşon Çapı`;
+
+      portInput.addEventListener('input', (e) => {
+        const diam = parseFloat(e.target.value) || this.part.params.Phi;
+        face.ports[index].diam = diam;
+        this.onUpdate();
+      });
+
+      const portLabel = document.createElement('span');
+      portLabel.className = 'manson-port-label';
+      portLabel.textContent = `Ø${index + 1}`;
+
+      portItem.appendChild(portLabel);
+      portItem.appendChild(portInput);
+      portsGrid.appendChild(portItem);
+    });
+
+    portsContainer.appendChild(portsGrid);
   }
 
   renderFacePortsInputs(faceKey, section) {
