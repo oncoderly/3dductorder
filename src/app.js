@@ -12,6 +12,7 @@ import { Reduksiyon } from './components/Reduksiyon.js';
 import { Yaka } from './components/yaka.js';
 import { SideBranch2 } from './components/sidebranch-2.js';
 import { YBranch2 } from './components/YBranch-2.js';
+import { Manson } from './components/manson.js';
 import { ParameterPanel } from './ui/ParameterPanel.js';
 import { ViewControls } from './ui/ViewControls.js';
 import { DimensionPopup } from './ui/DimensionPopup.js';
@@ -298,6 +299,9 @@ class App {
           break;
         case 'y-branch-2':
           this.currentPart = new YBranch2(this.scene, this.materials);
+          break;
+        case 'manson':
+          this.currentPart = new Manson(this.scene, this.materials);
           break;
         default:
           this.errorHandler.error(

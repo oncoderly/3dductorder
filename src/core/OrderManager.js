@@ -129,21 +129,51 @@ export class OrderManager {
    */
   async getCartSummary() {
     const cart = await this.getCart();
+    const summary = cart.reduce((acc, item) => {
+      const quantity = Math.max(1, parseInt(item.quantity) || 1);
+      const breakdown = this.getAreaBreakdown(item);
+      acc.totalNetArea += breakdown.netArea * quantity;
+      acc.totalWasteArea += breakdown.wasteArea * quantity;
+      acc.totalArea += breakdown.netArea * quantity;
+      return acc;
+    }, {
+      totalItems: cart.length,
+      totalQuantity: 0,
+      totalArea: 0,
+      totalNetArea: 0,
+      totalWasteArea: 0
+    });
+
+    summary.totalQuantity = cart.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
+    summary.totalAreaWithWaste = summary.totalNetArea + summary.totalWasteArea;
+    summary.totalWastePercent = summary.totalNetArea > 0
+      ? (summary.totalWasteArea / summary.totalNetArea) * 100
+      : 0;
+
+    return summary;
+  }
+
+  getAreaBreakdown(item) {
+    const areaValue = typeof item.area === 'object' ? (item.area.outer || 0) : parseFloat(item.area) || 0;
+    const rawKFactor = Number(item.params?.kFactor);
+    const rawWastePercent = Number(item.params?.wastePercent);
+    const kFactor = Number.isFinite(rawKFactor) ? rawKFactor : 1;
+    const wastePercent = Number.isFinite(rawWastePercent) ? rawWastePercent : 0;
+    const appliedWastePercent = item.partType === 'duz-kanal' ? 0 : wastePercent;
+    const netArea = areaValue * kFactor;
+    const wasteArea = netArea * (appliedWastePercent / 100);
+    const totalArea = netArea + wasteArea;
 
     return {
-      totalItems: cart.length, // Parça çeşidi
-      totalQuantity: cart.reduce((sum, item) => sum + item.quantity, 0), // Toplam adet
-      totalArea: cart.reduce((sum, item) => {
-        const area = parseFloat(item.area) || 0;
-        return sum + (area * item.quantity);
-      }, 0) // Toplam alan (m²)
+      baseArea: areaValue,
+      netArea,
+      wastePercent: appliedWastePercent,
+      wasteArea,
+      totalArea,
+      kFactor
     };
   }
 
-  /**
-   * Siparişi JSON olarak export et
-   * @returns {Promise<string>} - JSON string
-   */
   async exportToJSON() {
     const cart = await this.getCart();
     const summary = await this.getCartSummary();
@@ -270,6 +300,8 @@ export class OrderManager {
     const margin = 20; // Daha geniş margin
     const contentWidth = pageWidth - (margin * 2);
 
+    const totalPages = cart.length + 1;
+
     // Her parça için bir sayfa oluştur
     for (let i = 0; i < cart.length; i++) {
       const item = cart[i];
@@ -292,7 +324,7 @@ export class OrderManager {
       const pageNum = i + 1;
       pdf.setFontSize(9);
       pdf.setTextColor(255, 255, 255);
-      pdf.text(this.turkishToPdfText(`Sayfa ${pageNum} / ${cart.length}`), pageWidth - margin, 8, { align: 'right' });
+      pdf.text(this.turkishToPdfText(`Sayfa ${pageNum} / ${totalPages}`), pageWidth - margin, 8, { align: 'right' });
 
       // Logo/Başlık (beyaz, üst çubukta)
       pdf.setFontSize(11);
@@ -329,27 +361,19 @@ export class OrderManager {
       // Bilgi kutuları (cards)
       yPos += 8;
 
-      // Boyutlar kutusu
-      pdf.setFillColor(245, 247, 250);
-      pdf.roundedRect(margin, yPos, contentWidth, 18, 2, 2, 'F');
-
-      pdf.setFontSize(10);
-      pdf.setTextColor(60, 60, 60);
-      pdf.setFont(undefined, 'bold');
-      pdf.text(this.turkishToPdfText('Boyutlar'), margin + 5, yPos + 6);
-
-      pdf.setFont(undefined, 'normal');
-      pdf.setFontSize(11);
-      pdf.setTextColor(0, 0, 0);
-      const dimensions = Object.entries(item.dimensions)
-        .map(([key, value]) => `${key}: ${Number.isInteger(value) ? value : value.toFixed(1)} cm`)
-        .join('  •  ');
-      pdf.text(this.turkishToPdfText(dimensions), margin + 5, yPos + 13);
-
       // Alan bilgisi kutusu
-      yPos += 22;
+      const breakdown = this.getAreaBreakdown(item);
+      const quantity = Math.max(1, parseInt(item.quantity) || 1);
+      const netArea = breakdown.netArea;
+      const netTotal = netArea * quantity;
+      const wastePercent = breakdown.wastePercent;
+      const totalArea = breakdown.totalArea;
+      const totalWithWaste = totalArea * quantity;
+      const isDuzKanal = item.partType === 'duz-kanal';
+      const areaCardHeight = isDuzKanal ? 18 : 26;
+
       pdf.setFillColor(240, 253, 244);
-      pdf.roundedRect(margin, yPos, contentWidth, 18, 2, 2, 'F');
+      pdf.roundedRect(margin, yPos, contentWidth, areaCardHeight, 2, 2, 'F');
 
       pdf.setFontSize(10);
       pdf.setTextColor(22, 101, 52);
@@ -357,15 +381,35 @@ export class OrderManager {
       pdf.text(this.turkishToPdfText('Alan Hesabi'), margin + 5, yPos + 6);
 
       pdf.setFont(undefined, 'normal');
-      pdf.setFontSize(11);
+      pdf.setFontSize(10);
       pdf.setTextColor(0, 0, 0);
-      // Alan değerini obje veya sayı olarak destekle
-      const areaValue = typeof item.area === 'object' ? (item.area.outer || 0) : parseFloat(item.area) || 0;
-      const totalArea = (areaValue * item.quantity).toFixed(2);
-      pdf.text(this.turkishToPdfText(`Birim Alan: ${areaValue.toFixed(2)} m²  •  Adet: ${item.quantity}  •  Toplam Alan: ${totalArea} m²`), margin + 5, yPos + 13);
+      if (isDuzKanal) {
+        pdf.text(
+          this.turkishToPdfText(
+            `Net Alan: ${netArea.toFixed(2)} m2  -  Adet: ${quantity}  -  Toplam: ${netTotal.toFixed(2)} m2`
+          ),
+          margin + 5,
+          yPos + 13
+        );
+      } else {
+        pdf.text(
+          this.turkishToPdfText(
+            `Net Alan: ${netArea.toFixed(2)} m2  -  Atik: %${wastePercent.toFixed(1)}  -  Atik Dahil: ${totalArea.toFixed(2)} m2`
+          ),
+          margin + 5,
+          yPos + 12
+        );
+        pdf.text(
+          this.turkishToPdfText(
+            `Adet: ${quantity}  -  Net Toplam: ${netTotal.toFixed(2)} m2  -  Dahil Toplam: ${totalWithWaste.toFixed(2)} m2`
+          ),
+          margin + 5,
+          yPos + 19
+        );
+      }
 
       // Görüntüler başlığı
-      yPos += 24;
+      yPos += areaCardHeight + 6;
       pdf.setFontSize(12);
       pdf.setTextColor(0, 0, 0);
       pdf.setFont(undefined, 'bold');
@@ -435,6 +479,89 @@ export class OrderManager {
       pdf.text(this.turkishToPdfText(`Olusturulma: ${new Date().toLocaleDateString('tr-TR')}`), pageWidth - margin, pageHeight - 8, { align: 'right' });
     }
 
+    const summary = await this.getCartSummary();
+    pdf.addPage();
+
+    pdf.setFillColor(16, 185, 129);
+    pdf.rect(0, 0, pageWidth, 12, 'F');
+
+    pdf.setFontSize(9);
+    pdf.setTextColor(255, 255, 255);
+    pdf.text(this.turkishToPdfText(`Sayfa ${totalPages} / ${totalPages}`), pageWidth - margin, 8, { align: 'right' });
+
+    pdf.setFontSize(11);
+    pdf.setFont(undefined, 'bold');
+    pdf.text(this.turkishToPdfText('3D Kanal Siparis Sistemi'), margin, 8);
+
+    let summaryY = margin + 5;
+    pdf.setFontSize(16);
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFont(undefined, 'bold');
+    pdf.text(this.turkishToPdfText('Siparis Ozeti'), margin, summaryY);
+
+    summaryY += 6;
+    pdf.setDrawColor(200, 200, 200);
+    pdf.setLineWidth(0.3);
+    pdf.line(margin, summaryY, pageWidth - margin, summaryY);
+
+    summaryY += 6;
+    const colName = 60;
+    const colQty = 15;
+    const colNet = 28;
+    const colWaste = 32;
+    const colTotal = contentWidth - colName - colQty - colNet - colWaste;
+    const headerHeight = 12;
+    const rowHeight = 8;
+
+    const xName = margin + 2;
+    const xQty = margin + colName + 2;
+    const xNet = margin + colName + colQty + 2;
+    const xWaste = margin + colName + colQty + colNet + 2;
+    const xTotal = margin + colName + colQty + colNet + colWaste + 2;
+
+    pdf.setFillColor(245, 247, 250);
+    pdf.rect(margin, summaryY, contentWidth, headerHeight, 'F');
+    pdf.setFontSize(8);
+    pdf.setTextColor(60, 60, 60);
+    pdf.setFont(undefined, 'bold');
+    pdf.text(this.turkishToPdfText('Parca Adi'), xName, summaryY + 8);
+    pdf.text(this.turkishToPdfText('Adet'), xQty, summaryY + 8);
+    pdf.text(this.turkishToPdfText('Net Birim'), xNet, summaryY + 5);
+    pdf.text(this.turkishToPdfText('Alan'), xNet, summaryY + 9);
+    pdf.text(this.turkishToPdfText('Fire Dahil'), xWaste, summaryY + 5);
+    pdf.text(this.turkishToPdfText('Alan'), xWaste, summaryY + 9);
+    pdf.text(this.turkishToPdfText('Toplam'), xTotal, summaryY + 5);
+    pdf.text(this.turkishToPdfText('Alan'), xTotal, summaryY + 9);
+
+    summaryY += headerHeight;
+    pdf.setFontSize(9);
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFont(undefined, 'normal');
+
+    cart.forEach((item) => {
+      const breakdown = this.getAreaBreakdown(item);
+      const quantity = Math.max(1, parseInt(item.quantity) || 1);
+      const unitNet = breakdown.netArea;
+      const unitWaste = breakdown.totalArea;
+      const lineArea = unitWaste * quantity;
+
+      pdf.text(this.turkishToPdfText(item.partName || item.partType), xName, summaryY + 5.5);
+      pdf.text(this.turkishToPdfText(String(quantity)), xQty, summaryY + 5.5);
+      pdf.text(this.turkishToPdfText(unitNet.toFixed(2)), xNet, summaryY + 5.5);
+      pdf.text(this.turkishToPdfText(unitWaste.toFixed(2)), xWaste, summaryY + 5.5);
+      pdf.text(this.turkishToPdfText(lineArea.toFixed(2)), xTotal, summaryY + 5.5);
+      summaryY += rowHeight;
+    });
+
+    summaryY += 4;
+    pdf.setFillColor(240, 253, 244);
+    pdf.roundedRect(margin, summaryY, contentWidth, 12, 2, 2, 'F');
+    pdf.setFontSize(10);
+    pdf.setTextColor(22, 101, 52);
+    pdf.setFont(undefined, 'bold');
+    pdf.text(this.turkishToPdfText(`Toplam Adet: ${summary.totalQuantity}`), margin + 5, summaryY + 8);
+    pdf.text(this.turkishToPdfText(`Toplam Alan: ${summary.totalAreaWithWaste.toFixed(2)} m2`), margin + 80, summaryY + 8);
+
     // PDF'i indir
     pdf.save(filename || defaultFilename);
   }
@@ -487,7 +614,7 @@ export class OrderManager {
         percentage: ((used / total) * 100).toFixed(1) + '%'
       };
     } catch (error) {
-      return { used: '?', total: '5 MB', percentage: '?' };
+      return { used: '-', total: '5 MB', percentage: '-' };
     }
   }
 }

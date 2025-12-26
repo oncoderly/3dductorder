@@ -65,6 +65,12 @@ export const PARTS_CONFIG = {
     icon: '🔱',
     description: 'Y-Branch (ReduksiyonDirsek tabanlı)',
     component: 'YBranch2'
+  },
+  'manson': {
+    name: 'Manşon',
+    icon: 'O',
+    description: 'Silindirik manson parcasi',
+    component: 'Manson'
   }
 };
 

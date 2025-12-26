@@ -448,7 +448,7 @@ html, body {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 12px;
+  padding: 6px;
 }
 
 /* Custom Scrollbar */
@@ -477,8 +477,8 @@ html, body {
 .param-section {
   background: linear-gradient(135deg, #252c3d 0%, #1e2532 100%);
   border: 2px solid #374151;
-  border-radius: 10px;
-  margin-bottom: 8px;
+  border-radius: 8px;
+  margin-bottom: 4px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   overflow: hidden;
@@ -501,7 +501,7 @@ html, body {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin: 0;
-  padding: 10px 12px;
+  padding: 6px 8px;
   letter-spacing: 0.3px;
   cursor: pointer;
   user-select: none;
@@ -523,7 +523,7 @@ html, body {
 }
 
 .param-section-content {
-  padding: 0 12px 12px 12px;
+  padding: 0 6px 6px 6px;
   max-height: 1000px;
   overflow: hidden;
   transition: max-height 0.3s ease, padding 0.3s ease;
@@ -531,7 +531,7 @@ html, body {
 
 .param-section.collapsed .param-section-content {
   max-height: 0;
-  padding: 0 12px;
+  padding: 0 6px;
 }
 
 .sheet-scale-section .param-section-content {
@@ -542,14 +542,14 @@ html, body {
 .param-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 8px;
+  gap: 4px;
 }
 
 /* Parameter Control */
 .param-control {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .param-label {
@@ -563,7 +563,7 @@ html, body {
 .param-input-wrapper {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 3px;
   position: relative;
 }
 
@@ -593,9 +593,9 @@ html, body {
   background: #1a2332;
   color: #f0f4f8;
   border: 2px solid #374151;
-  border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 14px;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 13px;
   font-weight: 600;
   width: 100%;
   position: relative;
@@ -628,7 +628,7 @@ html, body {
 .param-slider-control {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 3px;
 }
 
 .param-slider-label-row {
@@ -691,8 +691,8 @@ html, body {
 .param-checkbox-control {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 0;
+  gap: 4px;
+  padding: 2px 0;
 }
 
 .param-checkbox {
@@ -716,8 +716,8 @@ html, body {
   color: #e6edf3;
   border: 1px solid #39414f;
   border-radius: 6px;
-  padding: 6px 10px;
-  font-size: 13px;
+  padding: 4px 8px;
+  font-size: 12px;
   cursor: pointer;
 }
 
@@ -755,11 +755,11 @@ html, body {
   background: rgba(76, 195, 255, 0.1);
   border: 1px solid #4cc3ff;
   border-radius: 6px;
-  padding: 10px;
+  padding: 6px;
   font-size: 11px;
-  line-height: 1.5;
+  line-height: 1.4;
   color: #4cc3ff;
-  margin-top: 12px;
+  margin-top: 6px;
 }
 
 /* Sheet scale */
@@ -767,25 +767,25 @@ html, body {
   background: rgba(16, 185, 129, 0.12);
   border: 1px solid rgba(16, 185, 129, 0.6);
   border-radius: 6px;
-  padding: 8px;
+  padding: 4px 6px;
   font-size: 11px;
-  line-height: 1.4;
+  line-height: 1.3;
   color: #34d399;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .sheet-scale-table {
   display: grid;
-  gap: 6px;
+  gap: 3px;
   font-size: 11px;
   color: #cbd5f5;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
 .sheet-scale-row {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
+  gap: 4px;
 }
 
 .sheet-scale-range {
@@ -1502,11 +1502,11 @@ html, body {
 .param-number-row {
   display: flex;
   align-items: center;
-  gap: clamp(2px, 1vw, 4px);
-  padding: clamp(3px, 1.2vw, 5px);
+  gap: clamp(1px, 0.8vw, 3px);
+  padding: clamp(2px, 1vw, 4px);
   background: #1f2632;
   border: 1px solid #39414f;
-  border-radius: 8px;
+  border-radius: 6px;
   flex-wrap: nowrap;
   overflow: visible;
   font-size: clamp(10px, 3vw, 13px);

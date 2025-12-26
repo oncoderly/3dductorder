@@ -70,9 +70,35 @@ class OrdersPage {
       .join('');
 
     // Alan formatla (area string olabilir, sayıya çevir)
-    const area = parseFloat(item.area) || 0;
-    const areaFormatted = area.toFixed(2);
-    const totalArea = (area * item.quantity).toFixed(2);
+    const breakdown = this.orderManager.getAreaBreakdown(item);
+    const quantity = Math.max(1, parseInt(item.quantity) || 1);
+    const formatArea = (value) => Number(value).toFixed(2);
+    const formatPercent = (value) => Number(value).toFixed(1);
+    const netArea = breakdown.netArea;
+    const netTotal = netArea * quantity;
+    const wastePercent = breakdown.wastePercent;
+    const totalArea = breakdown.totalArea;
+    const totalWithWaste = totalArea * quantity;
+    const isDuzKanal = item.partType === 'duz-kanal';
+    const netTotalText = quantity > 1 ? `<span class="order-area-sub">(Toplam: ${formatArea(netTotal)} m²)</span>` : '';
+    const totalWithWasteText = quantity > 1 ? `<span class="order-area-sub">(Toplam: ${formatArea(totalWithWaste)} m²)</span>` : '';
+    const areaHtml = isDuzKanal
+      ? `
+        <div class="order-area-row">
+          Net Alan: <strong>${formatArea(netArea)} m²</strong> ${netTotalText}
+        </div>
+      `
+      : `
+        <div class="order-area-row">
+          Net Alan (hariç): <strong>${formatArea(netArea)} m²</strong> ${netTotalText}
+        </div>
+        <div class="order-area-row">
+          Atık Oranı: <strong>%${formatPercent(wastePercent)}</strong>
+        </div>
+        <div class="order-area-row">
+          Atık Dahil: <strong>${formatArea(totalArea)} m²</strong> ${totalWithWasteText}
+        </div>
+      `;
 
     card.innerHTML = `
       <div class="order-item-header">
@@ -107,8 +133,7 @@ class OrdersPage {
       </div>
 
       <div class="order-area">
-        Alan: <strong>${areaFormatted} m²</strong>
-        ${item.quantity > 1 ? `(Toplam: <strong>${totalArea} m²</strong>)` : ''}
+        ${areaHtml}
       </div>
 
       <div class="order-quantity">
@@ -127,7 +152,10 @@ class OrdersPage {
 
     document.getElementById('summary-items').textContent = summary.totalItems;
     document.getElementById('summary-quantity').textContent = summary.totalQuantity;
-    document.getElementById('summary-area').textContent = summary.totalArea.toFixed(2) + ' m²';
+    document.getElementById('summary-area-net').textContent = summary.totalNetArea.toFixed(2) + ' m²';
+    document.getElementById('summary-waste-percent').textContent = summary.totalWastePercent.toFixed(1) + ' %';
+    document.getElementById('summary-area-waste').textContent = summary.totalWasteArea.toFixed(2) + ' m²';
+    document.getElementById('summary-area-total').textContent = summary.totalAreaWithWaste.toFixed(2) + ' m²';
   }
 
   setupEventListeners() {
