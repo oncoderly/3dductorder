@@ -20,11 +20,6 @@ export class ParameterPanel {
     this.container.innerHTML = '';
     const definitions = this.part.getParameterDefinitions();
 
-    // SAHNE KONTROLLERI (en üstte, tüm parçalar için ortak)
-    if (this.scene) {
-      this.renderSceneControlsSection();
-    }
-
     // Yeni groups yapısını destekle
     if (definitions.groups && definitions.groups.length > 0) {
       definitions.groups.forEach(group => {
@@ -60,6 +55,12 @@ export class ParameterPanel {
 
     // Alan hesabı bölümü
     this.renderAreaSection();
+
+    // SAHNE KONTROLLERI (en altta, varsayılan kapalı)
+    if (this.scene) {
+      this.renderSceneControlsSection();
+    }
+
     this.updateSheetScaleDisplay();
   }
 
@@ -618,7 +619,7 @@ export class ParameterPanel {
   }
   renderViewSection() {
     const section = document.createElement('div');
-    section.className = 'param-section';
+    section.className = 'param-section collapsed'; // Varsayılan kapalı
 
     const header = document.createElement('h3');
     header.className = 'param-section-title';
@@ -926,7 +927,7 @@ export class ParameterPanel {
     if (!this.scene) return;
 
     const section = document.createElement('div');
-    section.className = 'param-section';
+    section.className = 'param-section collapsed'; // Varsayılan kapalı
 
     const header = document.createElement('h3');
     header.className = 'param-section-title';

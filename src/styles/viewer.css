@@ -1868,3 +1868,266 @@ html, body {
     font-size: 14px;
   }
 }
+
+/* ========================================
+   THEME 2 - Modern Glassmorphism Theme
+   Alternative Design inspired
+   ======================================== */
+
+/* Theme 2 aktifleştirmek için params-panel'e theme-modern class'ı ekleyin */
+
+.params-panel.theme-modern {
+  background: linear-gradient(135deg,
+    rgba(30, 41, 59, 0.4) 0%,
+    rgba(88, 28, 135, 0.3) 50%,
+    rgba(30, 41, 59, 0.4) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.params-panel.theme-modern::before {
+  display: none;
+}
+
+.params-panel.theme-modern .params-scroll {
+  padding: 4px;
+}
+
+.params-panel.theme-modern .param-section {
+  background: rgba(30, 41, 59, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  margin-bottom: 2px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.params-panel.theme-modern .param-section:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.params-panel.theme-modern .param-section-title {
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  background: none;
+  -webkit-background-clip: unset;
+  -webkit-text-fill-color: #ffffff;
+  background-clip: unset;
+  color: #ffffff;
+}
+
+.params-panel.theme-modern .param-section-title::after {
+  color: rgba(148, 163, 184, 0.8);
+  font-size: 12px;
+}
+
+.params-panel.theme-modern .param-section-content {
+  padding: 0 10px 10px 10px;
+}
+
+.params-panel.theme-modern .param-section.collapsed .param-section-content {
+  padding: 0 10px;
+}
+
+.params-panel.theme-modern .param-grid {
+  gap: 6px;
+}
+
+.params-panel.theme-modern .param-control {
+  gap: 3px;
+}
+
+.params-panel.theme-modern .param-label {
+  font-size: 11px;
+  color: rgba(165, 180, 252, 0.9);
+  font-weight: 500;
+  margin-bottom: 1px;
+}
+
+/* Theme 2 - Number Row */
+.params-panel.theme-modern .param-number-row {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 3px;
+  gap: 3px;
+}
+
+.params-panel.theme-modern .param-step-btn {
+  border-radius: 4px;
+  min-width: 26px;
+  width: 26px;
+  height: 26px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.params-panel.theme-modern .param-step-btn.decrement {
+  background: linear-gradient(135deg, #f43f5e, #e11d48);
+  box-shadow: 0 2px 8px rgba(244, 63, 94, 0.4);
+}
+
+.params-panel.theme-modern .param-step-btn.increment {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+}
+
+.params-panel.theme-modern .param-step-btn:hover {
+  transform: scale(1.05);
+}
+
+.params-panel.theme-modern .param-step-btn:active {
+  transform: scale(0.95);
+}
+
+.params-panel.theme-modern .param-number-input {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  height: 26px;
+  width: 50px;
+}
+
+.params-panel.theme-modern .param-number-input:focus {
+  box-shadow: none;
+  outline: none;
+}
+
+.params-panel.theme-modern .param-number-slider {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+}
+
+.params-panel.theme-modern .param-number-slider::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(135deg, #22d3ee, #06b6d4);
+  border: none;
+  box-shadow: 0 0 8px rgba(34, 211, 238, 0.5);
+}
+
+.params-panel.theme-modern .param-number-row .param-unit {
+  color: rgba(165, 180, 252, 0.8);
+  font-size: 11px;
+}
+
+/* Theme 2 - Checkbox */
+.params-panel.theme-modern .param-checkbox-control {
+  padding: 4px 0;
+  gap: 6px;
+}
+
+.params-panel.theme-modern .param-checkbox {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  accent-color: #6366f1;
+}
+
+.params-panel.theme-modern .param-checkbox-label {
+  font-size: 12px;
+  color: rgba(226, 232, 240, 0.9);
+}
+
+.params-panel.theme-modern .param-checkbox-label:hover {
+  color: #ffffff;
+}
+
+/* Theme 2 - Slider */
+.params-panel.theme-modern .param-slider {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+}
+
+.params-panel.theme-modern .param-slider::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(135deg, #22d3ee, #06b6d4);
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.5);
+}
+
+.params-panel.theme-modern .param-value {
+  background: transparent;
+  border: none;
+  color: #22d3ee;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Theme 2 - Area Display */
+.params-panel.theme-modern .area-display {
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  color: #22d3ee;
+  border-radius: 8px;
+  padding: 8px;
+  margin-top: 8px;
+}
+
+/* Theme 2 - Sheet Scale */
+.params-panel.theme-modern .sheet-scale-summary {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.params-panel.theme-modern .sheet-scale-table {
+  gap: 4px;
+}
+
+/* Theme 2 - Select */
+.params-panel.theme-modern .param-select {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.params-panel.theme-modern .param-select:focus {
+  border-color: rgba(99, 102, 241, 0.6);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+/* Theme 2 - Input */
+.params-panel.theme-modern .param-input {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+.params-panel.theme-modern .param-input:focus {
+  border-color: rgba(99, 102, 241, 0.6);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Theme 2 - Color */
+.params-panel.theme-modern .param-color {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  width: 40px;
+  height: 28px;
+}
+
+/* Theme 2 - Section Icons (via title pseudo-element icons) */
+.params-panel.theme-modern .param-section-title::before {
+  margin-right: 6px;
+  font-size: 14px;
+}
