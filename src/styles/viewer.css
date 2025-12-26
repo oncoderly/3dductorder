@@ -758,6 +758,49 @@ html, body {
   margin-top: 12px;
 }
 
+/* Sheet scale */
+.sheet-scale-summary {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.6);
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #34d399;
+  margin-bottom: 8px;
+}
+
+.sheet-scale-table {
+  display: grid;
+  gap: 6px;
+  font-size: 11px;
+  color: #cbd5f5;
+  margin-bottom: 10px;
+}
+
+.sheet-scale-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sheet-scale-range {
+  color: #a5b4fc;
+}
+
+.sheet-scale-thickness {
+  color: #34d399;
+  font-weight: 700;
+}
+
+.param-control.disabled,
+.param-checkbox-control.disabled,
+.param-slider-control.disabled,
+.param-row.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
 /* 3D Labels */
 .label {
   color: #e6edf3;

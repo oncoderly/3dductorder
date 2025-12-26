@@ -46,8 +46,22 @@ export class BasePart {
       // Alan hesabı
       areaIncludeFlange: false,
       wastePercent: 25,
-      kFactor: 1
+      kFactor: 1,
+
+      // Sheet scale (mm)
+      sheetScaleEnabled: true,
+      sheetScaleAuto: true,
+      sheetScaleManualEdgeMm: 500
     };
+
+    const sheetScaleDefaults = {};
+    BasePart.getGalvanizedThicknessListMm().forEach((value) => {
+      const key = BasePart.getSheetScaleKey(value);
+      sheetScaleDefaults[`sheetScaleT${key}Enabled`] = true;
+      sheetScaleDefaults[`sheetScaleT${key}MaxMm`] = BasePart.getSheetScaleDefaultLimitMm(value);
+    });
+
+    this.defaultParams = { ...this.defaultParams, ...sheetScaleDefaults };
 
     this.params = { ...this.defaultParams };
   }
@@ -126,6 +140,7 @@ export class BasePart {
     this.scene.clearLabels();
 
     // Geometriyi oluştur
+    this.applySheetScale();
     this.buildGeometry();
 
     // Flanşları oluştur (eğer varsa)
@@ -353,6 +368,165 @@ export class BasePart {
     this.materials.updateMetalProperties(this.params.metalRough, this.params.metalness);
   }
 
+  // Sheet thickness scale helpers
+  getSheetScaleParamMeta() {
+    const definitions = this.getParameterDefinitions() || {};
+    const params = [];
+    if (definitions.dimensions && Array.isArray(definitions.dimensions)) {
+      params.push(...definitions.dimensions);
+    }
+    if (definitions.groups && Array.isArray(definitions.groups)) {
+      definitions.groups.forEach(group => {
+        if (group && Array.isArray(group.params)) {
+          params.push(...group.params);
+        }
+      });
+    }
+    const meta = new Map();
+    params.forEach(param => {
+      if (param && param.key) {
+        meta.set(param.key, param);
+      }
+    });
+    return meta;
+  }
+
+  getSheetScaleMaxEdgeMm() {
+    const dims = this.getDimensions ? this.getDimensions() : {};
+    const meta = this.getSheetScaleParamMeta();
+    let maxMm = 0;
+    const isCmFallbackKey = (key) => {
+      if (typeof key !== 'string') return false;
+      return /^(W|H)\d*$/i.test(key);
+    };
+    Object.entries(dims).forEach(([key, raw]) => {
+      if (key === 't') return;
+      if (typeof key === 'string' && key.toUpperCase().startsWith('L')) return;
+      const value = Number(raw);
+      if (!Number.isFinite(value)) return;
+      const def = meta.get(key);
+      let isCm = false;
+      if (def) {
+        if (def.unit) {
+          isCm = def.unit === 'cm';
+        } else if (typeof def.label === 'string') {
+          isCm = def.label.toLowerCase().includes('cm');
+        }
+      } else if (isCmFallbackKey(key)) {
+        isCm = true;
+      }
+      if (!isCm) return;
+      const mm = value * 10;
+      if (mm > maxMm) maxMm = mm;
+    });
+    return maxMm;
+  }
+
+  getSheetScaleEntries() {
+    return BasePart.getGalvanizedThicknessListMm().map((thicknessMm) => {
+      const enabledKey = BasePart.getSheetScaleEnabledKey(thicknessMm);
+      const maxKey = BasePart.getSheetScaleMaxKey(thicknessMm);
+      return {
+        thicknessMm,
+        enabledKey,
+        maxKey,
+        enabled: !!this.params[enabledKey],
+        maxMm: Number(this.params[maxKey])
+      };
+    });
+  }
+
+  normalizeSheetScaleParams() {
+    const toNumber = (value, fallback) => {
+      const num = Number(value);
+      return Number.isFinite(num) ? num : fallback;
+    };
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+    const minEdge = 1;
+    const maxEdge = 10000;
+    const entries = this.getSheetScaleEntries();
+
+    let prevLimit = 0;
+    entries.forEach((entry) => {
+      const defaultLimit = BasePart.getSheetScaleDefaultLimitMm(entry.thicknessMm);
+      let limit = clamp(toNumber(this.params[entry.maxKey], defaultLimit), minEdge, maxEdge);
+      const enabled = !!this.params[entry.enabledKey];
+
+      if (enabled) {
+        const minLimit = prevLimit + 1;
+        if (limit < minLimit) limit = minLimit;
+        prevLimit = limit;
+      }
+
+      this.params[entry.maxKey] = limit;
+      this.params[entry.enabledKey] = enabled;
+    });
+
+    const defaultEdge = prevLimit > 0 ? prevLimit : minEdge;
+    this.params.sheetScaleManualEdgeMm = clamp(
+      toNumber(this.params.sheetScaleManualEdgeMm, defaultEdge),
+      minEdge,
+      maxEdge
+    );
+  }
+
+  getSheetScaleThicknessForEdgeMm(edgeMm, entries = null) {
+    const items = (entries || this.getSheetScaleEntries()).filter(entry => entry.enabled);
+    if (!items.length) return null;
+    if (!Number.isFinite(edgeMm)) return items[items.length - 1].thicknessMm;
+
+    for (const entry of items) {
+      if (Number.isFinite(entry.maxMm) && edgeMm <= entry.maxMm) return entry.thicknessMm;
+    }
+    return items[items.length - 1].thicknessMm;
+  }
+
+  getSheetScaleState() {
+    const enabled = !!this.params.sheetScaleEnabled;
+    const auto = true;
+    const edgeMm = this.getSheetScaleMaxEdgeMm();
+
+    const entries = this.getSheetScaleEntries();
+    let prevLimit = 0;
+    const entriesWithRanges = entries.map((entry) => {
+      const minMm = entry.enabled ? prevLimit + 1 : null;
+      const maxMm = entry.enabled ? entry.maxMm : null;
+      if (entry.enabled && Number.isFinite(entry.maxMm)) {
+        prevLimit = entry.maxMm;
+      }
+      return { ...entry, minMm, maxMm };
+    });
+
+    const thicknessMm = enabled
+      ? this.getSheetScaleThicknessForEdgeMm(edgeMm, entriesWithRanges)
+      : null;
+
+    return {
+      enabled,
+      auto,
+      edgeMm,
+      thicknessMm,
+      entries: entriesWithRanges
+    };
+  }
+
+  applySheetScale() {
+    if (!this.params.sheetScaleEnabled) return;
+
+    this.normalizeSheetScaleParams();
+    const state = this.getSheetScaleState();
+    if (Number.isFinite(state.thicknessMm)) {
+      const thicknessCm = state.thicknessMm / 10;
+      if (Number.isFinite(thicknessCm)) {
+        this.params.t = thicknessCm;
+      }
+    }
+    if (state.auto && Number.isFinite(state.edgeMm)) {
+      this.params.sheetScaleManualEdgeMm = state.edgeMm;
+    }
+  }
+
   // Parametreleri export et (sipariş için)
   exportParams() {
     const dimensions = this.getDimensions();
@@ -369,6 +543,44 @@ export class BasePart {
 
   static V(x = 0, y = 0, z = 0) {
     return new THREE.Vector3(x, y, z);
+  }
+
+  static getSheetScaleKey(value) {
+    return value.toString().replace('.', '_');
+  }
+
+  static getSheetScaleEnabledKey(value) {
+    return `sheetScaleT${BasePart.getSheetScaleKey(value)}Enabled`;
+  }
+
+  static getSheetScaleMaxKey(value) {
+    return `sheetScaleT${BasePart.getSheetScaleKey(value)}MaxMm`;
+  }
+
+  static getSheetScaleDefaultLimitMm(value) {
+    return Math.round(value * 1000);
+  }
+
+  static getGalvanizedThicknessListMm() {
+    return [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.5, 2.0];
+  }
+
+  static getGalvanizedThicknessListCm() {
+    return BasePart.getGalvanizedThicknessListMm().map(value => value / 10);
+  }
+
+  static snapToClosest(value, list) {
+    if (!Array.isArray(list) || list.length === 0) return value;
+    let closest = list[0];
+    let minDiff = Math.abs(value - closest);
+    for (let i = 1; i < list.length; i++) {
+      const diff = Math.abs(value - list[i]);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closest = list[i];
+      }
+    }
+    return closest;
   }
 
   // Format dimension for labels, trim trailing zeros.

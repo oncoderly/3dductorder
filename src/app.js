@@ -61,8 +61,14 @@ class App {
 
     // Dimension Popup oluştur (canvas wrapper'ı kullan)
     const viewerContainer = document.querySelector('.canvas-wrapper') || document.body;
-    this.dimensionPopup = new DimensionPopup(viewerContainer, () => {
+    this.dimensionPopup = new DimensionPopup(viewerContainer, (key, value) => {
       this.updateHUD();
+      if (this.paramPanel) {
+        if (key) {
+          this.paramPanel.syncNumberControlValue(key, value);
+        }
+        this.paramPanel.updateSheetScaleDisplay();
+      }
     });
     this.scene.dimensionPopup = this.dimensionPopup;
 
@@ -359,8 +365,17 @@ class App {
     const kFactor = this.currentPart.params?.kFactor ?? 1;
     const wastePercent = this.currentPart.params?.wastePercent ?? 0;
     const sheet = outer * kFactor;
+    const wasteIncluded = sheet * (1 + wastePercent / 100);
+    const thicknessCm = this.currentPart.params?.t;
+    const thicknessMm = Number.isFinite(thicknessCm) ? thicknessCm * 10 : NaN;
 
-    hudInfo.textContent = `Alan: ${sheet.toFixed(3)} m2 - Atik: %${wastePercent.toFixed(1)}`;
+    const formatValue = (value, decimals) => {
+      if (!Number.isFinite(value)) return '-';
+      const text = value.toFixed(decimals);
+      return text.replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1');
+    };
+
+    hudInfo.textContent = `Alan: ${formatValue(sheet, 3)} m2 - Atik: %${formatValue(wastePercent, 1)} - Atik Dahil: ${formatValue(wasteIncluded, 3)} m2 - Sac Kalinligi: ${formatValue(thicknessMm, 2)} mm`;
   }
 
   // Export için (sipariş sistemi ile entegrasyon)

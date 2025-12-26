@@ -1,11 +1,20 @@
 // ParameterPanel - Mobil-uyumlu standart parametre paneli
+import { BasePart } from '../components/BasePart.js';
+
+const GALV_THICKNESS_MM = BasePart.getGalvanizedThicknessListMm();
+const GALV_THICKNESS_CM = BasePart.getGalvanizedThicknessListCm();
 export class ParameterPanel {
   constructor(container, part, onUpdate, scene = null) {
     this.container = container;
     this.part = part;
-    this.onUpdate = onUpdate;
+    this.onUpdateCallback = onUpdate;
+    this.onUpdate = (...args) => {
+      if (this.onUpdateCallback) this.onUpdateCallback(...args);
+      this.updateSheetScaleDisplay();
+    };
     this.scene = scene; // Scene3D instance for scene controls
     this.controls = {};
+    this.sheetScaleElements = null;
   }
 
   render() {
@@ -34,6 +43,7 @@ export class ParameterPanel {
     if (definitions.faces && definitions.faces.length > 0) {
       this.renderFacesSection(definitions.faces);
     }
+    this.renderSheetScaleSection();
 
     // Görünüm bölümü
     this.renderViewSection();
@@ -51,6 +61,7 @@ export class ParameterPanel {
 
     // Alan hesabı bölümü
     this.renderAreaSection();
+    this.updateSheetScaleDisplay();
   }
 
   renderGroupSection(group) {
@@ -174,20 +185,50 @@ export class ParameterPanel {
     inputWrapper.className = 'param-number-row';
 
     const currentValue = this.part.params[param.key];
-    const range = Math.max(1, (param.max || 1) - (param.min || 0));
-    const nudgeStep = param.nudgeStep ?? param.nudge ?? (range >= 50 ? 5 : (param.step || 1) * 5);
-    const decimals = (() => {
-      if (!param.step || Number.isInteger(param.step)) return 0;
-      const [, fraction] = param.step.toString().split('.');
-      return Math.min((fraction ? fraction.length : 2), 4);
-    })();
+    const allowedValues = Array.isArray(param.allowedValues) && param.allowedValues.length
+      ? param.allowedValues
+      : (param.key === 't' ? GALV_THICKNESS_CM : null);
+
+    const getListDecimals = (list) => {
+      let maxDecimals = 0;
+      list.forEach((value) => {
+        const text = value.toString();
+        const dotIndex = text.indexOf('.');
+        if (dotIndex === -1) return;
+        maxDecimals = Math.max(maxDecimals, text.length - dotIndex - 1);
+      });
+      return Math.min(maxDecimals, 4);
+    };
+
+    const getListStep = (list) => {
+      if (!list || list.length < 2) return 1;
+      let minStep = Number.POSITIVE_INFINITY;
+      for (let i = 1; i < list.length; i++) {
+        const step = Math.abs(list[i] - list[i - 1]);
+        if (step > 0 && step < minStep) minStep = step;
+      }
+      return Number.isFinite(minStep) ? minStep : 1;
+    };
+
+    const min = allowedValues ? allowedValues[0] : (param.min ?? 0);
+    const max = allowedValues ? allowedValues[allowedValues.length - 1] : (param.max ?? 1);
+    const step = allowedValues ? getListStep(allowedValues) : (param.step || 1);
+    const range = Math.max(1, (max || 1) - (min || 0));
+    const nudgeStep = param.nudgeStep ?? param.nudge ?? (range >= 50 ? 5 : step * 5);
+    const decimals = allowedValues
+      ? getListDecimals(allowedValues)
+      : (() => {
+        if (!param.step || Number.isInteger(param.step)) return 0;
+        const [, fraction] = param.step.toString().split('.');
+        return Math.min((fraction ? fraction.length : 2), 4);
+      })();
 
     const slider = document.createElement('input');
     slider.type = 'range';
     slider.className = 'param-number-slider';
-    slider.min = param.min;
-    slider.max = param.max;
-    slider.step = param.step;
+    slider.min = min;
+    slider.max = max;
+    slider.step = step;
     slider.value = currentValue;
 
     const decBtn = document.createElement('button');
@@ -199,9 +240,9 @@ export class ParameterPanel {
     input.type = 'number';
     input.className = 'param-input';
     input.classList.add('param-number-input');
-    input.min = param.min;
-    input.max = param.max;
-    input.step = param.step;
+    input.min = min;
+    input.max = max;
+    input.step = step;
     input.value = currentValue;
 
     const unit = document.createElement('span');
@@ -222,15 +263,19 @@ export class ParameterPanel {
     };
 
     const clampAndSnap = (raw) => {
-      const min = param.min ?? Number.NEGATIVE_INFINITY;
-      const max = param.max ?? Number.POSITIVE_INFINITY;
-      const step = param.step || 1;
+      const minValue = Number.isFinite(min) ? min : Number.NEGATIVE_INFINITY;
+      const maxValue = Number.isFinite(max) ? max : Number.POSITIVE_INFINITY;
       let value = parseFloat(raw);
-      if (Number.isNaN(value)) value = param.default ?? min ?? 0;
-      value = Math.min(max, Math.max(min, value));
-      const snapped = Math.round((value - min) / step) * step + min;
+      if (Number.isNaN(value)) value = param.default ?? minValue ?? 0;
+      value = Math.min(maxValue, Math.max(minValue, value));
+      if (allowedValues && allowedValues.length) {
+        const snapped = BasePart.snapToClosest(value, allowedValues);
+        return Math.min(maxValue, Math.max(minValue, snapped));
+      }
+      const stepValue = step || 1;
+      const snapped = Math.round((value - minValue) / stepValue) * stepValue + minValue;
       const fixed = decimals > 0 ? parseFloat(snapped.toFixed(decimals)) : Math.round(snapped);
-      return Math.min(max, Math.max(min, fixed));
+      return Math.min(maxValue, Math.max(minValue, fixed));
     };
 
     const setValue = (val, triggerUpdate = true) => {
@@ -251,14 +296,28 @@ export class ParameterPanel {
     });
 
     decBtn.addEventListener('click', () => {
+      if (allowedValues && allowedValues.length) {
+        const current = clampAndSnap(this.part.params[param.key]);
+        const index = allowedValues.findIndex(value => Math.abs(value - current) < 1e-6);
+        const nextIndex = index > 0 ? index - 1 : 0;
+        setValue(allowedValues[nextIndex]);
+        return;
+      }
       setValue(this.part.params[param.key] - nudgeStep);
     });
 
     incBtn.addEventListener('click', () => {
+      if (allowedValues && allowedValues.length) {
+        const current = clampAndSnap(this.part.params[param.key]);
+        const index = allowedValues.findIndex(value => Math.abs(value - current) < 1e-6);
+        const nextIndex = index >= 0 ? Math.min(allowedValues.length - 1, index + 1) : 0;
+        setValue(allowedValues[nextIndex]);
+        return;
+      }
       setValue(this.part.params[param.key] + nudgeStep);
     });
 
-    updateSliderFill(currentValue);
+    setValue(currentValue, false);
 
     inputWrapper.appendChild(slider);
     inputWrapper.appendChild(decBtn);
@@ -387,6 +446,161 @@ export class ParameterPanel {
     });
   }
 
+  renderSheetScaleSection() {
+    if (!this.part || !this.part.getSheetScaleState || this.part.params.t === undefined) return;
+
+    const formatLabel = (value) => {
+      if (!Number.isFinite(value)) return '-';
+      const rounded = Math.round(value * 100) / 100;
+      const text = rounded.toFixed(2)
+        .replace(/\.0+$/, '')
+        .replace(/(\.\d*[1-9])0+$/, '$1');
+      return text.replace('.', ',');
+    };
+
+    const section = document.createElement('div');
+    section.className = 'param-section collapsed';
+
+    const header = document.createElement('h3');
+    header.className = 'param-section-title';
+    header.textContent = 'Sac Kalinligi Skalasi';
+
+    header.addEventListener('click', () => {
+      section.classList.toggle('collapsed');
+    });
+
+    section.appendChild(header);
+
+    const content = document.createElement('div');
+    content.className = 'param-section-content';
+
+    const summary = document.createElement('div');
+    summary.className = 'sheet-scale-summary';
+    content.appendChild(summary);
+
+    const table = document.createElement('div');
+    table.className = 'sheet-scale-table';
+    content.appendChild(table);
+
+    const grid = document.createElement('div');
+    grid.className = 'param-grid';
+
+    const enableControl = this.createCheckboxControl('sheetScaleEnabled', 'Skala ile sec');
+    grid.appendChild(enableControl);
+    this.controls.sheetScaleEnabled = enableControl;
+
+    const entries = [];
+    GALV_THICKNESS_MM.forEach((thicknessMm) => {
+      const entry = document.createElement('div');
+      entry.className = 'sheet-scale-entry';
+
+      const title = document.createElement('div');
+      title.className = 'sheet-scale-entry-title';
+      title.textContent = `${formatLabel(thicknessMm)} mm`;
+      entry.appendChild(title);
+
+      const enabledKey = BasePart.getSheetScaleEnabledKey(thicknessMm);
+      const maxKey = BasePart.getSheetScaleMaxKey(thicknessMm);
+
+      const entryControls = document.createElement('div');
+      entryControls.className = 'sheet-scale-entry-controls';
+
+      const includeControl = this.createCheckboxControl(enabledKey, 'Dahil');
+      entryControls.appendChild(includeControl);
+      this.controls[enabledKey] = includeControl;
+
+      const limitControl = this.createNumberControl({
+        key: maxKey,
+        label: 'Bitis (mm)',
+        min: 1,
+        max: 5000,
+        step: 1,
+        unit: 'mm',
+        nudgeStep: 50
+      });
+      entryControls.appendChild(limitControl);
+      this.controls[maxKey] = limitControl;
+
+      entry.appendChild(entryControls);
+      grid.appendChild(entry);
+
+      entries.push({ thicknessMm, enabledKey, maxKey });
+    });
+
+    content.appendChild(grid);
+    section.appendChild(content);
+    this.container.appendChild(section);
+
+    this.sheetScaleElements = { summary, table, section, entries };
+  }
+
+  updateSheetScaleDisplay() {
+    if (!this.sheetScaleElements || !this.part || !this.part.getSheetScaleState) return;
+
+    const state = this.part.getSheetScaleState();
+    const format = (value) => {
+      if (!Number.isFinite(value)) return '-';
+      const rounded = Math.round(value * 100) / 100;
+      const text = rounded.toFixed(2)
+        .replace(/\.0+$/, '')
+        .replace(/(\.\d*[1-9])0+$/, '$1');
+      return text.replace('.', ',');
+    };
+
+    const summary = this.sheetScaleElements.summary;
+    if (summary) {
+      if (state.enabled && Number.isFinite(state.thicknessMm)) {
+        summary.textContent = `En genis kenar: ${format(state.edgeMm)} mm -> Sac kalinligi: ${format(state.thicknessMm)} mm`;
+      } else {
+        summary.textContent = 'Skala kapali. Sac kalinligi elle ayarlanir.';
+      }
+    }
+
+    const table = this.sheetScaleElements.table;
+    if (table) {
+      const entries = state.entries || [];
+      const enabledEntries = entries.filter(entry => entry.enabled);
+      const lastEnabled = enabledEntries.length ? enabledEntries[enabledEntries.length - 1] : null;
+
+      table.innerHTML = '';
+      entries.forEach((entry) => {
+        const item = document.createElement('div');
+        item.className = 'sheet-scale-row';
+        const label = document.createElement('span');
+        label.className = 'sheet-scale-range';
+        label.textContent = `${format(entry.thicknessMm)} mm`;
+        const range = document.createElement('span');
+        range.className = 'sheet-scale-thickness';
+
+        if (!entry.enabled) {
+          range.textContent = 'Kapali';
+        } else if (lastEnabled && entry === lastEnabled) {
+          range.textContent = `>= ${format(entry.minMm)} mm`;
+        } else {
+          range.textContent = `${format(entry.minMm)} - ${format(entry.maxMm)} mm`;
+        }
+
+        item.appendChild(label);
+        item.appendChild(range);
+        table.appendChild(item);
+      });
+    }
+
+    const entries = state.entries || [];
+    entries.forEach((entry) => {
+      this.syncNumberControlValue(entry.maxKey, entry.maxMm);
+    });
+    this.syncNumberControlValue('t', this.part.params.t);
+
+    const enabled = state.enabled;
+
+    entries.forEach((entry) => {
+      this.setControlDisabled(this.controls[entry.enabledKey], !enabled);
+      this.setControlDisabled(this.controls[entry.maxKey], !enabled || !entry.enabled);
+    });
+
+    this.setControlDisabled(this.controls.t, enabled);
+  }
   renderViewSection() {
     const section = document.createElement('div');
     section.className = 'param-section';
@@ -654,6 +868,33 @@ export class ParameterPanel {
     return wrapper;
   }
 
+
+  setControlDisabled(control, disabled) {
+    if (!control) return;
+    control.classList.toggle('disabled', disabled);
+    control.querySelectorAll('input, button, select').forEach((el) => {
+      el.disabled = disabled;
+    });
+  }
+
+  syncNumberControlValue(key, value) {
+    const control = this.controls[key];
+    if (!control) return;
+    const slider = control.querySelector('.param-number-slider');
+    const input = control.querySelector('.param-number-input');
+
+    if (slider) {
+      slider.value = value;
+      const min = parseFloat(slider.min);
+      const max = parseFloat(slider.max);
+      const span = (max - min) || 1;
+      const pct = ((value - min) / span) * 100;
+      slider.style.background = `linear-gradient(90deg, #4c8dff ${pct}%, #2a3242 ${pct}%)`;
+    }
+    if (input) {
+      input.value = value;
+    }
+  }
   // Sahne kontrolleri bölümü (Grid, Eksenler, Arkaplan vb.)
   renderSceneControlsSection() {
     if (!this.scene) return;

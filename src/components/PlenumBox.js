@@ -41,10 +41,10 @@ export class PlenumBox extends BasePart {
 
     this.params = {
       ...this.params,
-      W1: 100,
-      H1: 80,
-      L: 120,
-      Phi: 60,
+      W1: 45.5,
+      H1: 45.5,
+      L: 40,
+      Phi: 37.5,
       spigotLenCm: 10,
       t: 0.12,
       steps: 80,
@@ -54,7 +54,7 @@ export class PlenumBox extends BasePart {
       colorPhi: '#00c853',
       showSideLabels: true,
       faces: {
-        right: { count: 1, ports: [{ diam: 60 }] },
+        right: { count: 1, ports: [{ diam: 37.5 }] },
         left: { count: 0, ports: [] },
         front: { count: 0, ports: [] },
         back: { count: 0, ports: [] },
@@ -69,10 +69,10 @@ export class PlenumBox extends BasePart {
 
     return {
       dimensions: [
-        { key: 'W1', label: 'Genişlik (W)', min: 10, max: 400, step: 1, unit: 'cm', default: 100 },
-        { key: 'H1', label: 'Yükseklik (H)', min: 10, max: 400, step: 1, unit: 'cm', default: 80 },
-        { key: 'L', label: 'Derinlik (L)', min: 10, max: 1000, step: 1, unit: 'cm', default: 120 },
-        { key: 'Phi', label: 'Ø varsayılan', min: 10, max: 400, step: 1, unit: 'cm', default: 60 },
+        { key: 'W1', label: 'Genişlik (W)', min: 10, max: 400, step: 1, unit: 'cm', default: 45.5 },
+        { key: 'H1', label: 'Yükseklik (H)', min: 10, max: 400, step: 1, unit: 'cm', default: 45.5 },
+        { key: 'L', label: 'Derinlik (L)', min: 10, max: 1000, step: 1, unit: 'cm', default: 40 },
+        { key: 'Phi', label: 'Ø varsayılan', min: 10, max: 400, step: 1, unit: 'cm', default: 37.5 },
         { key: 'spigotLenCm', label: 'Manşon Uzunluğu', min: 1, max: 100, step: 1, unit: 'cm', default: 10 },
         { key: 't', label: 'Sac Kalınlığı', min: 0.02, max: 1.0, step: 0.01, unit: 'cm', default: 0.12 },
         { key: 'steps', label: 'Segment Sayısı', min: 8, max: 400, step: 1, unit: '', default: 80 }
