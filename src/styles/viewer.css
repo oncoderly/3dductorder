@@ -2170,12 +2170,43 @@ html, body {
 .manson-count-wrapper {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
+}
+
+.manson-count-btn {
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  color: #ffffff;
+}
+
+.manson-count-btn.decrement {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.manson-count-btn.increment {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.manson-count-btn:hover {
+  transform: scale(1.1);
+}
+
+.manson-count-btn:active {
+  transform: scale(0.95);
 }
 
 .manson-count-input {
-  width: 40px;
-  height: 24px;
+  width: 32px;
+  height: 22px;
   background: #1a2332;
   border: 1px solid #374151;
   border-radius: 4px;
@@ -2183,7 +2214,7 @@ html, body {
   font-size: 12px;
   font-weight: 600;
   text-align: center;
-  padding: 0 4px;
+  padding: 0 2px;
 }
 
 .manson-count-input:focus {
@@ -2192,9 +2223,14 @@ html, body {
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
 }
 
-.manson-count-label {
-  font-size: 10px;
-  color: #9ca3af;
+/* Hide number input spinners */
+.manson-count-input::-webkit-outer-spin-button,
+.manson-count-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.manson-count-input[type=number] {
+  -moz-appearance: textfield;
 }
 
 .manson-ports-container {
@@ -2256,6 +2292,20 @@ html, body {
 
 .params-panel.theme-modern .manson-face-label {
   color: #ffffff;
+}
+
+.params-panel.theme-modern .manson-count-btn {
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+}
+
+.params-panel.theme-modern .manson-count-btn.decrement {
+  background: linear-gradient(135deg, #f43f5e, #e11d48);
+}
+
+.params-panel.theme-modern .manson-count-btn.increment {
+  background: linear-gradient(135deg, #10b981, #059669);
 }
 
 .params-panel.theme-modern .manson-count-input {

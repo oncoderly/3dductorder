@@ -382,6 +382,12 @@ export class ParameterPanel {
       const countWrapper = document.createElement('div');
       countWrapper.className = 'manson-count-wrapper';
 
+      // - butonu
+      const decrementBtn = document.createElement('button');
+      decrementBtn.type = 'button';
+      decrementBtn.className = 'manson-count-btn decrement';
+      decrementBtn.textContent = '−';
+
       const countInput = document.createElement('input');
       countInput.type = 'number';
       countInput.className = 'manson-count-input';
@@ -390,19 +396,35 @@ export class ParameterPanel {
       countInput.step = 1;
       countInput.value = this.part.params.faces[face.key].count || 0;
 
-      const countLabel = document.createElement('span');
-      countLabel.className = 'manson-count-label';
-      countLabel.textContent = 'adet';
+      // + butonu
+      const incrementBtn = document.createElement('button');
+      incrementBtn.type = 'button';
+      incrementBtn.className = 'manson-count-btn increment';
+      incrementBtn.textContent = '+';
 
-      countInput.addEventListener('input', (e) => {
-        const count = parseInt(e.target.value) || 0;
+      const updateCount = (newCount) => {
+        const count = Math.max(0, Math.min(20, newCount));
+        countInput.value = count;
         this.part.ensureFacePorts(face.key, count);
         this.renderMansonPortsInputs(face.key, faceRow);
         this.onUpdate();
+      };
+
+      decrementBtn.addEventListener('click', () => {
+        updateCount((parseInt(countInput.value) || 0) - 1);
       });
 
+      incrementBtn.addEventListener('click', () => {
+        updateCount((parseInt(countInput.value) || 0) + 1);
+      });
+
+      countInput.addEventListener('input', (e) => {
+        updateCount(parseInt(e.target.value) || 0);
+      });
+
+      countWrapper.appendChild(decrementBtn);
       countWrapper.appendChild(countInput);
-      countWrapper.appendChild(countLabel);
+      countWrapper.appendChild(incrementBtn);
 
       faceHeader.appendChild(faceLabel);
       faceHeader.appendChild(countWrapper);
