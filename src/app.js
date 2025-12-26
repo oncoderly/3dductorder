@@ -236,16 +236,153 @@ class App {
     if (!selector) return;
 
     const parts = getAllParts();
+    const partMap = new Map(parts.map(part => [part.key, part]));
 
     // Dropdown'u doldur
+    selector.classList.add('part-selector-native');
     selector.innerHTML = parts.map(part =>
-      `<option value="${part.key}">${part.icon} ${part.name}</option>`
+      `<option value="${part.key}">${part.name}</option>`
     ).join('');
 
-    // Değişiklik dinleyicisi
-    selector.addEventListener('change', (e) => {
-      this.loadPart(e.target.value);
+    const wrapper = selector.parentElement;
+    if (!wrapper) return;
+
+    let custom = wrapper.querySelector('.part-selector-custom');
+    if (!custom) {
+      custom = document.createElement('div');
+      custom.className = 'part-selector-custom';
+      wrapper.appendChild(custom);
+    }
+    custom.innerHTML = '';
+
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'part-selector-trigger';
+    trigger.setAttribute('aria-haspopup', 'listbox');
+    trigger.setAttribute('aria-expanded', 'false');
+
+    const triggerIcon = document.createElement('img');
+    triggerIcon.className = 'part-selector-icon';
+    triggerIcon.alt = '';
+    const triggerFallback = document.createElement('span');
+    triggerFallback.className = 'part-selector-icon-fallback';
+    triggerFallback.setAttribute('aria-hidden', 'true');
+
+    const triggerLabel = document.createElement('span');
+    triggerLabel.className = 'part-selector-label';
+    const triggerCaret = document.createElement('span');
+    triggerCaret.className = 'part-selector-caret';
+    triggerCaret.textContent = 'v';
+
+    trigger.append(triggerIcon, triggerFallback, triggerLabel, triggerCaret);
+
+    const menu = document.createElement('div');
+    menu.className = 'part-selector-menu';
+    menu.setAttribute('role', 'listbox');
+
+    const optionButtons = new Map();
+
+    const applyIcon = (imgEl, fallbackEl, part) => {
+      const iconPath = part?.iconPath;
+      const fallback = part?.icon || '';
+      if (iconPath) {
+        imgEl.onerror = () => {
+          imgEl.classList.add('is-hidden');
+          fallbackEl.classList.remove('is-hidden');
+        };
+        imgEl.src = iconPath;
+        imgEl.classList.remove('is-hidden');
+        fallbackEl.textContent = fallback;
+        fallbackEl.classList.add('is-hidden');
+      } else {
+        imgEl.classList.add('is-hidden');
+        fallbackEl.textContent = fallback;
+        fallbackEl.classList.remove('is-hidden');
+      }
+    };
+
+    const openMenu = () => {
+      custom.classList.add('open');
+      trigger.setAttribute('aria-expanded', 'true');
+    };
+
+    const closeMenu = () => {
+      custom.classList.remove('open');
+      trigger.setAttribute('aria-expanded', 'false');
+    };
+
+    const updateSelected = (key, notify = false) => {
+      const part = partMap.get(key) || parts[0];
+      if (!part) return;
+      applyIcon(triggerIcon, triggerFallback, part);
+      triggerLabel.textContent = part.name;
+      optionButtons.forEach((btn, btnKey) => {
+        btn.setAttribute('aria-selected', btnKey == part.key ? 'true' : 'false');
+      });
+      if (selector.value !== part.key) {
+        selector.value = part.key;
+      }
+      if (notify) {
+        selector.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    };
+
+    parts.forEach(part => {
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.className = 'part-selector-option';
+      option.setAttribute('role', 'option');
+      option.dataset.value = part.key;
+
+      const optionIcon = document.createElement('img');
+      optionIcon.className = 'part-selector-icon';
+      optionIcon.alt = '';
+      const optionFallback = document.createElement('span');
+      optionFallback.className = 'part-selector-icon-fallback';
+      optionFallback.setAttribute('aria-hidden', 'true');
+      applyIcon(optionIcon, optionFallback, part);
+
+      const optionLabel = document.createElement('span');
+      optionLabel.className = 'part-selector-option-label';
+      optionLabel.textContent = part.name;
+
+      option.append(optionIcon, optionFallback, optionLabel);
+      option.addEventListener('click', (e) => {
+        e.preventDefault();
+        updateSelected(part.key, true);
+        closeMenu();
+      });
+
+      menu.appendChild(option);
+      optionButtons.set(part.key, option);
     });
+
+    trigger.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (custom.classList.contains('open')) {
+        closeMenu();
+      } else {
+        openMenu();
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!custom.contains(e.target)) {
+        closeMenu();
+      }
+    });
+
+    custom.append(trigger, menu);
+
+    // De?i?iklik dinleyicisi
+    selector.addEventListener('change', (e) => {
+      const key = e.target.value;
+      this.loadPart(key);
+      updateSelected(key, false);
+    });
+
+    updateSelected(selector.value || parts[0]?.key, false);
   }
 
   setupViewControls() {
