@@ -962,9 +962,50 @@ export class ParameterPanel {
       }
     });
 
+    // Tema değiştirme kontrolü ekle
+    const themeControl = this.createThemeToggleControl();
+    grid.appendChild(themeControl);
+
     content.appendChild(grid);
     section.appendChild(content);
     this.container.appendChild(section);
+  }
+
+  createThemeToggleControl() {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'param-row checkbox-row';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = 'theme-modern-toggle';
+    checkbox.className = 'param-checkbox';
+
+    // Mevcut tema durumunu kontrol et
+    const paramsPanel = document.querySelector('.params-panel');
+    checkbox.checked = paramsPanel?.classList.contains('theme-modern') || false;
+
+    checkbox.addEventListener('change', (e) => {
+      const panel = document.querySelector('.params-panel');
+      if (panel) {
+        if (e.target.checked) {
+          panel.classList.add('theme-modern');
+        } else {
+          panel.classList.remove('theme-modern');
+        }
+        // Tercihi localStorage'a kaydet
+        localStorage.setItem('guiTheme', e.target.checked ? 'modern' : 'default');
+      }
+    });
+
+    const labelEl = document.createElement('label');
+    labelEl.htmlFor = 'theme-modern-toggle';
+    labelEl.className = 'param-label';
+    labelEl.textContent = 'Modern Tema';
+
+    wrapper.appendChild(checkbox);
+    wrapper.appendChild(labelEl);
+
+    return wrapper;
   }
 
   createSceneCheckboxControl(key, label) {

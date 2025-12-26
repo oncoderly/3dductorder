@@ -79,6 +79,7 @@ class App {
     this.setupHUD();
     this.setupMobileToggle();
     this.setupOrderSystem();
+    this.loadSavedTheme();
 
       // İlk parçayı yükle
       this.loadPart('duz-kanal');
@@ -93,6 +94,16 @@ class App {
         `Hata: ${error.message}`
       );
       console.error('Init error:', error);
+    }
+  }
+
+  loadSavedTheme() {
+    const savedTheme = localStorage.getItem('guiTheme');
+    const paramsPanel = document.querySelector('.params-panel');
+    if (paramsPanel && savedTheme === 'modern') {
+      paramsPanel.classList.add('theme-modern');
+    } else if (paramsPanel && savedTheme === 'default') {
+      paramsPanel.classList.remove('theme-modern');
     }
   }
 
