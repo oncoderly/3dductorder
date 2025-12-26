@@ -55,9 +55,10 @@ export class BasePart {
     };
 
     const sheetScaleDefaults = {};
+    const defaultEnabled = new Set([0.6, 0.8, 1.0, 1.2]);
     BasePart.getGalvanizedThicknessListMm().forEach((value) => {
       const key = BasePart.getSheetScaleKey(value);
-      sheetScaleDefaults[`sheetScaleT${key}Enabled`] = true;
+      sheetScaleDefaults[`sheetScaleT${key}Enabled`] = defaultEnabled.has(value);
       sheetScaleDefaults[`sheetScaleT${key}MaxMm`] = BasePart.getSheetScaleDefaultLimitMm(value);
     });
 
@@ -558,6 +559,16 @@ export class BasePart {
   }
 
   static getSheetScaleDefaultLimitMm(value) {
+    const key = Number(value).toFixed(1);
+    const defaults = {
+      '0.6': 600,
+      '0.8': 1249,
+      '1.0': 2490,
+      '1.2': 5000
+    };
+    if (Object.prototype.hasOwnProperty.call(defaults, key)) {
+      return defaults[key];
+    }
     return Math.round(value * 1000);
   }
 
