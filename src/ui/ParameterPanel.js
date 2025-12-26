@@ -2,7 +2,6 @@
 import { BasePart } from '../components/BasePart.js';
 
 const GALV_THICKNESS_MM = BasePart.getGalvanizedThicknessListMm();
-const GALV_THICKNESS_CM = BasePart.getGalvanizedThicknessListCm();
 export class ParameterPanel {
   constructor(container, part, onUpdate, scene = null) {
     this.container = container;
@@ -184,10 +183,17 @@ export class ParameterPanel {
     const inputWrapper = document.createElement('div');
     inputWrapper.className = 'param-number-row';
 
-    const currentValue = this.part.params[param.key];
-    const allowedValues = Array.isArray(param.allowedValues) && param.allowedValues.length
+    const isThickness = param.key === 't';
+    const toUiValue = (value) => (isThickness ? value * 10 : value);
+    const fromUiValue = (value) => (isThickness ? value / 10 : value);
+
+    const currentValue = toUiValue(this.part.params[param.key]);
+    const allowedValuesRaw = Array.isArray(param.allowedValues) && param.allowedValues.length
       ? param.allowedValues
-      : (param.key === 't' ? GALV_THICKNESS_CM : null);
+      : null;
+    const allowedValues = allowedValuesRaw
+      ? (isThickness ? allowedValuesRaw.map(value => value * 10) : allowedValuesRaw)
+      : null;
 
     const getListDecimals = (list) => {
       let maxDecimals = 0;
@@ -210,18 +216,25 @@ export class ParameterPanel {
       return Number.isFinite(minStep) ? minStep : 1;
     };
 
-    const min = allowedValues ? allowedValues[0] : (param.min ?? 0);
-    const max = allowedValues ? allowedValues[allowedValues.length - 1] : (param.max ?? 1);
-    const step = allowedValues ? getListStep(allowedValues) : (param.step || 1);
+    const min = allowedValues ? allowedValues[0] : (isThickness ? (param.min ?? 0) * 10 : (param.min ?? 0));
+    const max = allowedValues ? allowedValues[allowedValues.length - 1] : (isThickness ? (param.max ?? 1) * 10 : (param.max ?? 1));
+    const step = allowedValues ? getListStep(allowedValues) : (isThickness ? 0.1 : (param.step || 1));
     const range = Math.max(1, (max || 1) - (min || 0));
-    const nudgeStep = param.nudgeStep ?? param.nudge ?? (range >= 50 ? 5 : step * 5);
+    const nudgeStep = isThickness ? 0.1 : (param.nudgeStep ?? param.nudge ?? (range >= 50 ? 5 : step * 5));
     const decimals = allowedValues
       ? getListDecimals(allowedValues)
       : (() => {
-        if (!param.step || Number.isInteger(param.step)) return 0;
-        const [, fraction] = param.step.toString().split('.');
+        const stepValue = isThickness ? step : param.step;
+        if (!stepValue || Number.isInteger(stepValue)) return 0;
+        const [, fraction] = stepValue.toString().split('.');
         return Math.min((fraction ? fraction.length : 2), 4);
       })();
+    const formatNumber = (value, places) => {
+      if (!Number.isFinite(value)) return '';
+      if (places <= 0) return Math.round(value).toString();
+      const text = value.toFixed(places);
+      return text.replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1');
+    };
 
     const slider = document.createElement('input');
     slider.type = 'range';
@@ -247,7 +260,7 @@ export class ParameterPanel {
 
     const unit = document.createElement('span');
     unit.className = 'param-unit';
-    unit.textContent = param.unit;
+    unit.textContent = isThickness ? 'mm' : param.unit;
 
     const incBtn = document.createElement('button');
     incBtn.type = 'button';
@@ -280,8 +293,8 @@ export class ParameterPanel {
 
     const setValue = (val, triggerUpdate = true) => {
       const value = clampAndSnap(val);
-      this.part.params[param.key] = value;
-      input.value = value;
+      this.part.params[param.key] = fromUiValue(value);
+      input.value = formatNumber(value, decimals);
       slider.value = value;
       updateSliderFill(value);
       if (triggerUpdate) this.onUpdate();
@@ -297,24 +310,26 @@ export class ParameterPanel {
 
     decBtn.addEventListener('click', () => {
       if (allowedValues && allowedValues.length) {
-        const current = clampAndSnap(this.part.params[param.key]);
+        const current = clampAndSnap(toUiValue(this.part.params[param.key]));
         const index = allowedValues.findIndex(value => Math.abs(value - current) < 1e-6);
         const nextIndex = index > 0 ? index - 1 : 0;
         setValue(allowedValues[nextIndex]);
         return;
       }
-      setValue(this.part.params[param.key] - nudgeStep);
+      const current = toUiValue(this.part.params[param.key]);
+      setValue(current - nudgeStep);
     });
 
     incBtn.addEventListener('click', () => {
       if (allowedValues && allowedValues.length) {
-        const current = clampAndSnap(this.part.params[param.key]);
+        const current = clampAndSnap(toUiValue(this.part.params[param.key]));
         const index = allowedValues.findIndex(value => Math.abs(value - current) < 1e-6);
         const nextIndex = index >= 0 ? Math.min(allowedValues.length - 1, index + 1) : 0;
         setValue(allowedValues[nextIndex]);
         return;
       }
-      setValue(this.part.params[param.key] + nudgeStep);
+      const current = toUiValue(this.part.params[param.key]);
+      setValue(current + nudgeStep);
     });
 
     setValue(currentValue, false);
@@ -322,7 +337,7 @@ export class ParameterPanel {
     inputWrapper.appendChild(slider);
     inputWrapper.appendChild(decBtn);
     inputWrapper.appendChild(input);
-    if (param.unit) inputWrapper.appendChild(unit);
+    if (param.unit || isThickness) inputWrapper.appendChild(unit);
     inputWrapper.appendChild(incBtn);
 
     wrapper.appendChild(label);
@@ -459,7 +474,7 @@ export class ParameterPanel {
     };
 
     const section = document.createElement('div');
-    section.className = 'param-section collapsed';
+    section.className = 'param-section collapsed sheet-scale-section';
 
     const header = document.createElement('h3');
     header.className = 'param-section-title';
@@ -882,17 +897,28 @@ export class ParameterPanel {
     if (!control) return;
     const slider = control.querySelector('.param-number-slider');
     const input = control.querySelector('.param-number-input');
+    const uiValue = key === 't' ? value * 10 : value;
+    const stepValue = slider ? parseFloat(slider.step) : parseFloat(input?.step);
+    const decimals = Number.isFinite(stepValue) && stepValue % 1 !== 0
+      ? Math.min((stepValue.toString().split('.')[1] || '').length, 4)
+      : 0;
+    const formatNumber = (num) => {
+      if (!Number.isFinite(num)) return '';
+      if (decimals <= 0) return Math.round(num).toString();
+      const text = num.toFixed(decimals);
+      return text.replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1');
+    };
 
     if (slider) {
-      slider.value = value;
+      slider.value = uiValue;
       const min = parseFloat(slider.min);
       const max = parseFloat(slider.max);
       const span = (max - min) || 1;
-      const pct = ((value - min) / span) * 100;
+      const pct = ((uiValue - min) / span) * 100;
       slider.style.background = `linear-gradient(90deg, #4c8dff ${pct}%, #2a3242 ${pct}%)`;
     }
     if (input) {
-      input.value = value;
+      input.value = formatNumber(uiValue);
     }
   }
   // Sahne kontrolleri bölümü (Grid, Eksenler, Arkaplan vb.)

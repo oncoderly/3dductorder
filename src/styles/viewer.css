@@ -534,6 +534,10 @@ html, body {
   padding: 0 12px;
 }
 
+.sheet-scale-section .param-section-content {
+  max-height: 4000px;
+}
+
 /* Parameter Grid */
 .param-grid {
   display: grid;

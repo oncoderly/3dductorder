@@ -368,12 +368,18 @@ class App {
     const wasteIncluded = sheet * (1 + wastePercent / 100);
     const thicknessCm = this.currentPart.params?.t;
     const thicknessMm = Number.isFinite(thicknessCm) ? thicknessCm * 10 : NaN;
+    const isDuzKanal = this.getCurrentPartKey() === 'duz-kanal';
 
     const formatValue = (value, decimals) => {
       if (!Number.isFinite(value)) return '-';
       const text = value.toFixed(decimals);
       return text.replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1');
     };
+
+    if (isDuzKanal) {
+      hudInfo.textContent = `Alan: ${formatValue(sheet, 3)} m2 - Sac Kalinligi: ${formatValue(thicknessMm, 2)} mm`;
+      return;
+    }
 
     hudInfo.textContent = `Alan: ${formatValue(sheet, 3)} m2 - Atik: %${formatValue(wastePercent, 1)} - Atik Dahil: ${formatValue(wasteIncluded, 3)} m2 - Sac Kalinligi: ${formatValue(thicknessMm, 2)} mm`;
   }
