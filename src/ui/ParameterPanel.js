@@ -791,7 +791,18 @@ export class ParameterPanel {
       setValue(e.target.value);
     });
 
-    input.addEventListener('input', (e) => {
+    // Select all text on focus so user can immediately type a new value
+    input.addEventListener('focus', () => {
+      input.select();
+    });
+
+    // Only validate on blur/change, not on every keystroke
+    input.addEventListener('change', (e) => {
+      setValue(e.target.value);
+    });
+
+    // Also validate on blur in case user clicks away without pressing Enter
+    input.addEventListener('blur', (e) => {
       setValue(e.target.value);
     });
 
