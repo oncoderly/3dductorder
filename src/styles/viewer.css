@@ -2039,22 +2039,28 @@ html, body {
 }
 
 .params-panel.theme-modern .params-scroll {
-  padding: 4px;
+  padding: 0;
 }
 
 .params-panel.theme-modern .param-section {
-  background: rgba(30, 41, 59, 0.4);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  margin-bottom: 2px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0;
+  margin-bottom: 0;
+  box-shadow: none;
+}
+
+.params-panel.theme-modern .param-section:last-child {
+  border-bottom: none;
 }
 
 .params-panel.theme-modern .param-section:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
 }
 
 .params-panel.theme-modern .param-section-title {
@@ -2479,4 +2485,582 @@ html, body {
 
 .params-panel.theme-modern .manson-port-input:focus {
   border-color: rgba(16, 185, 129, 0.6);
+}
+
+/* ========================================
+   THEME 3 - Emerald Dark Theme
+   Alternative Design-2 inspired
+   ======================================== */
+
+.params-panel.theme-emerald {
+  background: linear-gradient(135deg,
+    rgba(15, 23, 42, 0.95) 0%,
+    rgba(30, 41, 59, 0.9) 50%,
+    rgba(15, 23, 42, 0.95) 100%);
+  border-left: 1px solid rgba(16, 185, 129, 0.3);
+  box-shadow: -4px 0 30px rgba(0, 0, 0, 0.5);
+}
+
+.params-panel.theme-emerald::before {
+  background: linear-gradient(to bottom, #10b981, #06b6d4, #10b981);
+}
+
+.params-panel.theme-emerald .params-scroll {
+  padding: 6px;
+}
+
+.params-panel.theme-emerald .param-section {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 10px;
+  margin-bottom: 4px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.params-panel.theme-emerald .param-section:hover {
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.15);
+}
+
+.params-panel.theme-emerald .param-section-title {
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #10b981, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.params-panel.theme-emerald .param-section-title::after {
+  color: #10b981;
+  font-size: 10px;
+}
+
+.params-panel.theme-emerald .param-section-content {
+  padding: 0 8px 8px 8px;
+}
+
+.params-panel.theme-emerald .param-section.collapsed .param-section-content {
+  padding: 0 8px;
+}
+
+.params-panel.theme-emerald .param-grid {
+  gap: 6px;
+}
+
+.params-panel.theme-emerald .param-control {
+  gap: 3px;
+}
+
+.params-panel.theme-emerald .param-label {
+  font-size: 11px;
+  color: #10b981;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+/* Theme 3 - Number Row */
+.params-panel.theme-emerald .param-number-row {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.params-panel.theme-emerald .param-step-btn {
+  border-radius: 6px;
+  min-width: 28px;
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.params-panel.theme-emerald .param-step-btn.decrement {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #f87171;
+}
+
+.params-panel.theme-emerald .param-step-btn.decrement:hover {
+  background: rgba(239, 68, 68, 0.3);
+}
+
+.params-panel.theme-emerald .param-step-btn.increment {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.5);
+  color: #34d399;
+}
+
+.params-panel.theme-emerald .param-step-btn.increment:hover {
+  background: rgba(16, 185, 129, 0.3);
+}
+
+.params-panel.theme-emerald .param-number-input {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(71, 85, 105, 0.5);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  height: 28px;
+  border-radius: 4px;
+}
+
+.params-panel.theme-emerald .param-number-input:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+.params-panel.theme-emerald .param-number-slider {
+  height: 6px;
+  background: rgba(71, 85, 105, 0.5);
+  border-radius: 999px;
+}
+
+.params-panel.theme-emerald .param-number-slider::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  background: linear-gradient(135deg, #10b981, #06b6d4);
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.5);
+}
+
+.params-panel.theme-emerald .param-number-row .param-unit {
+  color: #10b981;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Theme 3 - Checkbox (Toggle Style) */
+.params-panel.theme-emerald .param-checkbox-control {
+  padding: 6px 8px;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(71, 85, 105, 0.5);
+  border-radius: 8px;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.params-panel.theme-emerald .param-checkbox-control:has(.param-checkbox:checked) {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.params-panel.theme-emerald .param-checkbox {
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: rgba(71, 85, 105, 0.6);
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.params-panel.theme-emerald .param-checkbox::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.params-panel.theme-emerald .param-checkbox:checked {
+  background: #10b981;
+}
+
+.params-panel.theme-emerald .param-checkbox:checked::after {
+  left: 18px;
+}
+
+.params-panel.theme-emerald .param-checkbox-label {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.params-panel.theme-emerald .param-checkbox-control:has(.param-checkbox:checked) .param-checkbox-label {
+  color: #34d399;
+}
+
+/* Theme 3 - Slider */
+.params-panel.theme-emerald .param-slider {
+  height: 6px;
+  background: rgba(71, 85, 105, 0.5);
+  border-radius: 999px;
+}
+
+.params-panel.theme-emerald .param-slider::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  background: linear-gradient(135deg, #10b981, #06b6d4);
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.5);
+}
+
+.params-panel.theme-emerald .param-value {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* Theme 3 - Area Display */
+.params-panel.theme-emerald .area-display {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #34d399;
+  border-radius: 10px;
+  padding: 10px;
+  margin-top: 8px;
+}
+
+/* Theme 3 - Sheet Scale */
+.params-panel.theme-emerald .sheet-scale-summary {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(6, 182, 212, 0.15) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.params-panel.theme-emerald .sheet-scale-table {
+  gap: 4px;
+}
+
+.params-panel.theme-emerald .sheet-scale-thickness {
+  color: #34d399;
+  font-weight: 700;
+}
+
+/* Theme 3 - Select */
+.params-panel.theme-emerald .param-select {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(71, 85, 105, 0.5);
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.params-panel.theme-emerald .param-select:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+/* Theme 3 - Input */
+.params-panel.theme-emerald .param-input {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(71, 85, 105, 0.5);
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.params-panel.theme-emerald .param-input:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+/* Theme 3 - Manşon Yönetimi */
+.params-panel.theme-emerald .manson-face-row {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 8px;
+}
+
+.params-panel.theme-emerald .manson-face-header {
+  background: rgba(16, 185, 129, 0.1);
+  border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+  padding: 8px 10px;
+}
+
+.params-panel.theme-emerald .manson-face-label {
+  color: #34d399;
+  font-weight: 600;
+}
+
+.params-panel.theme-emerald .manson-count-btn {
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+  border-radius: 6px;
+}
+
+.params-panel.theme-emerald .manson-count-btn.decrement {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  color: #f87171;
+}
+
+.params-panel.theme-emerald .manson-count-btn.increment {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  color: #34d399;
+}
+
+.params-panel.theme-emerald .manson-count-input {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(71, 85, 105, 0.5);
+  color: #ffffff;
+}
+
+.params-panel.theme-emerald .manson-port-item {
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+}
+
+.params-panel.theme-emerald .manson-port-label {
+  color: #22d3ee;
+}
+
+.params-panel.theme-emerald .manson-port-input {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(71, 85, 105, 0.5);
+  color: #ffffff;
+}
+
+.params-panel.theme-emerald .manson-port-input:focus {
+  border-color: #06b6d4;
+}
+
+/* ========================================
+   TAB NAVIGATION - Sekme Navigasyonu
+   Alternative Design-2 inspired
+   ======================================== */
+
+.tab-navigation {
+  display: flex;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.3);
+  background: linear-gradient(135deg, rgba(30, 37, 50, 0.98) 0%, rgba(26, 31, 46, 0.98) 100%);
+  padding: 0;
+  gap: 0;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.tab-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.tab-btn:hover {
+  color: #94a3b8;
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.tab-btn.active {
+  color: #10b981;
+}
+
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #10b981, #06b6d4);
+  border-radius: 3px 3px 0 0;
+}
+
+.tab-icon {
+  font-size: 18px;
+}
+
+.tab-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tab-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px;
+}
+
+.tab-panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tab-group {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.7) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.tab-group-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #10b981;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Theme Modern için Tab Stilleri */
+.params-panel.theme-modern .tab-navigation {
+  background: rgba(30, 41, 59, 0.3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.params-panel.theme-modern .tab-btn {
+  color: rgba(148, 163, 184, 0.8);
+}
+
+.params-panel.theme-modern .tab-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+.params-panel.theme-modern .tab-btn.active {
+  color: #22d3ee;
+}
+
+.params-panel.theme-modern .tab-btn.active::after {
+  background: linear-gradient(90deg, #22d3ee, #6366f1);
+}
+
+.params-panel.theme-modern .tab-content {
+  padding: 6px;
+}
+
+.params-panel.theme-modern .tab-group {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.params-panel.theme-modern .tab-group-title {
+  color: rgba(165, 180, 252, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Theme Emerald için Tab Stilleri */
+.params-panel.theme-emerald .tab-navigation {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.9) 100%);
+  border-bottom: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.params-panel.theme-emerald .tab-btn {
+  color: #64748b;
+}
+
+.params-panel.theme-emerald .tab-btn:hover {
+  color: #94a3b8;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.params-panel.theme-emerald .tab-btn.active {
+  color: #34d399;
+}
+
+.params-panel.theme-emerald .tab-btn.active::after {
+  background: linear-gradient(90deg, #10b981, #06b6d4);
+}
+
+.params-panel.theme-emerald .tab-content {
+  padding: 8px;
+}
+
+.params-panel.theme-emerald .tab-group {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.params-panel.theme-emerald .tab-group-title {
+  color: #34d399;
+  border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+/* Mobil için Tab Stilleri */
+@media (max-width: 768px) {
+  .tab-navigation {
+    padding: 0;
+  }
+
+  .tab-btn {
+    padding: 10px 6px;
+  }
+
+  .tab-icon {
+    font-size: 16px;
+  }
+
+  .tab-label {
+    font-size: 9px;
+  }
+
+  .tab-content {
+    padding: 6px;
+  }
+
+  .tab-group {
+    padding: 8px;
+  }
+
+  .tab-group-title {
+    font-size: 11px;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tab-btn {
+    padding: 8px 4px;
+  }
+
+  .tab-icon {
+    font-size: 14px;
+  }
+
+  .tab-label {
+    font-size: 8px;
+  }
+
+  .tab-content {
+    padding: 4px;
+  }
+
+  .tab-group {
+    padding: 6px;
+    border-radius: 8px;
+  }
 }

@@ -14,12 +14,500 @@ export class ParameterPanel {
     this.scene = scene; // Scene3D instance for scene controls
     this.controls = {};
     this.sheetScaleElements = null;
+    this.activeTab = localStorage.getItem('activeTab') || 'boyut'; // Varsayılan sekme
+    this.useTabNavigation = localStorage.getItem('useTabNavigation') === 'true';
   }
 
   render() {
     this.container.innerHTML = '';
     const definitions = this.part.getParameterDefinitions();
 
+    // Tab navigasyonu aktifse tab layout kullan
+    if (this.useTabNavigation) {
+      this.renderTabLayout(definitions);
+    } else {
+      this.renderAccordionLayout(definitions);
+    }
+
+    this.updateSheetScaleDisplay();
+  }
+
+  // Tab-based layout (Alternative Design-2 tarzı)
+  renderTabLayout(definitions) {
+    // Tab navigation bar
+    const tabNav = document.createElement('div');
+    tabNav.className = 'tab-navigation';
+
+    const tabs = [
+      { id: 'boyut', icon: '📏', label: 'Boyut' },
+      { id: 'gorunum', icon: '👁️', label: 'Görünüm' },
+      { id: 'sahne', icon: '🌐', label: 'Sahne' },
+      { id: 'diger', icon: '📦', label: 'Diğer' }
+    ];
+
+    tabs.forEach(tab => {
+      const tabBtn = document.createElement('button');
+      tabBtn.className = `tab-btn ${this.activeTab === tab.id ? 'active' : ''}`;
+      tabBtn.dataset.tab = tab.id;
+      tabBtn.innerHTML = `
+        <span class="tab-icon">${tab.icon}</span>
+        <span class="tab-label">${tab.label}</span>
+      `;
+      tabBtn.addEventListener('click', () => this.switchTab(tab.id));
+      tabNav.appendChild(tabBtn);
+    });
+
+    this.container.appendChild(tabNav);
+
+    // Tab içerik container
+    const tabContent = document.createElement('div');
+    tabContent.className = 'tab-content';
+    this.container.appendChild(tabContent);
+
+    // Aktif sekme içeriğini render et
+    this.renderTabContent(tabContent, definitions);
+  }
+
+  switchTab(tabId) {
+    this.activeTab = tabId;
+    localStorage.setItem('activeTab', tabId);
+
+    // Tab butonlarını güncelle
+    const tabBtns = this.container.querySelectorAll('.tab-btn');
+    tabBtns.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tabId);
+    });
+
+    // Tab içeriğini güncelle
+    const tabContent = this.container.querySelector('.tab-content');
+    if (tabContent) {
+      const definitions = this.part.getParameterDefinitions();
+      this.renderTabContent(tabContent, definitions);
+    }
+  }
+
+  renderTabContent(container, definitions) {
+    container.innerHTML = '';
+
+    switch (this.activeTab) {
+      case 'sahne':
+        this.renderSahneTabContent(container);
+        break;
+      case 'boyut':
+        this.renderBoyutTabContent(container, definitions);
+        break;
+      case 'gorunum':
+        this.renderGorunumTabContent(container);
+        break;
+      case 'diger':
+        this.renderDigerTabContent(container, definitions);
+        break;
+    }
+  }
+
+  renderSahneTabContent(container) {
+    const content = document.createElement('div');
+    content.className = 'tab-panel-content';
+
+    // Sahne ayarları
+    if (this.scene) {
+      const sceneParams = this.scene.getSceneParameterDefinitions();
+
+      sceneParams.forEach(param => {
+        let control;
+        if (param.type === 'checkbox') {
+          control = this.createSceneCheckboxControl(param.key, param.label);
+        } else if (param.type === 'color') {
+          control = this.createSceneColorControl(param.key, param.label);
+        }
+        if (control) {
+          content.appendChild(control);
+        }
+      });
+    }
+
+    // Tema seçimi
+    const themeControl = this.createThemeToggleControl();
+    content.appendChild(themeControl);
+
+    // Tab/Accordion modu seçimi
+    const layoutControl = this.createLayoutToggleControl();
+    content.appendChild(layoutControl);
+
+    container.appendChild(content);
+  }
+
+  renderBoyutTabContent(container, definitions) {
+    const content = document.createElement('div');
+    content.className = 'tab-panel-content';
+
+    // Gruplar
+    if (definitions.groups && definitions.groups.length > 0) {
+      definitions.groups.forEach(group => {
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'tab-group';
+
+        const groupTitle = document.createElement('div');
+        groupTitle.className = 'tab-group-title';
+        groupTitle.textContent = group.name;
+        groupDiv.appendChild(groupTitle);
+
+        group.params.forEach(param => {
+          let control;
+          if (!param.type || param.type === 'number') {
+            control = this.createNumberControl(param);
+          } else if (param.type === 'checkbox') {
+            control = this.createCheckboxControl(param.key, param.label);
+          } else if (param.type === 'color') {
+            control = this.createColorControl(param);
+          } else if (param.type === 'select') {
+            control = this.createSelectControl(param);
+          }
+          if (control) {
+            groupDiv.appendChild(control);
+            this.controls[param.key] = control;
+          }
+        });
+
+        content.appendChild(groupDiv);
+      });
+    }
+
+    // Boyutlar
+    if (definitions.dimensions && definitions.dimensions.length > 0) {
+      const dimDiv = document.createElement('div');
+      dimDiv.className = 'tab-group';
+
+      const dimTitle = document.createElement('div');
+      dimTitle.className = 'tab-group-title';
+      dimTitle.textContent = 'Boyutlar';
+      dimDiv.appendChild(dimTitle);
+
+      definitions.dimensions.forEach(param => {
+        const control = this.createNumberControl(param);
+        dimDiv.appendChild(control);
+        this.controls[param.key] = control;
+      });
+
+      content.appendChild(dimDiv);
+    }
+
+    // Yüzler (Plenum Box için)
+    if (definitions.faces && definitions.faces.length > 0) {
+      this.renderFacesSectionInTab(content, definitions.faces);
+    }
+
+    // Sac Kalınlığı Skalası
+    this.renderSheetScaleSectionInTab(content);
+
+    container.appendChild(content);
+  }
+
+  renderGorunumTabContent(container) {
+    const content = document.createElement('div');
+    content.className = 'tab-panel-content';
+
+    // Görünüm checkboxları
+    const checkboxes = [
+      { key: 'showEdges', label: 'Kenar Çizgileri' },
+      { key: 'showDims', label: 'Ölçülendirme' },
+      { key: 'showFlange', label: 'Flanşları Göster' },
+      { key: 'keepViewOnEdit', label: 'Görüşü Koru' }
+    ];
+
+    checkboxes.forEach(cb => {
+      const control = this.createCheckboxControl(cb.key, cb.label);
+      content.appendChild(control);
+    });
+
+    container.appendChild(content);
+  }
+
+  renderDigerTabContent(container, definitions) {
+    const content = document.createElement('div');
+    content.className = 'tab-panel-content';
+
+    // Flanş Ayarları
+    const flangeDiv = document.createElement('div');
+    flangeDiv.className = 'tab-group';
+
+    const flangeTitle = document.createElement('div');
+    flangeTitle.className = 'tab-group-title';
+    flangeTitle.textContent = '🔧 Flanş Ayarları';
+    flangeDiv.appendChild(flangeTitle);
+
+    const flangeParams = [
+      { key: 'flangeLip', label: 'Flanş Payı', min: 1, max: 8, step: 1, unit: 'cm' },
+      { key: 'flangeThick', label: 'Flanş Kalınlığı', min: 0.2, max: 2, step: 0.05, unit: 'cm' }
+    ];
+
+    flangeParams.forEach(param => {
+      const control = this.createSliderControl(param);
+      flangeDiv.appendChild(control);
+    });
+
+    content.appendChild(flangeDiv);
+
+    // Malzeme Özellikleri
+    const materialDiv = document.createElement('div');
+    materialDiv.className = 'tab-group';
+
+    const materialTitle = document.createElement('div');
+    materialTitle.className = 'tab-group-title';
+    materialTitle.textContent = '✨ Malzeme Özellikleri';
+    materialDiv.appendChild(materialTitle);
+
+    const materialParams = [
+      { key: 'metalRough', label: 'Pürüzlülük', min: 0, max: 1, step: 0.01 },
+      { key: 'metalness', label: 'Metallik', min: 0, max: 1, step: 0.01 }
+    ];
+
+    materialParams.forEach(param => {
+      const control = this.createSliderControl(param);
+      materialDiv.appendChild(control);
+    });
+
+    content.appendChild(materialDiv);
+
+    // Renkler
+    if (definitions.colors && definitions.colors.length > 0) {
+      const colorDiv = document.createElement('div');
+      colorDiv.className = 'tab-group';
+
+      const colorTitle = document.createElement('div');
+      colorTitle.className = 'tab-group-title';
+      colorTitle.textContent = '🎨 Renkler';
+      colorDiv.appendChild(colorTitle);
+
+      definitions.colors.forEach(color => {
+        const control = this.createColorControl(color);
+        colorDiv.appendChild(control);
+      });
+
+      content.appendChild(colorDiv);
+    }
+
+    // Alan Hesabı
+    const areaDiv = document.createElement('div');
+    areaDiv.className = 'tab-group';
+
+    const areaTitle = document.createElement('div');
+    areaTitle.className = 'tab-group-title';
+    areaTitle.textContent = '📊 Alan Hesabı';
+    areaDiv.appendChild(areaTitle);
+
+    const areaParams = [
+      { key: 'wastePercent', label: 'Atık Oranı (%)', min: 0, max: 100, step: 1 },
+      { key: 'kFactor', label: 'K Faktörü', min: 0, max: 2, step: 0.01 }
+    ];
+
+    areaParams.forEach(param => {
+      const control = this.createSliderControl(param);
+      areaDiv.appendChild(control);
+    });
+
+    const areaInclude = this.createCheckboxControl('areaIncludeFlange', 'Flanşı Dahil Et');
+    areaDiv.appendChild(areaInclude);
+
+    const areaDisplay = document.createElement('div');
+    areaDisplay.className = 'area-display';
+    areaDisplay.id = 'area-display';
+    areaDisplay.textContent = 'Alan hesaplanıyor...';
+    areaDiv.appendChild(areaDisplay);
+    this.part.areaDisplayElement = areaDisplay;
+
+    content.appendChild(areaDiv);
+
+    container.appendChild(content);
+  }
+
+  renderFacesSectionInTab(container, faces) {
+    const facesDiv = document.createElement('div');
+    facesDiv.className = 'tab-group manson-management-section';
+
+    const facesTitle = document.createElement('div');
+    facesTitle.className = 'tab-group-title';
+    facesTitle.textContent = '🔘 Manşon Yönetimi';
+    facesDiv.appendChild(facesTitle);
+
+    faces.forEach(face => {
+      const faceRow = document.createElement('div');
+      faceRow.className = 'manson-face-row';
+      faceRow.dataset.faceKey = face.key;
+
+      const faceHeader = document.createElement('div');
+      faceHeader.className = 'manson-face-header';
+
+      const faceLabel = document.createElement('span');
+      faceLabel.className = 'manson-face-label';
+      faceLabel.textContent = face.label;
+
+      const countWrapper = document.createElement('div');
+      countWrapper.className = 'manson-count-wrapper';
+
+      const decrementBtn = document.createElement('button');
+      decrementBtn.type = 'button';
+      decrementBtn.className = 'manson-count-btn decrement';
+      decrementBtn.textContent = '−';
+
+      const countInput = document.createElement('input');
+      countInput.type = 'number';
+      countInput.className = 'manson-count-input';
+      countInput.min = 0;
+      countInput.max = 20;
+      countInput.step = 1;
+      countInput.value = this.part.params.faces[face.key].count || 0;
+
+      const incrementBtn = document.createElement('button');
+      incrementBtn.type = 'button';
+      incrementBtn.className = 'manson-count-btn increment';
+      incrementBtn.textContent = '+';
+
+      const updateCount = (newCount) => {
+        const count = Math.max(0, Math.min(20, newCount));
+        countInput.value = count;
+        this.part.ensureFacePorts(face.key, count);
+        this.renderMansonPortsInputs(face.key, faceRow);
+        this.onUpdate();
+      };
+
+      decrementBtn.addEventListener('click', () => {
+        updateCount((parseInt(countInput.value) || 0) - 1);
+      });
+
+      incrementBtn.addEventListener('click', () => {
+        updateCount((parseInt(countInput.value) || 0) + 1);
+      });
+
+      countInput.addEventListener('input', (e) => {
+        updateCount(parseInt(e.target.value) || 0);
+      });
+
+      countWrapper.appendChild(decrementBtn);
+      countWrapper.appendChild(countInput);
+      countWrapper.appendChild(incrementBtn);
+
+      faceHeader.appendChild(faceLabel);
+      faceHeader.appendChild(countWrapper);
+      faceRow.appendChild(faceHeader);
+
+      const portsContainer = document.createElement('div');
+      portsContainer.className = 'manson-ports-container';
+      portsContainer.dataset.faceKey = face.key;
+      faceRow.appendChild(portsContainer);
+
+      facesDiv.appendChild(faceRow);
+
+      this.renderMansonPortsInputs(face.key, faceRow);
+    });
+
+    container.appendChild(facesDiv);
+  }
+
+  renderSheetScaleSectionInTab(container) {
+    if (!this.part || !this.part.getSheetScaleState || this.part.params.t === undefined) return;
+
+    const formatLabel = (value) => {
+      if (!Number.isFinite(value)) return '-';
+      const rounded = Math.round(value * 100) / 100;
+      const text = rounded.toFixed(2)
+        .replace(/\.0+$/, '')
+        .replace(/(\.\d*[1-9])0+$/, '$1');
+      return text.replace('.', ',');
+    };
+
+    const scaleDiv = document.createElement('div');
+    scaleDiv.className = 'tab-group sheet-scale-section';
+
+    const scaleTitle = document.createElement('div');
+    scaleTitle.className = 'tab-group-title';
+    scaleTitle.textContent = 'Sac Kalınlığı Skalası';
+    scaleDiv.appendChild(scaleTitle);
+
+    const summary = document.createElement('div');
+    summary.className = 'sheet-scale-summary';
+    scaleDiv.appendChild(summary);
+
+    const table = document.createElement('div');
+    table.className = 'sheet-scale-table';
+    scaleDiv.appendChild(table);
+
+    const enableControl = this.createCheckboxControl('sheetScaleEnabled', 'Skala ile seç');
+    scaleDiv.appendChild(enableControl);
+    this.controls.sheetScaleEnabled = enableControl;
+
+    const entries = [];
+    GALV_THICKNESS_MM.forEach((thicknessMm) => {
+      const entry = document.createElement('div');
+      entry.className = 'sheet-scale-entry';
+
+      const title = document.createElement('div');
+      title.className = 'sheet-scale-entry-title';
+      title.textContent = `${formatLabel(thicknessMm)} mm`;
+      entry.appendChild(title);
+
+      const enabledKey = BasePart.getSheetScaleEnabledKey(thicknessMm);
+      const maxKey = BasePart.getSheetScaleMaxKey(thicknessMm);
+
+      const entryControls = document.createElement('div');
+      entryControls.className = 'sheet-scale-entry-controls';
+
+      const includeControl = this.createCheckboxControl(enabledKey, 'Dahil');
+      entryControls.appendChild(includeControl);
+      this.controls[enabledKey] = includeControl;
+
+      const limitControl = this.createNumberControl({
+        key: maxKey,
+        label: 'Bitiş (mm)',
+        min: 1,
+        max: 5000,
+        step: 1,
+        unit: 'mm',
+        nudgeStep: 50
+      });
+      entryControls.appendChild(limitControl);
+      this.controls[maxKey] = limitControl;
+
+      entry.appendChild(entryControls);
+      scaleDiv.appendChild(entry);
+
+      entries.push({ thicknessMm, enabledKey, maxKey });
+    });
+
+    this.sheetScaleElements = { summary, table, section: scaleDiv, entries };
+
+    container.appendChild(scaleDiv);
+  }
+
+  createLayoutToggleControl() {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'param-checkbox-control';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'param-checkbox';
+    checkbox.id = 'layout-toggle';
+    checkbox.checked = this.useTabNavigation;
+
+    checkbox.addEventListener('change', (e) => {
+      this.useTabNavigation = e.target.checked;
+      localStorage.setItem('useTabNavigation', e.target.checked.toString());
+      this.render(); // Yeniden render et
+    });
+
+    const labelEl = document.createElement('label');
+    labelEl.className = 'param-checkbox-label';
+    labelEl.htmlFor = 'layout-toggle';
+    labelEl.textContent = 'Sekme Navigasyonu';
+
+    wrapper.appendChild(checkbox);
+    wrapper.appendChild(labelEl);
+
+    return wrapper;
+  }
+
+  // Accordion-based layout (mevcut yapı)
+  renderAccordionLayout(definitions) {
     // Yeni groups yapısını destekle
     if (definitions.groups && definitions.groups.length > 0) {
       definitions.groups.forEach(group => {
@@ -60,8 +548,6 @@ export class ParameterPanel {
     if (this.scene) {
       this.renderSceneControlsSection();
     }
-
-    this.updateSheetScaleDisplay();
   }
 
   renderGroupSection(group) {
@@ -1049,6 +1535,10 @@ export class ParameterPanel {
     const themeControl = this.createThemeToggleControl();
     grid.appendChild(themeControl);
 
+    // Sekme navigasyonu kontrolü ekle
+    const layoutControl = this.createLayoutToggleControl();
+    grid.appendChild(layoutControl);
+
     content.appendChild(grid);
     section.appendChild(content);
     this.container.appendChild(section);
@@ -1056,37 +1546,53 @@ export class ParameterPanel {
 
   createThemeToggleControl() {
     const wrapper = document.createElement('div');
-    wrapper.className = 'param-row checkbox-row';
+    wrapper.className = 'param-control';
 
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.id = 'theme-modern-toggle';
-    checkbox.className = 'param-checkbox';
+    const labelEl = document.createElement('label');
+    labelEl.className = 'param-label';
+    labelEl.textContent = 'Tema';
+
+    const select = document.createElement('select');
+    select.id = 'theme-selector';
+    select.className = 'param-select';
+
+    const themes = [
+      { value: 'default', label: 'Varsayılan' },
+      { value: 'modern', label: 'Modern (Glassmorphism)' },
+      { value: 'emerald', label: 'Emerald Dark' }
+    ];
+
+    themes.forEach(theme => {
+      const option = document.createElement('option');
+      option.value = theme.value;
+      option.textContent = theme.label;
+      select.appendChild(option);
+    });
 
     // Mevcut tema durumunu kontrol et
     const paramsPanel = document.querySelector('.params-panel');
-    checkbox.checked = paramsPanel?.classList.contains('theme-modern') || false;
+    const savedTheme = localStorage.getItem('guiTheme') || 'default';
+    select.value = savedTheme;
 
-    checkbox.addEventListener('change', (e) => {
+    select.addEventListener('change', (e) => {
       const panel = document.querySelector('.params-panel');
       if (panel) {
-        if (e.target.checked) {
-          panel.classList.add('theme-modern');
-        } else {
-          panel.classList.remove('theme-modern');
+        // Tüm tema class'larını kaldır
+        panel.classList.remove('theme-modern', 'theme-emerald');
+
+        // Seçilen temayı uygula
+        const selectedTheme = e.target.value;
+        if (selectedTheme !== 'default') {
+          panel.classList.add(`theme-${selectedTheme}`);
         }
+
         // Tercihi localStorage'a kaydet
-        localStorage.setItem('guiTheme', e.target.checked ? 'modern' : 'default');
+        localStorage.setItem('guiTheme', selectedTheme);
       }
     });
 
-    const labelEl = document.createElement('label');
-    labelEl.htmlFor = 'theme-modern-toggle';
-    labelEl.className = 'param-label';
-    labelEl.textContent = 'Modern Tema';
-
-    wrapper.appendChild(checkbox);
     wrapper.appendChild(labelEl);
+    wrapper.appendChild(select);
 
     return wrapper;
   }

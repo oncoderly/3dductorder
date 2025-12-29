@@ -100,10 +100,14 @@ class App {
   loadSavedTheme() {
     const savedTheme = localStorage.getItem('guiTheme');
     const paramsPanel = document.querySelector('.params-panel');
-    if (paramsPanel && savedTheme === 'modern') {
-      paramsPanel.classList.add('theme-modern');
-    } else if (paramsPanel && savedTheme === 'default') {
-      paramsPanel.classList.remove('theme-modern');
+    if (paramsPanel) {
+      // Tüm tema class'larını kaldır
+      paramsPanel.classList.remove('theme-modern', 'theme-emerald');
+
+      // Kaydedilen temayı uygula
+      if (savedTheme && savedTheme !== 'default') {
+        paramsPanel.classList.add(`theme-${savedTheme}`);
+      }
     }
   }
 
