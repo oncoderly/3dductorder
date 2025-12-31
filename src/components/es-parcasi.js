@@ -1,4 +1,4 @@
-// ES Parçası Component - Offset (ES) Transition Duct
+// Es-Parcasi Component - Offset (ES) Duct (Equal Cross Section)
 import * as THREE from 'three';
 import { BasePart } from './BasePart.js';
 
@@ -13,19 +13,15 @@ export class EsParcasi extends BasePart {
 
     this.params = {
       ...this.params,
-      W1: 100,
-      H1: 80,
-      W2: 100,
-      H2: 80,
+      W: 100,
+      H: 80,
       L: 120,
       ES: 60,
       ESmarginCm: 5,
       t: 0.12,
       steps: 64,
-      colorW1: '#207aff',
-      colorH1: '#ff2d2d',
-      colorW2: '#8e24aa',
-      colorH2: '#ff9800',
+      colorW: '#207aff',
+      colorH: '#ff2d2d',
       colorL: '#00bcd4',
       colorES: '#207aff'
     };
@@ -36,21 +32,17 @@ export class EsParcasi extends BasePart {
 
     return {
       dimensions: [
-        { key: 'W1', label: 'W1 (ön)', min: 10, max: 400, step: 1, unit: 'cm', default: 100 },
-        { key: 'H1', label: 'H1 (ön)', min: 10, max: 400, step: 1, unit: 'cm', default: 80 },
-        { key: 'W2', label: 'W2 (arka)', min: 10, max: 400, step: 1, unit: 'cm', default: 100 },
-        { key: 'H2', label: 'H2 (arka)', min: 10, max: 400, step: 1, unit: 'cm', default: 80 },
+        { key: 'W', label: 'W (genislik)', min: 10, max: 400, step: 1, unit: 'cm', default: 100 },
+        { key: 'H', label: 'H (yukseklik)', min: 10, max: 400, step: 1, unit: 'cm', default: 80 },
         { key: 'L', label: 'L (uzunluk)', min: 10, max: 1000, step: 1, unit: 'cm', default: 120 },
         { key: 'ES', label: 'ES (X ofset)', min: 0, max: 1000, step: 1, unit: 'cm', default: 60 },
-        { key: 'ESmarginCm', label: 'ES Marjı', min: 0, max: 100, step: 1, unit: 'cm', default: 5 },
-        { key: 't', label: 'Sac Kalınlığı', min: 0.02, max: 1.0, step: 0.01, unit: 'cm', default: 0.12 },
-        { key: 'steps', label: 'Segment Sayısı', min: 8, max: 200, step: 1, unit: '', default: 64 }
+        { key: 'ESmarginCm', label: 'ES Marji', min: 0, max: 100, step: 1, unit: 'cm', default: 5 },
+        { key: 't', label: 'Sac Kalinligi', min: 0.02, max: 1.0, step: 0.01, unit: 'cm', default: 0.12 },
+        { key: 'steps', label: 'Segment Sayisi', min: 8, max: 200, step: 1, unit: '', default: 64 }
       ],
       colors: [
-        { key: 'colorW1', label: 'W1 Rengi', default: '#207aff' },
-        { key: 'colorH1', label: 'H1 Rengi', default: '#ff2d2d' },
-        { key: 'colorW2', label: 'W2 Rengi', default: '#8e24aa' },
-        { key: 'colorH2', label: 'H2 Rengi', default: '#ff9800' },
+        { key: 'colorW', label: 'W Rengi', default: '#207aff' },
+        { key: 'colorH', label: 'H Rengi', default: '#ff2d2d' },
         { key: 'colorL', label: 'L Rengi', default: '#00bcd4' },
         { key: 'colorES', label: 'ES Rengi', default: '#207aff' }
       ],
@@ -60,10 +52,8 @@ export class EsParcasi extends BasePart {
   }
 
   buildGeometry() {
-    const W1 = BasePart.cm(this.params.W1);
-    const H1 = BasePart.cm(this.params.H1);
-    const W2 = BasePart.cm(this.params.W2);
-    const H2 = BasePart.cm(this.params.H2);
+    const W = BasePart.cm(this.params.W);
+    const H = BasePart.cm(this.params.H);
     const L = BasePart.cm(this.params.L);
     const ES = BasePart.cm(this.params.ES);
     const t = BasePart.cm(this.params.t);
@@ -76,9 +66,7 @@ export class EsParcasi extends BasePart {
     const ringsOuter = [];
     const ringsInner = [];
 
-    const lerp = (a, b, u) => a + (b - a) * u;
-
-    // ES ofseti için smoothstep hesaplama
+    // ES ofseti icin smoothstep hesaplama
     const margin = Math.min(
       BasePart.cm(this.params.ESmarginCm || 5),
       Math.max(0, L * 0.5 - 1e-6)
@@ -86,11 +74,9 @@ export class EsParcasi extends BasePart {
 
     for (let i = 0; i <= steps; i++) {
       const u = i / steps;
-      const w = lerp(W1, W2, u);
-      const h = lerp(H1, H2, u);
-      const z = (u - 0.5) * L; // Merkezi 0'a kaydır
+      const z = (u - 0.5) * L; // Merkezi 0'a kaydir
 
-      // ES ofseti - smoothstep ile yumuşak geçiş
+      // ES ofseti - smoothstep ile yumusak gecis
       let s;
       if (L <= 2 * margin) {
         s = u;
@@ -101,13 +87,13 @@ export class EsParcasi extends BasePart {
       s = s * s * (3 - 2 * s);
       const cx = ES * s - ES / 2; // ES ofsetini de merkezle
 
-      // Dış ve iç yarı genişlikler
-      const wo = Math.max(w / 2, 1e-6);
-      const ho = Math.max(h / 2, 1e-6);
+      // Dis ve ic yari genislikler (sabit kesit)
+      const wo = Math.max(W / 2, 1e-6);
+      const ho = Math.max(H / 2, 1e-6);
       const wi = Math.max(wo - t, 1e-6);
       const hi = Math.max(ho - t, 1e-6);
 
-      // Dikdörtgen köşeleri (4 köşe)
+      // Dikdortgen koseleri (4 kose)
       const outer = [
         new THREE.Vector3(cx - wo, -ho, z),
         new THREE.Vector3(cx + wo, -ho, z),
@@ -133,10 +119,10 @@ export class EsParcasi extends BasePart {
       }
     };
 
-    // Önce dış halkalar
+    // Once dis halkalar
     for (let i = 0; i <= steps; i++) pushRing(ringsOuter[i]);
 
-    // Sonra iç halkalar
+    // Sonra ic halkalar
     const innerBase = vertices.length / 3;
     for (let i = 0; i <= steps; i++) pushRing(ringsInner[i]);
 
@@ -145,7 +131,7 @@ export class EsParcasi extends BasePart {
       indices.push(a, b, c, a, c, d);
     };
 
-    // Dış yüzeyler
+    // Dis yuzeyler
     for (let i = 0; i < steps; i++) {
       const b0 = i * N;
       const b1 = (i + 1) * N;
@@ -158,7 +144,7 @@ export class EsParcasi extends BasePart {
       }
     }
 
-    // İç yüzeyler (ters yön)
+    // Ic yuzeyler (ters yon)
     for (let i = 0; i < steps; i++) {
       const b0 = innerBase + i * N;
       const b1 = innerBase + (i + 1) * N;
@@ -171,7 +157,7 @@ export class EsParcasi extends BasePart {
       }
     }
 
-    // Geometry oluştur
+    // Geometry olustur
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
     geometry.setIndex(indices);
@@ -185,22 +171,20 @@ export class EsParcasi extends BasePart {
   }
 
   buildFlange() {
-    const W1 = BasePart.cm(this.params.W1);
-    const H1 = BasePart.cm(this.params.H1);
-    const W2 = BasePart.cm(this.params.W2);
-    const H2 = BasePart.cm(this.params.H2);
+    const W = BasePart.cm(this.params.W);
+    const H = BasePart.cm(this.params.H);
     const L = BasePart.cm(this.params.L);
     const ES = BasePart.cm(this.params.ES);
     const lip = BasePart.cm(this.params.flangeLip);
     const fth = BasePart.cm(this.params.flangeThick);
 
-    // Başlangıç flanşı (merkezde)
-    const F0 = this.createFlangeRect(W1, H1, lip, fth);
+    // Baslangic flansi (merkezde)
+    const F0 = this.createFlangeRect(W, H, lip, fth);
     F0.position.set(-ES / 2, 0, -L / 2 - fth * 0.5);
     this.scene.flangeGroup.add(F0);
 
-    // Bitiş flanşı (merkezde)
-    const F1 = this.createFlangeRect(W2, H2, lip, fth);
+    // Bitis flansi (merkezde)
+    const F1 = this.createFlangeRect(W, H, lip, fth);
     F1.position.set(ES / 2, 0, L / 2 + fth * 0.5);
     this.scene.flangeGroup.add(F1);
   }
@@ -216,53 +200,31 @@ export class EsParcasi extends BasePart {
   }
 
   drawDimensions() {
-    const W1 = BasePart.cm(this.params.W1);
-    const H1 = BasePart.cm(this.params.H1);
-    const W2 = BasePart.cm(this.params.W2);
-    const H2 = BasePart.cm(this.params.H2);
+    const W = BasePart.cm(this.params.W);
+    const H = BasePart.cm(this.params.H);
     const L = BasePart.cm(this.params.L);
     const ES = BasePart.cm(this.params.ES);
 
-    const yTop = Math.max(H1, H2) / 2;
+    const yTop = H / 2;
 
-    // W1 alt kenar (merkezde)
+    // W alt kenar (on yuz - merkezde)
     this.createDimensionLine(
-      new THREE.Vector3(-ES / 2 - W1 / 2, -H1 / 2, -L / 2),
-      new THREE.Vector3(-ES / 2 + W1 / 2, -H1 / 2, -L / 2),
+      new THREE.Vector3(-ES / 2 - W / 2, -H / 2, -L / 2),
+      new THREE.Vector3(-ES / 2 + W / 2, -H / 2, -L / 2),
       new THREE.Vector3(0, -1, 0),
-      `W1 = ${BasePart.formatDimension(this.params.W1)} cm`,
-      this.params.colorW1,
-      'W1'
+      `W = ${BasePart.formatDimension(this.params.W)} cm`,
+      this.params.colorW,
+      'W'
     );
 
-    // H1 sol kenar (merkezde)
+    // H sol kenar (on yuz - merkezde)
     this.createDimensionLine(
-      new THREE.Vector3(-ES / 2 - W1 / 2, -H1 / 2, -L / 2),
-      new THREE.Vector3(-ES / 2 - W1 / 2, H1 / 2, -L / 2),
+      new THREE.Vector3(-ES / 2 - W / 2, -H / 2, -L / 2),
+      new THREE.Vector3(-ES / 2 - W / 2, H / 2, -L / 2),
       new THREE.Vector3(-1, 0, 0),
-      `H1 = ${BasePart.formatDimension(this.params.H1)} cm`,
-      this.params.colorH1,
-      'H1'
-    );
-
-    // W2 üst kenar (merkezde)
-    this.createDimensionLine(
-      new THREE.Vector3(ES / 2 - W2 / 2, H2 / 2, L / 2),
-      new THREE.Vector3(ES / 2 + W2 / 2, H2 / 2, L / 2),
-      new THREE.Vector3(0, 1, 0),
-      `W2 = ${BasePart.formatDimension(this.params.W2)} cm`,
-      this.params.colorW2,
-      'W2'
-    );
-
-    // H2 sol kenar (merkezde)
-    this.createDimensionLine(
-      new THREE.Vector3(ES / 2 - W2 / 2, -H2 / 2, L / 2),
-      new THREE.Vector3(ES / 2 - W2 / 2, H2 / 2, L / 2),
-      new THREE.Vector3(-1, 0, 0),
-      `H2 = ${BasePart.formatDimension(this.params.H2)} cm`,
-      this.params.colorH2,
-      'H2'
+      `H = ${BasePart.formatDimension(this.params.H)} cm`,
+      this.params.colorH,
+      'H'
     );
 
     // L: Z boyunca (merkezde)
@@ -277,8 +239,8 @@ export class EsParcasi extends BasePart {
 
     // ES: X ofseti (merkezde)
     this.createDimensionLine(
-      new THREE.Vector3(-ES / 2, H1 / 2, -L / 2),
-      new THREE.Vector3(ES / 2, H1 / 2, -L / 2),
+      new THREE.Vector3(-ES / 2, H / 2, -L / 2),
+      new THREE.Vector3(ES / 2, H / 2, -L / 2),
       new THREE.Vector3(0, 1, 0),
       `ES = ${BasePart.formatDimension(this.params.ES)} cm`,
       this.params.colorES,
@@ -312,10 +274,8 @@ export class EsParcasi extends BasePart {
 
   getDimensions() {
     return {
-      W1: this.params.W1,
-      H1: this.params.H1,
-      W2: this.params.W2,
-      H2: this.params.H2,
+      W: this.params.W,
+      H: this.params.H,
       L: this.params.L,
       ES: this.params.ES,
       t: this.params.t

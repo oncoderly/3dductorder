@@ -29,11 +29,18 @@ export const PARTS_CONFIG = {
     component: 'Dirsek'
   },
   'es-parcasi': {
-    name: 'ES Parçası',
+    name: 'Es-Parcasi',
     icon: '⚡',
     iconPath: '/ico/es_parcas%C4%B1.ico',
-    description: 'ES bağlantı parçası',
+    description: 'ES ofset parçası (eşit kesit)',
     component: 'EsParcasi'
+  },
+  'es-reduksiyonlu': {
+    name: 'Es-Reduksiyonlu',
+    icon: '⚡',
+    iconPath: '/ico/es_parcas%C4%B1.ico',
+    description: 'ES redüksiyonlu geçiş parçası',
+    component: 'EsReduksiyonlu'
   },
   'plenum-box': {
     name: 'Plenum Box',

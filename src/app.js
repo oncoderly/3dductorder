@@ -5,7 +5,8 @@ import { DuzKanal } from './components/DuzKanal.js';
 import { Kortapa } from './components/kortapa.js';
 import { ReduksiyonDirsek } from './components/ReduksiyonDirsek.js';
 import { Dirsek } from './components/Dirsek.js';
-import { EsParcasi } from './components/EsParcasi.js';
+import { EsParcasi } from './components/es-parcasi.js';
+import { EsReduksiyonlu } from './components/es-reduksiyonlu.js';
 import { PlenumBox } from './components/PlenumBox.js';
 import { KaredenYuvarlaga } from './components/KaredenYuvarlaga.js';
 import { Reduksiyon } from './components/Reduksiyon.js';
@@ -433,6 +434,9 @@ class App {
           break;
         case 'es-parcasi':
           this.currentPart = new EsParcasi(this.scene, this.materials);
+          break;
+        case 'es-reduksiyonlu':
+          this.currentPart = new EsReduksiyonlu(this.scene, this.materials);
           break;
         case 'plenum-box':
           this.currentPart = new PlenumBox(this.scene, this.materials);
