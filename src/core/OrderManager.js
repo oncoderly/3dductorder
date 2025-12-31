@@ -356,20 +356,21 @@ export class OrderManager {
       const thicknessCm = item.params?.t || item.dimensions?.t || 0.12;
       const thicknessMm = (thicknessCm * 10).toFixed(1);
 
-      // Parça başlığı satırı (kompakt)
+      // Parça başlığı ve alan bilgisi - aynı satırda
       let yPos = yStart;
-      pdf.setFontSize(12);
+      pdf.setFontSize(10);
       pdf.setTextColor(0, 0, 0);
       pdf.setFont(undefined, 'bold');
+
+      // Sol taraf: Parça adı
       pdf.text(this.turkishToPdfText(`${item.partName}`), margin, yPos);
 
-      // Alan bilgisi - başlık yanında (kompakt, tek satır)
+      // Sağ taraf: Alan bilgisi
       pdf.setFontSize(8);
-      pdf.setTextColor(80, 80, 80);
-      pdf.setFont(undefined, 'normal');
+      pdf.setTextColor(60, 60, 60);
       const areaInfo = isDuzKanal
-        ? `Sac: ${thicknessMm}mm | Alan: ${netArea.toFixed(2)}m2 | Adet: ${quantity} | Toplam: ${netTotal.toFixed(2)}m2`
-        : `Sac: ${thicknessMm}mm | Net: ${netArea.toFixed(2)}m2 | Fire: %${wastePercent.toFixed(0)} | Adet: ${quantity} | Toplam: ${totalWithWaste.toFixed(2)}m2`;
+        ? `Sac Kalinligi: ${thicknessMm}mm | Alan: ${netArea.toFixed(2)}m2 | Adet: ${quantity} | Toplam: ${netTotal.toFixed(2)}m2`
+        : `Sac Kalinligi: ${thicknessMm}mm | Net: ${netArea.toFixed(2)}m2 | Fire: %${wastePercent.toFixed(0)} | Fire Dahil: ${totalArea.toFixed(2)}m2 | Adet: ${quantity} | Toplam: ${totalWithWaste.toFixed(2)}m2`;
       pdf.text(this.turkishToPdfText(areaInfo), pageWidth - margin, yPos, { align: 'right' });
 
       // 4 screenshot'ı yerleştir (2x2 grid) - kompakt
@@ -466,9 +467,9 @@ export class OrderManager {
 
       // Parçalar arası ayırıcı çizgi (sadece ilk parçadan sonra)
       if (positionOnPage === 0 && i + 1 < cart.length) {
-        pdf.setDrawColor(220, 220, 220);
-        pdf.setLineWidth(0.3);
-        pdf.line(margin, yStart + partHeight - 2, pageWidth - margin, yStart + partHeight - 2);
+        pdf.setDrawColor(0, 0, 0);
+        pdf.setLineWidth(1.0);
+        pdf.line(margin, yStart + partHeight - 6, pageWidth - margin, yStart + partHeight - 6);
       }
     }
 
