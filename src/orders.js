@@ -156,6 +156,35 @@ class OrdersPage {
     document.getElementById('summary-waste-percent').textContent = summary.totalWastePercent.toFixed(1) + ' %';
     document.getElementById('summary-area-waste').textContent = summary.totalWasteArea.toFixed(2) + ' m²';
     document.getElementById('summary-area-total').textContent = summary.totalAreaWithWaste.toFixed(2) + ' m²';
+
+    // Sac kalınlığına göre detay
+    const thicknessDetails = document.getElementById('thickness-details');
+    if (thicknessDetails && summary.byThickness && summary.byThickness.length > 0) {
+      thicknessDetails.innerHTML = summary.byThickness.map(t => `
+        <div class="thickness-row">
+          <div class="thickness-header">
+            <span class="thickness-label">${t.thickness} mm</span>
+            <span class="thickness-count">${t.quantity} adet (${t.itemCount} çeşit)</span>
+          </div>
+          <div class="thickness-areas">
+            <div class="thickness-area-item">
+              <span>Net:</span>
+              <strong>${t.netArea.toFixed(2)} m²</strong>
+            </div>
+            <div class="thickness-area-item">
+              <span>Atık:</span>
+              <strong>${t.wasteArea.toFixed(2)} m²</strong>
+            </div>
+            <div class="thickness-area-item highlight">
+              <span>Toplam:</span>
+              <strong>${t.totalArea.toFixed(2)} m²</strong>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    } else if (thicknessDetails) {
+      thicknessDetails.innerHTML = '<div class="thickness-empty">Sac kalınlığı bilgisi yok</div>';
+    }
   }
 
   setupEventListeners() {
