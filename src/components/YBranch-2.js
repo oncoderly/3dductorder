@@ -654,9 +654,6 @@ export class YBranch2 extends BasePart {
       return { center, point };
     };
 
-    const W2mA = BasePart.cm(this.params.W2A);
-    const H2mA = BasePart.cm(this.params.H2A);
-    const H2mB = BasePart.cm(this.params.H2B);
     const RinA = BasePart.cm(this.params.R_inA);
 
     // GERÇEK köşelerden pozisyonları al (X ve Z kaydırmaları uygulanmış)
@@ -669,11 +666,8 @@ export class YBranch2 extends BasePart {
 
 
     // Tangent ve normal vektörlerini gerçek köşelerden hesapla
-    const secondRingA = this.elbow1Rings[1];
-    const secondCenterA = secondRingA.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(secondRingA.length);
-    const t0A = new THREE.Vector3().subVectors(secondCenterA, p0A).normalize();
-    const b0A = new THREE.Vector3(0, 1, 0);
-    const n0A = new THREE.Vector3().crossVectors(b0A, t0A).normalize();
+    const b0A = new THREE.Vector3().subVectors(firstRingA[3], firstRingA[0]).normalize();
+    const n0A = new THREE.Vector3().subVectors(firstRingA[1], firstRingA[0]).normalize();
 
     // Bitiş frame için tangent hesapla (son iki ring arasındaki yön)
     const secondLastRingA = this.elbow1Rings[this.elbow1Rings.length - 2];
@@ -684,9 +678,9 @@ export class YBranch2 extends BasePart {
 
 
     // Branch A başlangıç ölçüleri
-    const p0A_LB = p0A.clone().add(n0A.clone().multiplyScalar(-W2mA / 2)).add(b0A.clone().multiplyScalar(-H2mA / 2));
-    const p0A_RB = p0A.clone().add(n0A.clone().multiplyScalar(W2mA / 2)).add(b0A.clone().multiplyScalar(-H2mA / 2));
-    const p0A_LT = p0A.clone().add(n0A.clone().multiplyScalar(-W2mA / 2)).add(b0A.clone().multiplyScalar(H2mA / 2));
+    const p0A_LB = firstRingA[0];
+    const p0A_RB = firstRingA[1];
+    const p0A_LT = firstRingA[3];
     this.createDimensionLine(p0A_LB, p0A_RB, b0A.clone().negate(), `W2A = ${BasePart.formatDimension(this.params.W2A)} cm`, this.params.colorW2, 'W2A');
     this.createDimensionLine(p0A_LB, p0A_LT, n0A.clone().negate(), `H2A = ${BasePart.formatDimension(this.params.H2A)} cm`, this.params.colorH2, 'H2A');
 
@@ -776,7 +770,6 @@ export class YBranch2 extends BasePart {
     this.scene.addLabel(`A1 = ${this.params.A1}°`, labelPosA, this.params.colorA, paramDataA1);
 
     // ========== BRANCH B DIMENSIONS ==========
-    const W2mB = BasePart.cm(this.params.W2B);
     // B kolu yüksekliği artık bağımsız
     const RinB = BasePart.cm(this.params.R_inB);
 
@@ -787,17 +780,14 @@ export class YBranch2 extends BasePart {
     const p0B = firstRingB.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(firstRingB.length);
     const p1B = lastRingB.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(lastRingB.length);
 
-    const secondRingB = this.elbow2Rings[1];
-    const secondCenterB = secondRingB.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(secondRingB.length);
-    const t0B = new THREE.Vector3().subVectors(secondCenterB, p0B).normalize();
-    const b0B = new THREE.Vector3(0, 1, 0);
-    const n0B = new THREE.Vector3().crossVectors(b0B, t0B).normalize();
+    const b0B = new THREE.Vector3().subVectors(firstRingB[3], firstRingB[0]).normalize();
+    const n0B = new THREE.Vector3().subVectors(firstRingB[1], firstRingB[0]).normalize();
     const b1B = new THREE.Vector3(0, 1, 0);
 
     // Branch B başlangıç ölçüleri
-    const p0B_LB = p0B.clone().add(n0B.clone().multiplyScalar(-W2mB / 2)).add(b0B.clone().multiplyScalar(-H2mB / 2));
-    const p0B_RB = p0B.clone().add(n0B.clone().multiplyScalar(W2mB / 2)).add(b0B.clone().multiplyScalar(-H2mB / 2));
-    const p0B_LT = p0B.clone().add(n0B.clone().multiplyScalar(-W2mB / 2)).add(b0B.clone().multiplyScalar(H2mB / 2));
+    const p0B_LB = firstRingB[0];
+    const p0B_RB = firstRingB[1];
+    const p0B_LT = firstRingB[3];
     this.createDimensionLine(p0B_LB, p0B_RB, b0B.clone().negate(), `W2B = ${BasePart.formatDimension(this.params.W2B)} cm`, this.params.colorW2, 'W2B');
     this.createDimensionLine(p0B_LB, p0B_LT, n0B.clone().negate(), `H2B = ${BasePart.formatDimension(this.params.H2B)} cm`, this.params.colorH2, 'H2B');
     // Branch B bitiş ölçüleri - GERÇEK köşelerden al
