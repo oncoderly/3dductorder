@@ -1,5 +1,6 @@
 // Reduksiyon - Taper prizma redüksiyon parçası
 import * as THREE from 'three';
+import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { BasePart } from './BasePart.js';
 
 export class Reduksiyon extends BasePart {
@@ -247,6 +248,39 @@ export class Reduksiyon extends BasePart {
       case 'value': return offHy * u;
       default: return 0; // central
     }
+  }
+
+  toggleOffsetMode(axis, targetMode) {
+    const key = axis === 'W' ? 'modeW' : 'modeH';
+    this.params[key] = this.params[key] === targetMode ? 'central' : targetMode;
+    const select = document.querySelector(`.param-select[data-param-key="${key}"]`);
+    if (select && select.value !== this.params[key]) {
+      select.value = this.params[key];
+    }
+    this.rebuild();
+  }
+
+  addSideModeToggleLabel(text, position, axis, targetMode, color) {
+    const div = document.createElement('div');
+    div.className = 'label side-mode-label';
+    div.textContent = text;
+    if (color) div.style.color = color;
+    div.style.pointerEvents = 'auto';
+    div.style.cursor = 'pointer';
+    div.style.userSelect = 'none';
+    div.style.touchAction = 'manipulation';
+    div.style.opacity = '0';
+
+    div.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.toggleOffsetMode(axis, targetMode);
+    });
+
+    const label = new CSS2DObject(div);
+    label.position.copy(position);
+    this.rotatedDimensionGroup.add(label);
+    return label;
   }
 
   buildGeometry() {
@@ -575,10 +609,15 @@ export class Reduksiyon extends BasePart {
       const bottom0 = p0.clone().add(b.clone().multiplyScalar(-H2 / 2));
       const bottom1 = p1.clone().add(b.clone().multiplyScalar(-H1 / 2));
 
-      this.addSlopedFaceTag('SAĞ', right0, right1, b, n, widthCm, '#ff6');
-      this.addSlopedFaceTag('SOL', left0, left1, b, n.clone().negate(), widthCm, '#ff6');
-      this.addSlopedFaceTag('ÜST', top0, top1, n, b, widthCm, '#ff6');
-      this.addSlopedFaceTag('ALT', bottom0, bottom1, n, b.clone().negate(), widthCm, '#ff6');
+      const rightTag = this.addSlopedFaceTag('SAĞ', right0, right1, b, n, widthCm, '#ff6');
+      const leftTag = this.addSlopedFaceTag('SOL', left0, left1, b, n.clone().negate(), widthCm, '#ff6');
+      const topTag = this.addSlopedFaceTag('ÜST', top0, top1, n, b, widthCm, '#ff6');
+      const bottomTag = this.addSlopedFaceTag('ALT', bottom0, bottom1, n, b.clone().negate(), widthCm, '#ff6');
+
+      if (rightTag) this.addSideModeToggleLabel('SAĞ', rightTag.position, 'W', 'flatRight', '#ff6');
+      if (leftTag) this.addSideModeToggleLabel('SOL', leftTag.position, 'W', 'flatLeft', '#ff6');
+      if (topTag) this.addSideModeToggleLabel('ÜST', topTag.position, 'H', 'flatTop', '#ff6');
+      if (bottomTag) this.addSideModeToggleLabel('ALT', bottomTag.position, 'H', 'flatBottom', '#ff6');
     }
   }
 

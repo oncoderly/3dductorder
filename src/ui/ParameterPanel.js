@@ -605,6 +605,7 @@ export class ParameterPanel {
 
     const select = document.createElement('select');
     select.className = 'param-select';
+    select.dataset.paramKey = param.key;
 
     param.options.forEach(option => {
       const opt = document.createElement('option');
