@@ -30,6 +30,7 @@ export class Scene3D {
     this.setupCamera();
     this.setupLights();
     this.setupControls();
+    this.setupInteractions();
     this.setupLabelRenderer();
     this.setupGroups();
     this.setupHelpers();
@@ -141,6 +142,95 @@ export class Scene3D {
     this.controls.dampingFactor = 0.05;
     this.controls.enablePan = true;
     this.controls.enableZoom = true;
+  }
+
+  setupInteractions() {
+    this.raycaster = new THREE.Raycaster();
+    this.pointer = new THREE.Vector2();
+    this.pointerDown = null;
+    this.interactionClickSlop = 6;
+    this.interactionClickTime = 500;
+
+    const target = this.renderer.domElement;
+    target.addEventListener('pointerdown', (e) => this.handlePointerDown(e));
+    target.addEventListener('pointerup', (e) => this.handlePointerUp(e));
+    target.addEventListener('pointercancel', () => this.handlePointerCancel());
+  }
+
+  handlePointerDown(e) {
+    if (e.button !== 0) return;
+    this.pointerDown = {
+      x: e.clientX,
+      y: e.clientY,
+      time: Date.now()
+    };
+  }
+
+  handlePointerUp(e) {
+    if (e.button !== 0) return;
+    if (!this.pointerDown) return;
+
+    const dx = e.clientX - this.pointerDown.x;
+    const dy = e.clientY - this.pointerDown.y;
+    const dist = Math.hypot(dx, dy);
+    const elapsed = Date.now() - this.pointerDown.time;
+    this.pointerDown = null;
+
+    if (dist > this.interactionClickSlop || elapsed > this.interactionClickTime) return;
+    this.pickInteractive(e);
+  }
+
+  handlePointerCancel() {
+    this.pointerDown = null;
+  }
+
+  pickInteractive(e) {
+    const objects = this.currentPart?.getInteractiveObjects?.() || [];
+    if (!objects.length) return;
+
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+
+    this.pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    this.pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    this.raycaster.setFromCamera(this.pointer, this.camera);
+
+    const hits = this.raycaster.intersectObjects(objects, true);
+    if (!hits.length) return;
+
+    const target = this.findInteractiveTarget(hits[0].object);
+    if (!target || typeof target.userData?.onClick !== 'function') return;
+    if (!this.isInteractiveFacingCamera(target)) return;
+
+    target.userData.onClick();
+  }
+
+  findInteractiveTarget(object) {
+    let current = object;
+    while (current) {
+      if (current.userData && typeof current.userData.onClick === 'function') {
+        return current;
+      }
+      current = current.parent;
+    }
+    return null;
+  }
+
+  isInteractiveFacingCamera(object) {
+    const faceNormal = object.userData?.faceNormal;
+    if (!faceNormal) return true;
+
+    const worldPos = new THREE.Vector3();
+    const worldQuat = new THREE.Quaternion();
+    const worldNormal = new THREE.Vector3();
+    const toCamera = new THREE.Vector3();
+
+    object.getWorldPosition(worldPos);
+    object.getWorldQuaternion(worldQuat);
+    worldNormal.copy(faceNormal).applyQuaternion(worldQuat).normalize();
+    toCamera.subVectors(this.camera.position, worldPos).normalize();
+
+    return worldNormal.dot(toCamera) > 0;
   }
 
   setupLabelRenderer() {

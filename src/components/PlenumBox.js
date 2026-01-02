@@ -6,6 +6,8 @@ export class PlenumBox extends BasePart {
   constructor(scene, materials) {
     super(scene, materials);
     this.dimsToDraw = [];
+    this.mansonFaceButtons = [];
+    this.mansonButtonTextures = {};
     this.initParams();
   }
 
@@ -261,6 +263,8 @@ export class PlenumBox extends BasePart {
     this.mainGeometry = geometry;
     this.ringsOuter = ringsOuter;
     this.backPlaneMesh = back;
+
+    this.addMansonFaceButtons();
   }
 
   buildFlange() {
@@ -377,6 +381,167 @@ export class PlenumBox extends BasePart {
         text: `Ø = ${BasePart.formatDimension(D * 100)} cm`
       });
     }
+  }
+
+  getInteractiveObjects() {
+    return Array.isArray(this.mansonFaceButtons) ? this.mansonFaceButtons : [];
+  }
+
+  addMansonFaceButtons() {
+    if (!this.rotatedDimensionGroup) return;
+
+    this.mansonFaceButtons = [];
+
+    const W1 = BasePart.cm(this.params.W1);
+    const H1 = BasePart.cm(this.params.H1);
+    const L = BasePart.cm(this.params.L);
+
+    const faceDefs = {
+      right: { n: new THREE.Vector3(1, 0, 0), v: new THREE.Vector3(0, 1, 0), span: H1, base: new THREE.Vector3(W1 / 2, -H1 / 2, 0) },
+      left: { n: new THREE.Vector3(-1, 0, 0), v: new THREE.Vector3(0, 1, 0), span: H1, base: new THREE.Vector3(-W1 / 2, -H1 / 2, 0) },
+      front: { n: new THREE.Vector3(0, 0, 1), v: new THREE.Vector3(1, 0, 0), span: W1, base: new THREE.Vector3(0, -H1 / 2, L / 2) },
+      back: { n: new THREE.Vector3(0, 0, -1), v: new THREE.Vector3(1, 0, 0), span: W1, base: new THREE.Vector3(0, -H1 / 2, -L / 2) },
+      top: { n: new THREE.Vector3(0, 1, 0), v: new THREE.Vector3(1, 0, 0), span: W1, base: new THREE.Vector3(0, 0, 0) },
+      bottom: { n: new THREE.Vector3(0, -1, 0), v: new THREE.Vector3(1, 0, 0), span: W1, base: new THREE.Vector3(0, -H1, 0) }
+    };
+
+    const mapFace = { right: 'right', left: 'left', front: 'bottom', back: 'top', top: 'back' };
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+    const buttonSize = BasePart.cm(5);
+    const buttonDepth = BasePart.cm(1);
+    const faceLabelOffset = BasePart.cm(2.5);
+    const normalOffset = faceLabelOffset + BasePart.cm(1.2) + buttonDepth * 0.5;
+    const minOffset = BasePart.cm(4);
+    const maxOffset = BasePart.cm(20);
+
+    ['right', 'left', 'front', 'back', 'top'].forEach((key) => {
+      const targetDef = faceDefs[mapFace[key]];
+      if (!targetDef) return;
+
+      const normal = targetDef.n.clone().normalize();
+      const v = targetDef.v.clone().normalize();
+      const u = new THREE.Vector3().crossVectors(normal, v).normalize();
+      const spanU = Math.abs(normal.z) > 0.5 ? H1 : L;
+      const offsetU = clamp(spanU * 0.25, minOffset, maxOffset);
+      const spacing = Math.min(BasePart.cm(8), targetDef.span * 0.3);
+
+      const basePos = targetDef.base.clone()
+        .add(u.multiplyScalar(offsetU))
+        .add(normal.clone().multiplyScalar(normalOffset));
+
+      const minusPos = basePos.clone().add(v.clone().multiplyScalar(-spacing * 0.5));
+      const plusPos = basePos.clone().add(v.clone().multiplyScalar(spacing * 0.5));
+
+      this.addMansonFaceButton(key, -1, minusPos, normal, buttonSize, buttonDepth);
+      this.addMansonFaceButton(key, 1, plusPos, normal, buttonSize, buttonDepth);
+    });
+  }
+
+  addMansonFaceButton(faceKey, delta, position, normal, size, depth) {
+    const symbol = delta > 0 ? '+' : '-';
+    const isPlus = delta > 0;
+    const colors = isPlus
+      ? { bg: '#10b981', border: '#059669', fg: '#ffffff' }
+      : { bg: '#ef4444', border: '#dc2626', fg: '#ffffff' };
+
+    const texture = this.createMansonButtonTexture(symbol, colors.bg, colors.fg, colors.border);
+
+    const baseMaterial = new THREE.MeshStandardMaterial({
+      color: colors.bg,
+      roughness: 0.4,
+      metalness: 0.2
+    });
+    const base = new THREE.Mesh(new THREE.BoxGeometry(size, size, depth), baseMaterial);
+
+    const iconMaterial = new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+      depthTest: true
+    });
+    const icon = new THREE.Mesh(new THREE.PlaneGeometry(size * 0.7, size * 0.7), iconMaterial);
+    icon.position.z = depth * 0.5 + BasePart.cm(0.05);
+
+    const group = new THREE.Group();
+    group.add(base, icon);
+    group.position.copy(position);
+    group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal.clone().normalize());
+    group.userData.faceNormal = new THREE.Vector3(0, 0, 1);
+    group.userData.onClick = () => this.applyMansonFaceDelta(faceKey, delta);
+
+    this.rotatedDimensionGroup.add(group);
+    this.mansonFaceButtons.push(group);
+  }
+
+  applyMansonFaceDelta(faceKey, delta) {
+    const row = document.querySelector(`.manson-face-row[data-face-key="${faceKey}"]`);
+    if (row) {
+      const selector = delta > 0 ? '.manson-count-btn.increment' : '.manson-count-btn.decrement';
+      const btn = row.querySelector(selector);
+      if (btn) {
+        btn.click();
+        return;
+      }
+    }
+
+    const face = this.params.faces?.[faceKey];
+    if (!face) return;
+
+    const current = Number(face.count) || 0;
+    const next = Math.max(0, Math.min(20, current + delta));
+    if (next === current) return;
+
+    this.ensureFacePorts(faceKey, next);
+    this.rebuild();
+  }
+
+  createMansonButtonTexture(symbol, bgColor, fgColor, borderColor) {
+    const key = `${symbol}-${bgColor}-${fgColor}-${borderColor}`;
+    if (this.mansonButtonTextures[key]) return this.mansonButtonTextures[key];
+
+    const size = 128;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = size;
+    canvas.height = size;
+
+    const pad = 10;
+    const r = 18;
+    const drawRoundedRect = (x, y, w, h, radius) => {
+      const rr = Math.min(radius, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + rr, y);
+      ctx.lineTo(x + w - rr, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+      ctx.lineTo(x + w, y + h - rr);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+      ctx.lineTo(x + rr, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+      ctx.lineTo(x, y + rr);
+      ctx.quadraticCurveTo(x, y, x + rr, y);
+      ctx.closePath();
+    };
+
+    ctx.fillStyle = bgColor;
+    drawRoundedRect(pad, pad, size - pad * 2, size - pad * 2, r);
+    ctx.fill();
+
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 6;
+    ctx.stroke();
+
+    ctx.fillStyle = fgColor;
+    ctx.font = '700 96px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(symbol, size / 2, size / 2 + 6);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.anisotropy = 4;
+
+    this.mansonButtonTextures[key] = texture;
+    return texture;
   }
 
   addEdges() {
@@ -529,7 +694,7 @@ export class PlenumBox extends BasePart {
 
     // Yüz etiketleri - yüzeye yapışık 3D mesh etiketler (alt kenar y=0)
     if (this.params.showSideLabels) {
-      const widthCm = 30; // Etiket genişliği (cm cinsinden)
+      const widthCm = 21; // Etiket genişliği (cm cinsinden)
 
       const faceLabels = [
         { text: 'SAĞ', base: new THREE.Vector3(W1 / 2, -H1 / 2, 0), normal: new THREE.Vector3(1, 0, 0) },
