@@ -1,5 +1,6 @@
 // KaredenYuvarlaga - Kareden yuvarlağa geçiş parçası
 import * as THREE from 'three';
+import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { BasePart } from './BasePart.js';
 
 export class KaredenYuvarlaga extends BasePart {
@@ -402,6 +403,39 @@ export class KaredenYuvarlaga extends BasePart {
     }
   }
 
+  toggleOffsetMode(axis, targetMode) {
+    const key = axis === 'W' ? 'modeW' : 'modeH';
+    this.params[key] = this.params[key] === targetMode ? 'central' : targetMode;
+    const select = document.querySelector(`.param-select[data-param-key="${key}"]`);
+    if (select && select.value !== this.params[key]) {
+      select.value = this.params[key];
+    }
+    this.rebuild();
+  }
+
+  addSideModeToggleLabel(text, position, axis, targetMode, color) {
+    const div = document.createElement('div');
+    div.className = 'label side-mode-label';
+    div.textContent = text;
+    if (color) div.style.color = color;
+    div.style.pointerEvents = 'auto';
+    div.style.cursor = 'pointer';
+    div.style.userSelect = 'none';
+    div.style.touchAction = 'manipulation';
+    div.style.opacity = '0';
+
+    div.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.toggleOffsetMode(axis, targetMode);
+    });
+
+    const label = new CSS2DObject(div);
+    label.position.copy(position);
+    this.scene.dimensionGroup.add(label);
+    return label;
+  }
+
   drawDimensions() {
     const W1 = BasePart.cm(this.params.W1);
     const H1 = BasePart.cm(this.params.H1);
@@ -497,10 +531,15 @@ export class KaredenYuvarlaga extends BasePart {
         const bottomIdx = pickIndex('y', 'min');
         const widthCm = 15; // Etiket genişliği (cm cinsinden)
 
-        this.addSurfaceLabel('SAĞ', rightIdx, widthCm, '#ff6');
-        this.addSurfaceLabel('SOL', leftIdx, widthCm, '#ff6');
-        this.addSurfaceLabel('ÜST', topIdx, widthCm, '#ff6');
-        this.addSurfaceLabel('ALT', bottomIdx, widthCm, '#ff6');
+        const rightTag = this.addSurfaceLabel('SAĞ', rightIdx, widthCm, '#ff6');
+        const leftTag = this.addSurfaceLabel('SOL', leftIdx, widthCm, '#ff6');
+        const topTag = this.addSurfaceLabel('ÜST', topIdx, widthCm, '#ff6');
+        const bottomTag = this.addSurfaceLabel('ALT', bottomIdx, widthCm, '#ff6');
+
+        if (rightTag && rightTag.parent) this.addSideModeToggleLabel('SAĞ', rightTag.position, 'W', 'flatRight', '#ff6');
+        if (leftTag && leftTag.parent) this.addSideModeToggleLabel('SOL', leftTag.position, 'W', 'flatLeft', '#ff6');
+        if (topTag && topTag.parent) this.addSideModeToggleLabel('ÜST', topTag.position, 'H', 'flatTop', '#ff6');
+        if (bottomTag && bottomTag.parent) this.addSideModeToggleLabel('ALT', bottomTag.position, 'H', 'flatBottom', '#ff6');
       }
     }
   }
