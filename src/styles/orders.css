@@ -455,6 +455,17 @@ body {
   color: #e6edf3;
 }
 
+.order-offset-info {
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #9aa7b1;
+}
+
+.order-offset-info strong {
+  color: #e6edf3;
+  font-weight: 600;
+}
+
 /* Area */
 .order-area {
   display: grid;

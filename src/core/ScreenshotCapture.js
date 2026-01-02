@@ -232,6 +232,12 @@ export class ScreenshotCapture {
             return;
           }
 
+          const computedStyle = window.getComputedStyle(element);
+          const opacity = parseFloat(computedStyle.opacity);
+          if (computedStyle.display === 'none' || computedStyle.visibility === 'hidden' || opacity <= 0) {
+            return;
+          }
+
           // 3D dünya pozisyonunu al
           const worldPos = new THREE.Vector3();
           label.getWorldPosition(worldPos);
@@ -252,7 +258,6 @@ export class ScreenshotCapture {
           console.log(`  Label ${index}: "${text}" at (${Math.round(x)}, ${Math.round(y)})`);
 
           // Label stilini al
-          const computedStyle = window.getComputedStyle(element);
           const baseFontSize = parseFloat(computedStyle.fontSize) || 14;
           // Offscreen renderer 2x pixel ratio kullanıyor, font büyüt
           const fontSize = baseFontSize * 4; // 1920px genişlik için uygun ölçek

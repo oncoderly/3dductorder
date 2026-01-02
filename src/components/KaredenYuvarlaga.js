@@ -708,6 +708,47 @@ export class KaredenYuvarlaga extends BasePart {
     // Edge lines disabled for smooth appearance
   }
 
+  getOffsetModeLabel(mode, axis) {
+    if (!mode) return 'Merkezi';
+
+    if (axis === 'W') {
+      switch (mode) {
+        case 'flatLeft': return 'Sol Düz';
+        case 'flatRight': return 'Sağ Düz';
+        case 'value': return 'Değer';
+        default: return 'Merkezi';
+      }
+    }
+
+    switch (mode) {
+      case 'flatBottom': return 'Alt Düz';
+      case 'flatTop': return 'Üst Düz';
+      case 'value': return 'Değer';
+      default: return 'Merkezi';
+    }
+  }
+
+  getOffsetSelectionText() {
+    const widthMode = this.getOffsetModeLabel(this.params.modeW, 'W');
+    const heightMode = this.getOffsetModeLabel(this.params.modeH, 'H');
+    return `Genişlik: ${widthMode} | Yükseklik: ${heightMode}`;
+  }
+
+  exportParams() {
+    const base = super.exportParams();
+    const widthMode = this.getOffsetModeLabel(this.params.modeW, 'W');
+    const heightMode = this.getOffsetModeLabel(this.params.modeH, 'H');
+
+    return {
+      ...base,
+      offsetSelection: {
+        width: widthMode,
+        height: heightMode
+      },
+      offsetSelectionText: `Genişlik: ${widthMode} | Yükseklik: ${heightMode}`
+    };
+  }
+
   getDimensions() {
     return {
       W1: this.params.W1,

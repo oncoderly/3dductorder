@@ -207,6 +207,50 @@ export class OrderManager {
     };
   }
 
+  getOffsetModeLabel(mode, axis) {
+    if (!mode) return 'Merkezi';
+
+    if (axis === 'W') {
+      switch (mode) {
+        case 'flatLeft': return 'Sol Düz';
+        case 'flatRight': return 'Sağ Düz';
+        case 'value': return 'Değer';
+        default: return 'Merkezi';
+      }
+    }
+
+    switch (mode) {
+      case 'flatBottom': return 'Alt Düz';
+      case 'flatTop': return 'Üst Düz';
+      case 'value': return 'Değer';
+      default: return 'Merkezi';
+    }
+  }
+
+  getOffsetSelectionText(item) {
+    if (!item) return '';
+    const isTarget = item.partType === 'reduksiyon' || item.partType === 'kareden-yuvarlaga';
+    if (!isTarget) return '';
+
+    const fromText = item.params?.offsetSelectionText;
+    if (fromText) return fromText;
+
+    const offsetSelection = item.params?.offsetSelection;
+    if (offsetSelection?.width || offsetSelection?.height) {
+      const widthLabel = offsetSelection.width || this.getOffsetModeLabel(item.params?.modeW, 'W');
+      const heightLabel = offsetSelection.height || this.getOffsetModeLabel(item.params?.modeH, 'H');
+      return `Genişlik: ${widthLabel} | Yükseklik: ${heightLabel}`;
+    }
+
+    const modeW = item.params?.modeW;
+    const modeH = item.params?.modeH;
+    if (!modeW && !modeH) return '';
+
+    const widthLabel = this.getOffsetModeLabel(modeW, 'W');
+    const heightLabel = this.getOffsetModeLabel(modeH, 'H');
+    return `Genişlik: ${widthLabel} | Yükseklik: ${heightLabel}`;
+  }
+
   async exportToJSON() {
     const cart = await this.getCart();
     const summary = await this.getCartSummary();
@@ -372,6 +416,15 @@ export class OrderManager {
         ? `Sac Kalinligi: ${thicknessMm}mm | Alan: ${netArea.toFixed(2)}m2 | Adet: ${quantity} | Toplam: ${netTotal.toFixed(2)}m2`
         : `Sac Kalinligi: ${thicknessMm}mm | Net: ${netArea.toFixed(2)}m2 | Fire: %${wastePercent.toFixed(0)} | Fire Dahil: ${totalArea.toFixed(2)}m2 | Adet: ${quantity} | Toplam: ${totalWithWaste.toFixed(2)}m2`;
       pdf.text(this.turkishToPdfText(areaInfo), pageWidth - margin, yPos, { align: 'right' });
+
+      const offsetSelectionText = this.getOffsetSelectionText(item);
+      if (offsetSelectionText) {
+        yPos += 4;
+        pdf.setFontSize(8);
+        pdf.setTextColor(60, 60, 60);
+        pdf.setFont(undefined, 'normal');
+        pdf.text(this.turkishToPdfText(`Ofset: ${offsetSelectionText}`), margin, yPos);
+      }
 
       // 4 screenshot'ı yerleştir (2x2 grid) - kompakt
       yPos += 4;

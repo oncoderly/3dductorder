@@ -46,6 +46,50 @@ class OrdersPage {
     });
   }
 
+  getOffsetModeLabel(mode, axis) {
+    if (!mode) return 'Merkezi';
+
+    if (axis === 'W') {
+      switch (mode) {
+        case 'flatLeft': return 'Sol Düz';
+        case 'flatRight': return 'Sağ Düz';
+        case 'value': return 'Değer';
+        default: return 'Merkezi';
+      }
+    }
+
+    switch (mode) {
+      case 'flatBottom': return 'Alt Düz';
+      case 'flatTop': return 'Üst Düz';
+      case 'value': return 'Değer';
+      default: return 'Merkezi';
+    }
+  }
+
+  getOffsetSelectionText(item) {
+    if (!item) return '';
+    const isTarget = item.partType === 'reduksiyon' || item.partType === 'kareden-yuvarlaga';
+    if (!isTarget) return '';
+
+    const fromText = item.params?.offsetSelectionText;
+    if (fromText) return fromText;
+
+    const offsetSelection = item.params?.offsetSelection;
+    if (offsetSelection?.width || offsetSelection?.height) {
+      const widthLabel = offsetSelection.width || this.getOffsetModeLabel(item.params?.modeW, 'W');
+      const heightLabel = offsetSelection.height || this.getOffsetModeLabel(item.params?.modeH, 'H');
+      return `Genişlik: ${widthLabel} | Yükseklik: ${heightLabel}`;
+    }
+
+    const modeW = item.params?.modeW;
+    const modeH = item.params?.modeH;
+    if (!modeW && !modeH) return '';
+
+    const widthLabel = this.getOffsetModeLabel(modeW, 'W');
+    const heightLabel = this.getOffsetModeLabel(modeH, 'H');
+    return `Genişlik: ${widthLabel} | Yükseklik: ${heightLabel}`;
+  }
+
   createOrderCard(item, index) {
     const card = document.createElement('div');
     card.className = 'order-item-card';
@@ -68,6 +112,10 @@ class OrdersPage {
         return `<span class="dimension-tag">${key}: ${formattedValue} cm</span>`;
       })
       .join('');
+    const offsetSelectionText = this.getOffsetSelectionText(item);
+    const offsetInfoHtml = offsetSelectionText
+      ? `<div class="order-offset-info">Ofset: <strong>${offsetSelectionText}</strong></div>`
+      : '';
 
     // Alan formatla (area string olabilir, sayıya çevir)
     const breakdown = this.orderManager.getAreaBreakdown(item);
@@ -131,6 +179,7 @@ class OrdersPage {
       <div class="order-dimensions">
         ${dimensionsHTML}
       </div>
+      ${offsetInfoHtml}
 
       <div class="order-area">
         ${areaHtml}
