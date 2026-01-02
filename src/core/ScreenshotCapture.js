@@ -72,6 +72,9 @@ export class ScreenshotCapture {
       throw new Error(`Unknown view: ${viewName}`);
     }
 
+    const interactiveObjects = this.scene3D.currentPart?.getInteractiveObjects?.() || [];
+    const interactiveStates = interactiveObjects.map(obj => ({ obj, visible: obj.visible }));
+
     try {
       // OFFSCREEN RENDERING - Ana sahne hiç etkilenmiyor!
 
@@ -80,6 +83,13 @@ export class ScreenshotCapture {
       const originalAxesVisible = this.scene3D.axes ? this.scene3D.axes.visible : false;
       const originalDimensionsVisible = this.scene3D.dimensionGroup ? this.scene3D.dimensionGroup.visible : false;
       const originalLabelsVisible = this.scene3D.labelGroup ? this.scene3D.labelGroup.visible : false;
+
+      // 3D interaktif butonlari gecici gizle
+      if (interactiveObjects.length) {
+        interactiveObjects.forEach(obj => {
+          if (obj) obj.visible = false;
+        });
+      }
 
       // UI elementlerini geçici gizle (sadece screenshot için)
       if (hideUI) {
@@ -149,6 +159,12 @@ export class ScreenshotCapture {
     } catch (error) {
       console.error('Screenshot capture error:', error);
       throw error;
+    } finally {
+      if (interactiveStates.length) {
+        interactiveStates.forEach(({ obj, visible }) => {
+          if (obj) obj.visible = visible;
+        });
+      }
     }
   }
 
