@@ -126,8 +126,8 @@
 
 <script type="importmap">
 {"imports":{
-  "three":"https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
-  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+  "three":"/vendor/three/build/three.module.js",
+  "three/addons/":"/vendor/three/examples/jsm/"
 }}
 </script>
 </head>
@@ -167,7 +167,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import GUI from 'https://cdn.jsdelivr.net/npm/lil-gui@0.19/+esm';
+import GUI from '/vendor/lil-gui/lil-gui.esm.min.js';
 
 /* === kurulum (değişmedi) === */
 const sceneWrap=document.getElementById('sceneWrap');

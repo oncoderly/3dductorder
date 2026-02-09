@@ -9,7 +9,7 @@
   #viewbar .vbtn .vicon{width:32px;height:32px;display:inline-block}
   #viewbar .vbtn:hover{opacity:1}
 </style>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"}}</script>
+<script type="importmap">{"imports":{"three":"/vendor/three/build/three.module.js","three/addons/":"/vendor/three/examples/jsm/"}}</script>
 </head><body>
 <div style="position:absolute;top:10px;left:10px;z-index:100;background:rgba(18,24,34,0.9);padding:8px 12px;border-radius:8px;display:flex;align-items:center;gap:10px;border:1px solid #39414f;">
   <a href="/" style="display:flex;align-items:center;">
@@ -32,7 +32,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
-import GUI from 'https://cdn.jsdelivr.net/npm/lil-gui@0.19/+esm';
+import GUI from '/vendor/lil-gui/lil-gui.esm.min.js';
 
 // === Temel kurulum ===
 const C=document.getElementById('c');

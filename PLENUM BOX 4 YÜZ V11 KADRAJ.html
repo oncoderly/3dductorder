@@ -30,7 +30,7 @@
   .label{color:inherit;font-weight:700;background:rgba(18,24,34,.9);padding:4px 8px;border:1px solid var(--border);border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.35)}
   @media (max-width:700px){#layout{grid-template-columns:1fr;grid-auto-rows:minmax(260px,auto)}}
 </style>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"}}</script>
+<script type="importmap">{"imports":{"three":"/vendor/three/build/three.module.js","three/addons/":"/vendor/three/examples/jsm/"}}</script>
 </head>
 <body>
   <div id="layout">
@@ -72,7 +72,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
-import GUI from 'https://cdn.jsdelivr.net/npm/lil-gui@0.19/+esm';
+import GUI from '/vendor/lil-gui/lil-gui.esm.min.js';
 
 // ——— Temel kurulum ———
 const scenePane = document.getElementById('scene');
