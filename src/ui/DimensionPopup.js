@@ -253,6 +253,15 @@ export class DimensionPopup {
       this.slider.max = paramData.max;
     }
     this.slider.step = paramData.step !== undefined ? paramData.step : '1';
+    const declaredMax = Number(paramData.max);
+    const minValue = Number(this.slider.min);
+    const fallbackMax = Number.isFinite(declaredMax)
+      ? declaredMax
+      : Math.max(
+        Number.isFinite(currentValue) ? currentValue * 2 : 300,
+        (Number.isFinite(minValue) ? minValue : 0) + 300
+      );
+    this.slider.max = Math.max(fallbackMax, Number.isFinite(currentValue) ? currentValue : 0);
 
     // Görünür yap
     this.popup.style.display = 'block';
@@ -350,14 +359,17 @@ export class DimensionPopup {
       : (Number.isFinite(sliderValue) ? sliderValue : parseFloat(this.slider.min));
     const newValue = Math.max(
       parseFloat(this.slider.min),
-      Math.min(parseFloat(this.slider.max), currentValue + delta)
+      currentValue + delta
     );
+    this.ensureSliderMax(newValue);
 
     this.slider.value = newValue;
     this.updateValue(newValue);
   }
 
   updateValue(value) {
+    this.ensureSliderMax(value);
+
     // Değer display'i güncelle
     this.valueDisplay.textContent = this.formatDisplayValue(value);
 
@@ -373,6 +385,16 @@ export class DimensionPopup {
         this.onUpdate(this.currentParam.key, value);
       }
     }
+  }
+
+  ensureSliderMax(value) {
+    const numericValue = Number(value);
+    const currentMax = parseFloat(this.slider.max);
+    if (!Number.isFinite(numericValue) || !Number.isFinite(currentMax) || numericValue <= currentMax) return;
+
+    const step = Number(this.slider.step);
+    const padding = Math.max(Math.abs(numericValue) * 0.25, (Number.isFinite(step) ? step : 1) * 20, 10);
+    this.slider.max = Math.ceil(numericValue + padding);
   }
 
   getStepDecimals(step) {

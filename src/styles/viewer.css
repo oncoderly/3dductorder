@@ -331,6 +331,56 @@ html, body {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
+.excel-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.excel-action-btn {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: #1f2937;
+  color: #f8fafc;
+  border-radius: 8px;
+  padding: 9px 12px;
+  min-height: 38px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.excel-action-btn.primary {
+  background: #2563eb;
+  border-color: #3b82f6;
+}
+
+.excel-action-btn:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.excel-action-btn:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+@media (max-width: 768px) {
+  .excel-actions {
+    order: 3;
+    flex: 1 1 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .excel-action-btn {
+    padding: 8px 10px;
+    min-height: 36px;
+  }
+
+  .mobile-toggle {
+    order: 4;
+  }
+}
+
 /* Mobile Toggle Button - Sadece mobilde görünür */
 .mobile-toggle {
   display: none;

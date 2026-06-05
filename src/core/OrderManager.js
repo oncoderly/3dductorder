@@ -433,11 +433,12 @@ export class OrderManager {
       const imgWidth = (contentWidth - horizontalGap) / 2;
       const imgHeight = (partHeight - 20) / 2 - verticalGap; // Kalan alanı 2'ye böl
 
+      const itemScreenshots = item.screenshots || {};
       const screenshots = [
-        { label: 'On', data: item.screenshots.front },
-        { label: 'Sag', data: item.screenshots.right },
-        { label: 'Ust', data: item.screenshots.top },
-        { label: 'Izo', data: item.screenshots.iso }
+        { label: 'On', data: itemScreenshots.front },
+        { label: 'Sag', data: itemScreenshots.right },
+        { label: 'Ust', data: itemScreenshots.top },
+        { label: 'Izo', data: itemScreenshots.iso }
       ];
 
       for (let j = 0; j < screenshots.length; j++) {

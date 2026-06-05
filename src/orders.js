@@ -147,6 +147,16 @@ class OrdersPage {
           Atık Dahil: <strong>${formatArea(totalArea)} m²</strong> ${totalWithWasteText}
         </div>
       `;
+    const missingShot = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="220"><rect width="100%" height="100%" fill="#111827"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#94a3b8" font-family="Arial" font-size="18">Excel Import</text></svg>'
+    );
+    const safeScreenshots = {
+      front: missingShot,
+      right: missingShot,
+      top: missingShot,
+      iso: missingShot,
+      ...(item.screenshots || {})
+    };
 
     card.innerHTML = `
       <div class="order-item-header">
@@ -159,19 +169,19 @@ class OrdersPage {
 
       <div class="order-screenshots">
         <div class="screenshot-item">
-          <img src="${item.screenshots.front}" alt="Ön görünüm">
+          <img src="${safeScreenshots.front || ''}" alt="Ön görünüm">
           <div class="screenshot-label">Ön</div>
         </div>
         <div class="screenshot-item">
-          <img src="${item.screenshots.right}" alt="Sağ görünüm">
+          <img src="${safeScreenshots.right || ''}" alt="Sağ görünüm">
           <div class="screenshot-label">Sağ</div>
         </div>
         <div class="screenshot-item">
-          <img src="${item.screenshots.top}" alt="Üst görünüm">
+          <img src="${safeScreenshots.top || ''}" alt="Üst görünüm">
           <div class="screenshot-label">Üst</div>
         </div>
         <div class="screenshot-item">
-          <img src="${item.screenshots.iso}" alt="İzometrik">
+          <img src="${safeScreenshots.iso || ''}" alt="İzometrik">
           <div class="screenshot-label">İzometrik</div>
         </div>
       </div>

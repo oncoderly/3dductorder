@@ -152,10 +152,11 @@ export class ParameterPanel {
         groupTitle.textContent = group.name;
         groupDiv.appendChild(groupTitle);
 
+        const unboundedMax = this.isDimensionGroupName(group.name);
         group.params.forEach(param => {
           let control;
           if (!param.type || param.type === 'number') {
-            control = this.createNumberControl(param);
+            control = this.createNumberControl(param, { unboundedMax });
           } else if (param.type === 'checkbox') {
             control = this.createCheckboxControl(param.key, param.label);
           } else if (param.type === 'color') {
@@ -184,7 +185,7 @@ export class ParameterPanel {
       dimDiv.appendChild(dimTitle);
 
       definitions.dimensions.forEach(param => {
-        const control = this.createNumberControl(param);
+        const control = this.createNumberControl(param, { unboundedMax: true });
         dimDiv.appendChild(control);
         this.controls[param.key] = control;
       });
@@ -571,11 +572,12 @@ export class ParameterPanel {
     const grid = document.createElement('div');
     grid.className = 'param-grid';
 
+    const unboundedMax = this.isDimensionGroupName(group.name);
     group.params.forEach(param => {
       let control;
 
       if (!param.type || param.type === 'number') {
-        control = this.createNumberControl(param);
+        control = this.createNumberControl(param, { unboundedMax });
       } else if (param.type === 'checkbox') {
         control = this.createCheckboxControl(param.key, param.label);
       } else if (param.type === 'color') {
@@ -650,7 +652,7 @@ export class ParameterPanel {
     grid.className = 'param-grid';
 
     parameters.forEach(param => {
-      const control = this.createNumberControl(param);
+      const control = this.createNumberControl(param, { unboundedMax: groupKey === 'dimensions' });
       grid.appendChild(control);
       this.controls[param.key] = control;
     });
@@ -660,7 +662,25 @@ export class ParameterPanel {
     this.container.appendChild(section);
   }
 
-  createNumberControl(param) {
+  isDimensionGroupName(name) {
+    const text = String(name || '').toLowerCase();
+    return text.includes('ölç') || text.includes('olc') || text.includes('Ã¶l');
+  }
+
+  isDimensionalNumberParam(param) {
+    if (!param) return false;
+    const key = String(param.key || '');
+    const label = String(param.label || '').toLowerCase();
+    const unit = String(param.unit || '').toLowerCase();
+    return unit === 'cm'
+      || unit === 'mm'
+      || label.includes('cm')
+      || label.includes('mm')
+      || /cm$/i.test(key)
+      || /^(w|h|l|r|phi|es|t)(?:[0-9_a-z]*)?$/i.test(key);
+  }
+
+  createNumberControl(param, options = {}) {
     const wrapper = document.createElement('div');
     wrapper.className = 'param-control';
 
@@ -705,9 +725,13 @@ export class ParameterPanel {
     };
 
     const min = allowedValues ? allowedValues[0] : (isThickness ? (param.min ?? 0) * 10 : (param.min ?? 0));
-    const max = allowedValues ? allowedValues[allowedValues.length - 1] : (isThickness ? (param.max ?? 1) * 10 : (param.max ?? 1));
+    const declaredMax = allowedValues ? allowedValues[allowedValues.length - 1] : (isThickness ? (param.max ?? 1) * 10 : (param.max ?? 1));
+    const unboundedMax = options.unboundedMax === true && this.isDimensionalNumberParam(param) && !allowedValues;
+    const max = unboundedMax ? Number.POSITIVE_INFINITY : declaredMax;
     const step = allowedValues ? getListStep(allowedValues) : (isThickness ? 0.1 : (param.step || 1));
-    const range = Math.max(1, (max || 1) - (min || 0));
+    const finiteDeclaredMax = Number.isFinite(declaredMax) ? declaredMax : min + 100;
+    const sliderMax = unboundedMax ? Math.max(finiteDeclaredMax, currentValue || 0) : finiteDeclaredMax;
+    const range = Math.max(1, sliderMax - (min || 0));
     const nudgeStep = isThickness ? 0.1 : (param.nudgeStep ?? param.nudge ?? (range >= 50 ? 5 : step * 5));
     const decimals = allowedValues
       ? getListDecimals(allowedValues)
@@ -728,9 +752,10 @@ export class ParameterPanel {
     slider.type = 'range';
     slider.className = 'param-number-slider';
     slider.min = min;
-    slider.max = max;
+    slider.max = sliderMax;
     slider.step = step;
     slider.value = currentValue;
+    if (unboundedMax) slider.dataset.unboundedMax = 'true';
 
     const decBtn = document.createElement('button');
     decBtn.type = 'button';
@@ -742,7 +767,7 @@ export class ParameterPanel {
     input.className = 'param-input';
     input.classList.add('param-number-input');
     input.min = min;
-    input.max = max;
+    if (!unboundedMax) input.max = max;
     input.step = step;
     input.value = currentValue;
 
@@ -756,10 +781,17 @@ export class ParameterPanel {
     incBtn.textContent = `+${nudgeStep}`;
 
     const updateSliderFill = (value) => {
+      if (unboundedMax && Number.isFinite(value)) {
+        const currentSliderMax = parseFloat(slider.max);
+        if (value > currentSliderMax) {
+          const padding = Math.max(Math.abs(value) * 0.25, nudgeStep * 5, step * 20, 10);
+          slider.max = Math.ceil(value + padding);
+        }
+      }
       const min = parseFloat(slider.min);
       const max = parseFloat(slider.max);
       const span = (max - min) || 1;
-      const pct = ((value - min) / span) * 100;
+      const pct = Math.max(0, Math.min(100, ((value - min) / span) * 100));
       slider.style.background = `linear-gradient(90deg, #4c8dff ${pct}%, #2a3242 ${pct}%)`;
     };
 
@@ -967,7 +999,6 @@ export class ParameterPanel {
       portInput.type = 'number';
       portInput.className = 'manson-port-input';
       portInput.min = 1;
-      portInput.max = 400;
       portInput.step = 1;
       portInput.value = port.diam;
       portInput.title = `${index + 1}. Manşon Çapı`;
@@ -1027,7 +1058,6 @@ export class ParameterPanel {
       portInput.type = 'number';
       portInput.className = 'param-input';
       portInput.min = 1;
-      portInput.max = 400;
       portInput.step = 1;
       portInput.value = port.diam;
 
@@ -1492,11 +1522,17 @@ export class ParameterPanel {
     };
 
     if (slider) {
+      if (slider.dataset.unboundedMax === 'true') {
+        const currentSliderMax = parseFloat(slider.max);
+        if (Number.isFinite(uiValue) && uiValue > currentSliderMax) {
+          slider.max = Math.ceil(uiValue + Math.max(Math.abs(uiValue) * 0.25, 10));
+        }
+      }
       slider.value = uiValue;
       const min = parseFloat(slider.min);
       const max = parseFloat(slider.max);
       const span = (max - min) || 1;
-      const pct = ((uiValue - min) / span) * 100;
+      const pct = Math.max(0, Math.min(100, ((uiValue - min) / span) * 100));
       slider.style.background = `linear-gradient(90deg, #4c8dff ${pct}%, #2a3242 ${pct}%)`;
     }
     if (input) {

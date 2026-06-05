@@ -4,6 +4,7 @@ import { Materials } from './core/Materials.js';
 import { DuzKanal } from './components/DuzKanal.js';
 import { Kortapa } from './components/kortapa.js';
 import { ReduksiyonDirsek } from './components/ReduksiyonDirsek.js';
+import { ReduksiyonDirsekBoyunlu } from './components/ReduksiyonDirsekBoyunlu.js';
 import { Dirsek } from './components/Dirsek.js';
 import { EsParcasi } from './components/es-parcasi.js';
 import { EsReduksiyonlu } from './components/es-reduksiyonlu.js';
@@ -14,6 +15,7 @@ import { Yaka } from './components/yaka.js';
 import { SideBranch2 } from './components/sidebranch-2.js';
 import { YBranch2 } from './components/YBranch-2.js';
 import { Manson } from './components/manson.js';
+import { SpiroDirsek } from './components/SpiroDirsek.js';
 import { ParameterPanel } from './ui/ParameterPanel.js';
 import { ViewControls } from './ui/ViewControls.js';
 import { DimensionPopup } from './ui/DimensionPopup.js';
@@ -23,6 +25,7 @@ import { ErrorHandler, setupGlobalErrorHandler } from './utils/ErrorHandler.js';
 import { ScreenshotCapture } from './core/ScreenshotCapture.js';
 import { OrderManager } from './core/OrderManager.js';
 import { OrderButton } from './ui/OrderButton.js';
+import { ExcelImportManager } from './core/ExcelImportManager.js';
 
 class App {
   constructor() {
@@ -38,6 +41,7 @@ class App {
     this.screenshotCapture = null;
     this.orderManager = null;
     this.orderButton = null;
+    this.excelImportManager = null;
 
     this.init();
   }
@@ -80,6 +84,7 @@ class App {
     this.setupHUD();
     this.setupMobileToggle();
     this.setupOrderSystem();
+    this.setupExcelImport();
     this.loadSavedTheme();
 
       // İlk parçayı yükle
@@ -407,6 +412,43 @@ class App {
     `;
   }
 
+  createPart(partKey) {
+    switch (partKey) {
+      case 'duz-kanal':
+        return new DuzKanal(this.scene, this.materials);
+      case 'kortapa':
+        return new Kortapa(this.scene, this.materials);
+      case 'reduksiyon-dirsek':
+        return new ReduksiyonDirsek(this.scene, this.materials);
+      case 'reduksiyon-dirsek-boyunlu':
+        return new ReduksiyonDirsekBoyunlu(this.scene, this.materials);
+      case 'dirsek':
+        return new Dirsek(this.scene, this.materials);
+      case 'es-parcasi':
+        return new EsParcasi(this.scene, this.materials);
+      case 'es-reduksiyonlu':
+        return new EsReduksiyonlu(this.scene, this.materials);
+      case 'plenum-box':
+        return new PlenumBox(this.scene, this.materials);
+      case 'kareden-yuvarlaga':
+        return new KaredenYuvarlaga(this.scene, this.materials);
+      case 'reduksiyon':
+        return new Reduksiyon(this.scene, this.materials);
+      case 'yaka':
+        return new Yaka(this.scene, this.materials);
+      case 'side-branch-2':
+        return new SideBranch2(this.scene, this.materials);
+      case 'y-branch-2':
+        return new YBranch2(this.scene, this.materials);
+      case 'manson':
+        return new Manson(this.scene, this.materials);
+      case 'spiro-dirsek':
+        return new SpiroDirsek(this.scene, this.materials);
+      default:
+        return null;
+    }
+  }
+
   async loadPart(partKey) {
     try {
       // Önceki parçayı temizle
@@ -428,6 +470,9 @@ class App {
           break;
         case 'reduksiyon-dirsek':
           this.currentPart = new ReduksiyonDirsek(this.scene, this.materials);
+          break;
+        case 'reduksiyon-dirsek-boyunlu':
+          this.currentPart = new ReduksiyonDirsekBoyunlu(this.scene, this.materials);
           break;
         case 'dirsek':
           this.currentPart = new Dirsek(this.scene, this.materials);
@@ -458,6 +503,9 @@ class App {
           break;
         case 'manson':
           this.currentPart = new Manson(this.scene, this.materials);
+          break;
+        case 'spiro-dirsek':
+          this.currentPart = new SpiroDirsek(this.scene, this.materials);
           break;
         default:
           this.errorHandler.error(
@@ -589,6 +637,92 @@ class App {
   }
 
   // Header badge'i güncelle
+  setupExcelImport() {
+    if (!this.orderManager) return;
+
+    this.excelImportManager = new ExcelImportManager({
+      createPart: (partKey) => this.createPart(partKey),
+      getPartConfig: (partKey) => this.getPartConfig(partKey),
+      orderManager: this.orderManager,
+      screenshotCapture: this.screenshotCapture,
+      onPartReady: async (part, partKey, stage) => {
+        this.currentPart = part;
+        this.scene.currentPart = part;
+        const selector = document.getElementById('part-selector');
+        if (selector) selector.value = partKey;
+        if (stage === 'after-rebuild') {
+          this.setupParameterPanel();
+          this.updateHUD();
+        }
+      }
+    });
+
+    const templateBtn = document.getElementById('excel-template-download');
+    const importBtn = document.getElementById('excel-import-button');
+    const input = document.getElementById('excel-import-input');
+
+    if (templateBtn) {
+      templateBtn.addEventListener('click', async () => {
+        try {
+          templateBtn.disabled = true;
+          await this.excelImportManager.downloadTemplate(getAllParts());
+          this.errorHandler.info('Excel sablonu indirildi', 'Sayfa adlarini ve kolon basliklarini degistirmeyin.');
+        } catch (error) {
+          this.errorHandler.error('Excel sablonu indirilemedi', error.message);
+        } finally {
+          templateBtn.disabled = false;
+        }
+      });
+    }
+
+    if (importBtn && input) {
+      importBtn.addEventListener('click', () => input.click());
+      input.addEventListener('change', async (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        const originalText = importBtn.textContent;
+
+        try {
+          importBtn.disabled = true;
+          importBtn.textContent = 'Import suruyor...';
+          const result = await this.excelImportManager.importFile(file, getAllParts());
+
+          if (result.lastPart) {
+            this.currentPart = result.lastPart;
+            this.scene.currentPart = this.currentPart;
+            this.setupParameterPanel();
+            this.updateHUD();
+
+            const selector = document.getElementById('part-selector');
+            if (selector && result.lastPartKey) selector.value = result.lastPartKey;
+          }
+
+          const cart = await this.orderManager.getCart();
+          if (this.orderButton) this.orderButton.updateBadge(cart.length);
+          this.updateHeaderBadge(cart.length);
+
+          if (result.added > 0) {
+            this.errorHandler.info('Excel import tamamlandi', `${result.added} satir siparise eklendi.`);
+          }
+          if (result.errors.length > 0) {
+            console.error('Excel import errors:', result.errors);
+            this.errorHandler.warning('Excel import uyarilari', result.errors.slice(0, 3).join(' | '));
+          }
+          if (result.added === 0 && result.errors.length === 0) {
+            this.errorHandler.warning('Excel import bos', 'Sablonda eklenecek veri satiri bulunamadi.');
+          }
+        } catch (error) {
+          this.errorHandler.error('Excel import basarisiz', error.message);
+          console.error('Excel import error:', error);
+        } finally {
+          importBtn.disabled = false;
+          importBtn.textContent = originalText;
+          input.value = '';
+        }
+      });
+    }
+  }
+
   updateHeaderBadge(count) {
     const headerBadge = document.getElementById('header-orders-badge');
     if (headerBadge) {

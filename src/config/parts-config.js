@@ -21,6 +21,13 @@ export const PARTS_CONFIG = {
     description: 'Redüksiyonlu çeyrek dirsek',
     component: 'ReduksiyonDirsek'
   },
+  'reduksiyon-dirsek-boyunlu': {
+    name: 'Reduksiyonlu Dirsek Boyunlu',
+    icon: 'ğŸ”„',
+    iconPath: '/ico/reduksiyonludirsek.ico',
+    description: 'Cikis boynu B olculu reduksiyonlu dirsek',
+    component: 'ReduksiyonDirsekBoyunlu'
+  },
   'dirsek': {
     name: 'Dirsek',
     icon: '🔄',
@@ -90,6 +97,13 @@ export const PARTS_CONFIG = {
     iconPath: '/ico/manson.ico',
     description: 'Silindirik manson parcasi',
     component: 'Manson'
+  },
+  'spiro-dirsek': {
+    name: 'Spiro Dirsek',
+    icon: 'O',
+    iconPath: '/ico/manson.ico',
+    description: 'Yuvarlak kesitli spiro dirsek',
+    component: 'SpiroDirsek'
   }
 };
 
