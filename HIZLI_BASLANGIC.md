@@ -6,13 +6,13 @@
 node server.js
 ```
 
-Sunucu `http://localhost:3000` adresinde çalışacak.
+Sunucu `http://localhost:3001` adresinde çalışacak.
 
 ## 2️⃣ Ana Sayfayı Aç
 
 Tarayıcıda şu adresi aç:
 ```
-http://localhost:3000/index-new.html
+http://localhost:3001/index-new.html
 ```
 
 Üç seçenek göreceksin:
@@ -148,7 +148,7 @@ case 'yeni-parcam':
 
 ### Viewer Açılmıyor
 ✅ Sunucu çalışıyor mu? → `node server.js`
-✅ Doğru port'ta mı? → `http://localhost:3000`
+✅ Doğru port'ta mı? → `http://localhost:3001`
 ✅ Console'da hata var mı? → F12 basıp kontrol et
 
 ### 3D Görünüm Yok
@@ -230,7 +230,7 @@ Artık sistemi kullanmaya ve geliştirmeye hazırsın. İyi çalışmalar! 🚀
 node server.js
 
 # 2. Tarayıcıda aç
-http://localhost:3000/index-new.html
+http://localhost:3001/index-new.html
 
 # 3. Viewer'a git ve kullan!
 ```
