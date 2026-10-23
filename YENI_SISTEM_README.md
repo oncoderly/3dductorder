@@ -58,8 +58,9 @@ Bu proje, hava kanalı fittings parçalarını 3D olarak görüntülemek, boyutl
 │   │
 │   └── app.js                   # Ana uygulama
 │
-├── index.html                  # Yeni viewer sayfası
-├── index.html                   # Sipariş sistemi (mevcut)
+├── index.html                   # Ana 3D viewer ve parça seçimi
+├── orders.html                  # Sipariş sepeti
+├── index-new.html               # Alternatif giriş sayfası
 └── server.js                    # Node.js sunucu
 ```
 
