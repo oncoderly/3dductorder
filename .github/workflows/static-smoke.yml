@@ -1,0 +1,19 @@
+name: Static asset smoke tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - fix/github-pages-paths-20261023
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Verify static asset paths and imports
+        run: npm run build && npm test

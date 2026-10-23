@@ -58,8 +58,9 @@ Bu proje, hava kanalı fittings parçalarını 3D olarak görüntülemek, boyutl
 │   │
 │   └── app.js                   # Ana uygulama
 │
-├── viewer.html                  # Yeni viewer sayfası
-├── index.html                   # Sipariş sistemi (mevcut)
+├── index.html                   # Ana 3D viewer ve parça seçimi
+├── orders.html                  # Sipariş sepeti
+├── index-new.html               # Alternatif giriş sayfası
 └── server.js                    # Node.js sunucu
 ```
 
@@ -71,11 +72,11 @@ Bu proje, hava kanalı fittings parçalarını 3D olarak görüntülemek, boyutl
 node server.js
 ```
 
-Sunucu `http://localhost:3000` adresinde çalışacaktır.
+Sunucu `http://localhost:3001` adresinde çalışacaktır.
 
 ### Viewer'ı Açma
 
-1. Tarayıcıda `http://localhost:3000/viewer.html` adresine gidin
+1. Tarayıcıda `http://localhost:3001/index.html` adresine gidin
 2. Üst menüden parça seçin
 3. Sağ panelden parametreleri ayarlayın
 4. 3D görünümü inceleyin
