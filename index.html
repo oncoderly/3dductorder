@@ -10,22 +10,22 @@
   <title>3D Kanal Görüntüleyici</title>
 
   <!-- PWA Manifest -->
-  <link rel="manifest" href="/manifest.json">
+  <link rel="manifest" href="./manifest.json">
 
   <!-- App Icons -->
-  <link rel="icon" type="image/png" href="/logo13dductorder.png">
-  <link rel="apple-touch-icon" href="/logo13dductorder.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="/logo13dductorder.png">
-  <link rel="apple-touch-icon" sizes="152x152" href="/logo13dductorder.png">
-  <link rel="apple-touch-icon" sizes="167x167" href="/logo13dductorder.png">
+  <link rel="icon" type="image/png" href="./logo13dductorder.png">
+  <link rel="apple-touch-icon" href="./logo13dductorder.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="./logo13dductorder.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="./logo13dductorder.png">
+  <link rel="apple-touch-icon" sizes="167x167" href="./logo13dductorder.png">
 
-  <link rel="stylesheet" href="/src/styles/viewer.css?v=10">
-  <link rel="stylesheet" href="/src/styles/dimension-popup.css?v=10">
+  <link rel="stylesheet" href="./src/styles/viewer.css?v=10">
+  <link rel="stylesheet" href="./src/styles/dimension-popup.css?v=10">
   <script type="importmap">
   {
     "imports": {
-      "three": "/vendor/three/build/three.module.js",
-      "three/addons/": "/vendor/three/examples/jsm/"
+      "three": "./vendor/three/build/three.module.js",
+      "three/addons/": "./vendor/three/examples/jsm/"
     }
   }
   </script>
@@ -35,8 +35,8 @@
     <!-- Header - Mobil'de gizlenebilir -->
     <header class="app-header">
       <div class="header-left">
-        <a href="/" class="logo-link">
-          <img src="/logo23dductorder.png" alt="3D Duct Order Logo" class="app-logo">
+        <a href="./" class="logo-link">
+          <img src="./logo23dductorder.png" alt="3D Duct Order Logo" class="app-logo">
         </a>
         <h1 class="app-title">3D Kanal Görüntüleyici</h1>
       </div>
@@ -51,7 +51,7 @@
         <button id="excel-import-button" class="excel-action-btn primary" type="button">Excel Import</button>
         <input id="excel-import-input" type="file" accept=".xlsx,.xls" hidden>
       </div>
-      <a href="/orders.html" class="orders-link" id="orders-link" style="display: flex !important; visibility: visible !important;">
+      <a href="./orders.html" class="orders-link" id="orders-link" style="display: flex !important; visibility: visible !important;">
         🛒 Siparişlerim <span class="orders-badge" id="header-orders-badge">0</span>
       </a>
       <button id="mobile-toggle" class="mobile-toggle" aria-label="Parametreleri Aç/Kapat">
@@ -80,6 +80,6 @@
     </main>
   </div>
 
-  <script type="module" src="/src/app.js"></script>
+  <script type="module" src="./src/app.js"></script>
 </body>
 </html>
